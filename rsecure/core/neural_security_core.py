@@ -13,6 +13,14 @@ mock_path = os.path.join(os.path.dirname(__file__), '../../mock_libs')
 if mock_path not in sys.path:
     sys.path.insert(0, mock_path)
 
+# Import visual security module
+try:
+    from ..modules.defense.visual_security import VisualSecurityMonitor, VisualProtectionFilter, VisualThreat
+    VISUAL_SECURITY_AVAILABLE = True
+except ImportError:
+    VISUAL_SECURITY_AVAILABLE = False
+    print("Warning: Visual security module not available")
+
 # Try to import TensorFlow (real or mock)
 try:
     import tensorflow as tf
@@ -66,6 +74,14 @@ class RSecureNeuralCore:
         
         # Initialize models
         self._initialize_models()
+        
+        # Initialize visual security
+        self.visual_monitor = None
+        self.visual_filter = None
+        if VISUAL_SECURITY_AVAILABLE:
+            self.visual_monitor = VisualSecurityMonitor()
+            self.visual_filter = VisualProtectionFilter()
+            self.logger.info("Visual security system initialized")
         
         # Analysis thread
         self.analysis_thread = None
@@ -348,6 +364,11 @@ class RSecureNeuralCore:
         self.running = True
         self.analysis_thread = threading.Thread(target=self._analysis_loop, daemon=True)
         self.analysis_thread.start()
+        
+        # Start visual monitoring
+        if self.visual_monitor:
+            self.visual_monitor.start_monitoring()
+        
         self.logger.info("RSecure neural analysis started")
     
     def stop_analysis(self):
@@ -355,6 +376,11 @@ class RSecureNeuralCore:
         self.running = False
         if self.analysis_thread:
             self.analysis_thread.join(timeout=10)
+        
+        # Stop visual monitoring
+        if self.visual_monitor:
+            self.visual_monitor.stop_monitoring()
+        
         self.logger.info("RSecure neural analysis stopped")
     
     def _analysis_loop(self):
@@ -367,9 +393,12 @@ class RSecureNeuralCore:
                 file_result = self._analyze_data_type('file')
                 system_result = self._analyze_data_type('system')
                 
+                # Analyze visual threats
+                visual_result = self._analyze_visual_threats()
+                
                 # Ensemble decision
                 ensemble_result = self._ensemble_decision([
-                    network_result, process_result, file_result, system_result
+                    network_result, process_result, file_result, system_result, visual_result
                 ])
                 
                 # Update analysis results
@@ -379,6 +408,7 @@ class RSecureNeuralCore:
                     'process_analysis': process_result,
                     'file_analysis': file_result,
                     'system_analysis': system_result,
+                    'visual_analysis': visual_result,
                     'ensemble_result': ensemble_result,
                     'threat_level': ensemble_result.get('threat_score', 0.0)
                 })
@@ -432,6 +462,38 @@ class RSecureNeuralCore:
                 
         except Exception as e:
             self.logger.error(f"Error analyzing {data_type} data: {e}")
+            return {'status': 'error', 'threat_score': 0.0}
+    
+    def _analyze_visual_threats(self) -> Dict:
+        """Analyze visual security threats"""
+        if not self.visual_monitor:
+            return {'status': 'unavailable', 'threat_score': 0.0}
+        
+        try:
+            # Get recent visual threats
+            recent_threats = self.visual_monitor.get_recent_threats(minutes=1)
+            
+            if not recent_threats:
+                return {'status': 'no_threats', 'threat_score': 0.0}
+            
+            # Calculate combined threat score
+            max_severity = max(t.severity for t in recent_threats)
+            avg_confidence = np.mean([t.confidence for t in recent_threats])
+            
+            # Weight by recency and severity
+            weighted_threat = max_severity * avg_confidence
+            
+            return {
+                'status': 'threat_detected',
+                'threat_score': float(weighted_threat),
+                'threat_count': len(recent_threats),
+                'max_severity': float(max_severity),
+                'avg_confidence': float(avg_confidence),
+                'threat_types': list(set(t.threat_type for t in recent_threats))
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing visual threats: {e}")
             return {'status': 'error', 'threat_score': 0.0}
     
     def _fallback_analysis(self, data_type: str, data: np.ndarray) -> Dict:
@@ -509,6 +571,48 @@ class RSecureNeuralCore:
     def get_analysis_results(self) -> Dict:
         """Get current analysis results"""
         return self.analysis_results.copy()
+    
+    def get_visual_status(self) -> Dict:
+        """Get visual security status"""
+        if not self.visual_monitor:
+            return {'status': 'unavailable'}
+        
+        return self.visual_monitor.get_current_status()
+    
+    def get_visual_threats(self, minutes: int = 5) -> List[Dict]:
+        """Get recent visual threats"""
+        if not self.visual_monitor:
+            return []
+        
+        threats = self.visual_monitor.get_recent_threats(minutes)
+        return [
+            {
+                'type': t.threat_type,
+                'severity': t.severity,
+                'confidence': t.confidence,
+                'timestamp': t.timestamp,
+                'description': t.description
+            }
+            for t in threats
+        ]
+    
+    def activate_visual_protection(self, strength: float = 0.5):
+        """Activate visual protection filters"""
+        if self.visual_filter:
+            self.visual_filter.activate_protection(strength)
+            self.logger.info(f"Visual protection activated with strength {strength}")
+    
+    def deactivate_visual_protection(self):
+        """Deactivate visual protection filters"""
+        if self.visual_filter:
+            self.visual_filter.deactivate_protection()
+            self.logger.info("Visual protection deactivated")
+    
+    def clear_visual_threats(self):
+        """Clear visual threat history"""
+        if self.visual_monitor:
+            self.visual_monitor.clear_threat_history()
+            self.logger.info("Visual threat history cleared")
     
     def train_models(self, training_data: Dict):
         """Train models with provided data"""
