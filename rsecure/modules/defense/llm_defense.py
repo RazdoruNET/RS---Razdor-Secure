@@ -11,7 +11,15 @@ import logging
 import hashlib
 import threading
 import numpy as np
-import tensorflow as tf
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available - LLM defense using basic mode")
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass
@@ -95,6 +103,10 @@ class RSecureLLMDefense:
     
     def _create_pattern_detector(self):
         """Create pattern detection neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using rule-based pattern detection")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Embedding(10000, 128, input_length=500),
@@ -120,6 +132,10 @@ class RSecureLLMDefense:
     
     def _create_content_analyzer(self):
         """Create content analysis neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using rule-based content analysis")
+            return None
+            
         try:
             # Multi-input model for content analysis
             text_input = tf.keras.layers.Input(shape=(500,), name='text_input')
@@ -174,6 +190,10 @@ class RSecureLLMDefense:
     
     def _create_behavior_analyzer(self):
         """Create behavior analysis neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using rule-based behavior analysis")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Dense(128, activation='relu', input_shape=(100,)),

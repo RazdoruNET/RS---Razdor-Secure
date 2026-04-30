@@ -65,6 +65,21 @@ class RSecureCVU:
         self._load_existing_data()
         self._load_offline_knowledge_base()
         
+    def _initialize_data_storage(self):
+        """Initialize data storage directories and files"""
+        try:
+            # Create data directory
+            self.save_dir.mkdir(exist_ok=True)
+            
+            # Initialize data structures
+            self.active_threats = []
+            self.processed_vulnerabilities = set()
+            self.kev_cache = set()
+            
+            self.logger.info("CVU data storage initialized")
+        except Exception as e:
+            self.logger.error(f"Error initializing data storage: {e}")
+    
     def _get_default_config(self) -> Dict:
         return {
             'save_dir': os.environ.get("CVU_DIR", "./data"),
@@ -77,6 +92,28 @@ class RSecureCVU:
             'enable_nvd': True,
             'enable_ghsa': True
         }
+    
+    def _load_existing_data(self):
+        """Load existing threat data from file"""
+        try:
+            if self.output_file.exists():
+                with open(self.output_file, 'r') as f:
+                    data = json.load(f)
+                    self.active_threats = data.get('active_threats', [])
+                    self.processed_vulnerabilities = set(data.get('processed_vulnerabilities', []))
+                self.logger.info(f"Loaded {len(self.active_threats)} existing threats")
+        except Exception as e:
+            self.logger.error(f"Error loading existing data: {e}")
+    
+    def _load_offline_knowledge_base(self):
+        """Load offline threat knowledge base"""
+        try:
+            if self.offline_file.exists():
+                with open(self.offline_file, 'r') as f:
+                    self.offline_threats = json.load(f)
+                self.logger.info(f"Loaded {len(self.offline_threats)} offline threats")
+        except Exception as e:
+            self.logger.error(f"Error loading offline knowledge base: {e}")
     
     def start_intelligence(self):
         """Start CVU intelligence gathering"""

@@ -16,18 +16,36 @@ from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
 # Import RSecure modules
-from modules.detection import SystemDetector
-from utils.monitoring_logger import RSecureLogger
-from core.neural_security_core import RSecureNeuralCore, FeatureExtractor
-from utils.security_analytics import RSecureAnalytics, SecurityEvent
-from modules.defense.system_control import RSecureSystemControl
-from modules.detection.cvu_intelligence import RSecureCVU
-from core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
-from modules.defense.network_defense import RSecureNetworkDefense
-from modules.detection.phishing_detector import RSecurePhishingDetector
-from modules.defense.llm_defense import RSecureLLMDefense
-from modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
-from modules.protection.psychological_protection import RSecurePsychologicalProtection
+from .modules.detection.system_detector import SystemDetector
+from .utils.monitoring_logger import RSecureLogger
+from .utils.dashboard import RSecureDashboard
+try:
+    from .modules.analysis.security_analytics import RSecureAnalytics, SecurityEvent
+except ImportError:
+    RSecureAnalytics = None
+    SecurityEvent = None
+from .modules.defense.system_control import RSecureSystemControl
+from .modules.detection.cvu_intelligence import RSecureCVU
+from .modules.defense.network_defense import RSecureNetworkDefense
+from .modules.detection.phishing_detector import RSecurePhishingDetector
+from .modules.defense.llm_defense import RSecureLLMDefense
+from .modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
+from .modules.protection.psychological_protection import RSecurePsychologicalProtection
+
+# Optional imports for ML modules (may not be available without tensorflow)
+try:
+    from .core.neural_security_core import RSecureNeuralCore, FeatureExtractor
+    NEURAL_CORE_AVAILABLE = True
+except ImportError:
+    NEURAL_CORE_AVAILABLE = False
+    print("Warning: Neural Core not available (tensorflow required)")
+
+try:
+    from .core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
+    RL_AVAILABLE = True
+except ImportError:
+    RL_AVAILABLE = False
+    print("Warning: Reinforcement Learning not available")
 
 class RSecureMain:
     """Main RSecure security system integration"""
@@ -81,7 +99,7 @@ class RSecureMain:
             },
             'monitoring': {
                 'enabled': True,
-                'log_dir': '/var/log/rsecure',
+                'log_dir': './logs/rsecure',
                 'log_interval': 1,
                 'network_scan_interval': 30,
                 'file_scan_interval': 60
@@ -235,8 +253,8 @@ class RSecureMain:
                 self.monitoring_logger.add_alert_callback(self._handle_security_alert)
                 self.logger.info("Monitoring logger initialized")
             
-            # Neural core
-            if self.config['neural_core']['enabled']:
+            # Neural core (optional, requires tensorflow)
+            if self.config['neural_core']['enabled'] and NEURAL_CORE_AVAILABLE:
                 neural_config = self.config['neural_core']
                 self.neural_core = RSecureNeuralCore(
                     model_dir=neural_config['model_dir'],
@@ -244,15 +262,19 @@ class RSecureMain:
                 )
                 self.neural_core.start_analysis()
                 self.logger.info("Neural core initialized")
+            elif self.config['neural_core']['enabled'] and not NEURAL_CORE_AVAILABLE:
+                self.logger.warning("Neural core enabled but not available (tensorflow required)")
             
             # Analytics
-            if self.config['analytics']['enabled']:
+            if self.config['analytics']['enabled'] and RSecureAnalytics:
                 self.analytics = RSecureAnalytics(
                     db_path=self.config['analytics']['db_path'],
                     config=self.config['analytics']
                 )
                 self.analytics.start_analysis()
                 self.logger.info("Analytics initialized")
+            elif self.config['analytics']['enabled'] and not RSecureAnalytics:
+                self.logger.warning("Analytics enabled but module not available")
             
             # System control
             if self.config['system_control']['enabled']:
@@ -270,13 +292,15 @@ class RSecureMain:
                 self.cvu_intelligence.start_intelligence()
                 self.logger.info("CVU intelligence initialized")
             
-            # Reinforcement learning (temporarily disabled due to TF compatibility)
-            if False and self.config['reinforcement_learning']['enabled']:
+            # Reinforcement learning (optional, requires tensorflow)
+            if self.config['reinforcement_learning']['enabled'] and RL_AVAILABLE:
                 self.rl_agent = RSecureReinforcementLearning(
                     config=self.config['reinforcement_learning']
                 )
                 self.rl_agent.start_training()
                 self.logger.info("Reinforcement learning initialized")
+            elif self.config['reinforcement_learning']['enabled'] and not RL_AVAILABLE:
+                self.logger.warning("Reinforcement learning enabled but not available")
             
             # Network defense
             if self.config['network_defense']['enabled']:
@@ -515,19 +539,22 @@ class RSecureMain:
                 self.metrics['threats_detected'] += 1
                 
                 # Create security event
-                event = SecurityEvent(
-                    timestamp=datetime.now().isoformat(),
-                    event_type="neural_threat_detected",
-                    severity="high" if threat_level > 0.8 else "medium",
-                    source="neural_core",
-                    description=f"Neural analysis detected threat level: {threat_level:.3f}",
-                    threat_score=threat_level,
-                    confidence=results.get('confidence', 0.5),
-                    details=results
-                )
-                
-                if self.analytics:
-                    self.analytics.add_security_event(event)
+                if SecurityEvent:
+                    event = SecurityEvent(
+                        timestamp=datetime.now().isoformat(),
+                        event_type="neural_threat_detected",
+                        severity="high" if threat_level > 0.8 else "medium",
+                        source="neural_core",
+                        description=f"Neural analysis detected threat level: {threat_level:.3f}",
+                        threat_score=threat_level,
+                        confidence=results.get('confidence', 0.5),
+                        details=results
+                    )
+                    
+                    if self.analytics:
+                        self.analytics.add_security_event(event)
+                else:
+                    self.logger.warning(f"Neural threat detected: {threat_level:.3f} (analytics unavailable)")
         
         except Exception as e:
             self.logger.error(f"Error processing neural results: {e}")
@@ -537,19 +564,22 @@ class RSecureMain:
         try:
             for threat in threats:
                 if threat.get('final_risk', 0) > 7.0:  # High risk threshold
-                    event = SecurityEvent(
-                        timestamp=datetime.now().isoformat(),
-                        event_type="vulnerability_threat",
-                        severity="high",
-                        source="cvu_intelligence",
-                        description=f"High risk vulnerability: {threat.get('id', 'Unknown')}",
-                        threat_score=threat.get('final_risk', 0),
-                        confidence=threat.get('trust', 0.5),
-                        details=threat
-                    )
-                    
-                    if self.analytics:
-                        self.analytics.add_security_event(event)
+                    if SecurityEvent:
+                        event = SecurityEvent(
+                            timestamp=datetime.now().isoformat(),
+                            event_type="vulnerability_threat",
+                            severity="high",
+                            source="cvu_intelligence",
+                            description=f"High risk vulnerability: {threat.get('id', 'Unknown')}",
+                            threat_score=threat.get('final_risk', 0),
+                            confidence=threat.get('trust', 0.5),
+                            details=threat
+                        )
+                        
+                        if self.analytics:
+                            self.analytics.add_security_event(event)
+                    else:
+                        self.logger.warning(f"CVU threat detected: {threat.get('id', 'Unknown')} (analytics unavailable)")
         
         except Exception as e:
             self.logger.error(f"Error processing CVU threats: {e}")
@@ -929,56 +959,24 @@ class RSecureMain:
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.stop()
     
-    def get_status(self) -> Dict:
-        """Get comprehensive system status"""
-        try:
-            status = {
-                'system_info': self.system_info,
-                'running': self.running,
-                'uptime': (datetime.now() - self.metrics['start_time']).total_seconds(),
-                'metrics': self.metrics,
-                'components': {}
+    def get_status(self) -> Dict[str, Any]:
+        """Get current system status"""
+        return {
+            'running': self.running,
+            'uptime': (datetime.now() - self.metrics['start_time']).total_seconds() if self.running else 0,
+            'system_info': self.system_info,
+            'metrics': self.metrics,
+            'components': {
+                'neural_core': 'running' if self.neural_core else 'stopped',
+                'network_defense': 'running' if self.network_defense else 'stopped',
+                'cvu_intelligence': 'running' if self.cvu_intelligence else 'stopped',
+                'phishing_detector': 'running' if self.phishing_detector else 'stopped',
+                'llm_defense': 'running' if self.llm_defense else 'stopped',
+                'psychological_protection': 'running' if self.psychological_protection else 'stopped',
+                'system_control': 'running' if self.system_control else 'stopped',
+                'analytics': 'running' if self.analytics else 'stopped'
             }
-            
-            # Add component statuses
-            if self.logger:
-                status['components']['monitoring'] = 'running' if self.logger.running else 'stopped'
-            
-            if self.neural_core:
-                status['components']['neural_core'] = 'running' if self.neural_core.running else 'stopped'
-            
-            if self.analytics:
-                status['components']['analytics'] = 'running' if self.analytics.running else 'stopped'
-            
-            if self.system_control:
-                status['components']['system_control'] = 'running' if self.system_control.running else 'stopped'
-            
-            if self.cvu_intelligence:
-                status['components']['cvu_intelligence'] = 'running' if self.cvu_intelligence.running else 'stopped'
-            
-            if self.rl_agent:
-                status['components']['reinforcement_learning'] = 'running' if self.rl_agent.running else 'stopped'
-            
-            if self.network_defense:
-                status['components']['network_defense'] = 'running' if self.network_defense.running else 'stopped'
-            
-            if self.phishing_detector:
-                status['components']['phishing_detector'] = 'running' if self.phishing_detector.running else 'stopped'
-            
-            if self.llm_defense:
-                status['components']['llm_defense'] = 'running' if self.llm_defense.running else 'stopped'
-            
-            if self.audio_video_monitor:
-                status['components']['audio_video_monitor'] = 'running' if self.audio_video_monitor.monitoring_active else 'stopped'
-            
-            if self.psychological_protection:
-                status['components']['psychological_protection'] = 'running' if self.psychological_protection.running else 'stopped'
-            
-            return status
-        
-        except Exception as e:
-            self.logger.error(f"Error getting status: {e}")
-            return {'error': str(e)}
+        }
 
 def main():
     """Main entry point"""

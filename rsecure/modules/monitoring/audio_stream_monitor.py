@@ -11,7 +11,15 @@ import logging
 import threading
 import subprocess
 import numpy as np
-import tensorflow as tf
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available - audio monitor using basic mode")
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass
@@ -106,6 +114,10 @@ class RSecureAudioStreamMonitor:
     
     def _create_audio_analyzer(self):
         """Create audio analysis neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic audio analysis")
+            return None
+            
         try:
             # Input for audio spectrograms
             audio_input = tf.keras.layers.Input(shape=(128, 128, 1), name='audio_input')
@@ -155,6 +167,10 @@ class RSecureAudioStreamMonitor:
     
     def _create_speech_detector(self):
         """Create speech detection neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic speech detection")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.LSTM(128, return_sequences=True, input_shape=(None, 1)),
@@ -180,6 +196,10 @@ class RSecureAudioStreamMonitor:
     
     def _create_propaganda_detector(self):
         """Create propaganda detection neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic propaganda detection")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Conv1D(64, 3, activation='relu', input_shape=(None, 1)),

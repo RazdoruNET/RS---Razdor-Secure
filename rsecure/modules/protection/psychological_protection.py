@@ -10,7 +10,15 @@ import time
 import logging
 import threading
 import numpy as np
-import tensorflow as tf
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available - psychological protection using basic mode")
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass
@@ -126,6 +134,10 @@ class RSecurePsychologicalProtection:
     
     def _create_content_analyzer(self):
         """Create content analysis neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic content analysis")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Embedding(10000, 256, input_length=1000),
@@ -152,6 +164,10 @@ class RSecurePsychologicalProtection:
     
     def _create_pattern_detector(self):
         """Create pattern detection neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic pattern detection")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Dense(256, activation='relu', input_shape=(200,)),
@@ -178,6 +194,10 @@ class RSecurePsychologicalProtection:
     
     def _create_consciousness_monitor(self):
         """Create consciousness weight monitoring neural network"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using basic consciousness monitoring")
+            return None
+            
         try:
             model = tf.keras.Sequential([
                 tf.keras.layers.Dense(128, activation='relu', input_shape=(100,)),

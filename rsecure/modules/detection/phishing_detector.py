@@ -16,9 +16,16 @@ from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse, urljoin
 from dataclasses import dataclass
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available - phishing detector using basic mode")
 
 @dataclass
 class PhishingThreat:
@@ -79,6 +86,21 @@ class RSecurePhishingDetector:
     
     def _initialize_neural_network(self):
         """Initialize neural network for phishing detection"""
+        try:
+            self.model = self._build_neural_model()
+            if self.model:
+                self.logger.info("Neural network initialized successfully")
+        except Exception as e:
+            self.logger.error(f"Error initializing neural network: {e}")
+            self.model = None
+    
+    def _build_neural_model(self):
+        """Initialize neural network for phishing detection"""
+        if not TENSORFLOW_AVAILABLE:
+            print("Warning: TensorFlow not available - using rule-based detection only")
+            self.model = None
+            return
+            
         try:
             # Input layers
             url_input = layers.Input(shape=(200,), name='url_input')

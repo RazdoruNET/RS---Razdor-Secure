@@ -16,14 +16,14 @@ sys.path.insert(0, str(Path(__file__).parent / 'rsecure'))
 
 # Попытка импорта с обработкой ошибок зависимостей
 try:
-    from rsecure_main import RSecureMain
+    from rsecure.rsecure_main import RSecureMain
     RSECURE_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  RSecure модули недоступны: {e}")
     print("📊 Запуск дашборда в автономном режиме (без модулей безопасности)")
     RSECURE_AVAILABLE = False
 
-from utils.dashboard import RSecureDashboard
+from rsecure.utils.dashboard import RSecureDashboard
 
 class RSecureIntegrated:
     """Интегрированная система RSecure с дашбордом"""
@@ -72,7 +72,7 @@ class RSecureIntegrated:
             
             print("\n✅ RSecure Integrated System запущена успешно!")
             print("=" * 60)
-            print("📊 Веб-дашборд: http://127.0.0.1:5001")
+            print("📊 Веб-дашборд: http://127.0.0.1:5002")
             print("📋 Логи: ./logs/")
             print("⚠️  Нажмите Ctrl+C для остановки")
             print("=" * 60)
@@ -101,7 +101,7 @@ class RSecureIntegrated:
     def _run_dashboard(self):
         """Запуск дашборда в отдельном потоке"""
         try:
-            self.dashboard.run(host='127.0.0.1', port=5001, debug=False)
+            self.dashboard.run(host='127.0.0.1', port=5002, debug=False)
         except Exception as e:
             print(f"❌ Ошибка дашборда: {e}")
     
