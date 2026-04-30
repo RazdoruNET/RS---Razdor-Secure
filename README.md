@@ -254,26 +254,44 @@ python simple_dashboard.py
 
 ```
 rsecure/
-├── core/                    # Основные модули
-│   ├── neural_security_core.py
-│   └── ollama_integration.py
-├── modules/
-│   ├── detection/          # Детекторы угроз
-│   ├── defense/            # Модули защиты
-│   │   ├── dpi_bypass.py           # DPI обход (10+ методов)
-│   │   ├── vpn_proxy.py             # VPN и прокси
-│   │   ├── traffic_obfuscation.py  # Обфускация трафика
-│   │   ├── tor_integration.py       # Tor интеграция
-│   │   └── neural_encryptor.py      # Нейро-шифратор
-│   └── analysis/           # Аналитика
-├── tests/                   # Тесты
-│   ├── test_dpi_bypass.py          # Тесты DPI обхода
-│   ├── test_vpn_proxy.py            # Тесты VPN/прокси
-│   ├── test_traffic_obfuscation.py # Тесты обфускации
-│   └── test_tor_integration.py     # Тесты Tor
-├── docs/                    # Документация
-├── assets/                  # Ресурсы
-└── rsecure_main.py         # Основной файл
+├── 📋 README.md                       # Основная документация
+├── 📚 USER_GUIDE.md                  # Руководство пользователя
+├── ⚙️ INSTALLATION.md                # Инструкция по установке
+├── 📁 PROJECT_STRUCTURE.md            # Структура проекта
+├── 🚀 bin/                           # Исполняемые скрипты
+├── 📁 scripts/                        # Утилиты и тесты
+├── 🔧 tools/                          # Инструменты разработки
+├── ⚙️ config/                        # Конфигурационные файлы
+├── 📚 examples/                       # Примеры использования
+├── 📁 rsecure/                       # Основной пакет
+│   ├── 🎯 rsecure_main.py              # Главный файл
+│   ├── 📁 core/                        # Ядро системы
+│   ├── 📁 modules/                      # Модули безопасности
+│   │   ├── 📁 detection/                # Детекция угроз
+│   │   ├── 📁 defense/                  # Защита
+│   │   │   ├── 🔓 dpi_bypass.py           # DPI обход (10+ методов)
+│   │   │   ├── 🛡️ vpn_proxy.py             # VPN и прокси
+│   │   │   ├── 🔐 traffic_obfuscation.py  # Обфускация трафика
+│   │   │   └── 🌐 tor_integration.py       # Tor интеграция
+│   │   ├── 📁 monitoring/                # Мониторинг
+│   │   ├── 📁 protection/                # Защита
+│   │   └── 📁 analysis/                  # Аналитика
+│   ├── 📁 utils/                        # Утилиты
+│   └── 📁 config/                       # Конфигурация
+├── 📁 tests/                          # Тесты
+│   ├── 🔍 test_dpi_bypass.py          # Тесты DPI обхода
+│   ├── 🛡️ test_vpn_proxy.py            # Тесты VPN/прокси
+│   ├── 🔐 test_traffic_obfuscation.py # Тесты обфускации
+│   └── 🌐 test_tor_integration.py     # Тесты Tor
+├── 📁 docs/                           # Документация
+├── 🎨 assets/                         # Ресурсы
+├── 📁 templates/                      # Шаблоны
+├── 🧪 mock_libs/                     # Mock библиотеки
+├── 📁 rsecure_models/                 # Модели RSecure
+├── 📁 logs/                           # Логи
+├── 🚀 run_rsecure_with_dashboard.py   # Запуск с дешбордом
+├── 📊 simple_dashboard.py              # Простой дешборд
+└── 🗑️ uninstall_rsecure.sh            # Деинсталлятор
 ```
 
 ## 🔧 Разработка

@@ -1,0 +1,119 @@
+{
+  "_comment": "RSecure Configuration Template - Copy to rsecure_config.json and customize",
+  
+  "system_detection": {
+    "enabled": true,
+    "scan_interval": 30,
+    "deep_scan": false
+  },
+  
+  "monitoring": {
+    "enabled": true,
+    "log_interval": 1,
+    "network_scan_interval": 30,
+    "system_scan_interval": 60,
+    "log_level": "INFO"
+  },
+  
+  "neural_core": {
+    "enabled": true,
+    "threat_threshold": 0.7,
+    "model_path": "models/neural_security.pt",
+    "batch_size": 32,
+    "max_threads": 4,
+    "gpu_acceleration": false
+  },
+  
+  "network_defense": {
+    "enabled": true,
+    "monitored_ports": [22, 80, 443, 8080],
+    "auto_block": true,
+    "block_duration": 3600,
+    "max_blocked_ips": 1000
+  },
+  
+  "dpi_bypass": {
+    "enabled": false,
+    "default_method": "adaptive",
+    "tor_enabled": true,
+    "vpn_enabled": false,
+    "auto_rotate_methods": true,
+    "rotation_interval": 300,
+    "max_retry_attempts": 3,
+    "timeout_seconds": 30
+  },
+  
+  "traffic_obfuscation": {
+    "enabled": false,
+    "default_method": "aes",
+    "encryption_key": "auto_generated",
+    "key_rotation_interval": 3600,
+    "compression_enabled": true,
+    "steganography_enabled": false
+  },
+  
+  "vpn_proxy": {
+    "enabled": false,
+    "auto_connect": false,
+    "fallback_servers": [],
+    "connection_timeout": 30,
+    "reconnect_interval": 60
+  },
+  
+  "tor_integration": {
+    "enabled": false,
+    "socks_port": 9050,
+    "control_port": 9051,
+    "circuit_timeout": 60,
+    "max_circuits": 5,
+    "hidden_services_enabled": false
+  },
+  
+  "ollama": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 11434,
+    "models": ["qwen2.5-coder:1.5b", "gemma2:2b"],
+    "timeout": 30,
+    "max_concurrent_requests": 5
+  },
+  
+  "notifications": {
+    "enabled": true,
+    "methods": ["desktop"],
+    "threshold": 0.8,
+    "cooldown": 300,
+    "email": {
+      "enabled": false,
+      "smtp_server": "",
+      "smtp_port": 587,
+      "username": "",
+      "password": "",
+      "recipients": []
+    }
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "file": "logs/rsecure.log",
+    "max_size": "10MB",
+    "backup_count": 5,
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  },
+  
+  "security": {
+    "encryption_enabled": true,
+    "key_derivation": "pbkdf2",
+    "iterations": 100000,
+    "audit_logging": true,
+    "session_timeout": 3600
+  },
+  
+  "performance": {
+    "max_memory_usage": "2GB",
+    "max_cpu_usage": 80,
+    "cache_enabled": true,
+    "cache_size": "100MB",
+    "parallel_processing": true
+  }
+}
