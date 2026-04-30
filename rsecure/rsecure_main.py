@@ -18,30 +18,26 @@ from pathlib import Path
 # Import RSecure modules
 from .modules.detection.system_detector import SystemDetector
 from .utils.monitoring_logger import RSecureLogger
-from .utils.dashboard import RSecureDashboard
 try:
     from .modules.analysis.security_analytics import RSecureAnalytics, SecurityEvent
 except ImportError:
     RSecureAnalytics = None
     SecurityEvent = None
-from .modules.defense.system_control import RSecureSystemControl
-from .modules.detection.cvu_intelligence import RSecureCVU
-from .modules.defense.network_defense import RSecureNetworkDefense
-from .modules.detection.phishing_detector import RSecurePhishingDetector
-from .modules.defense.llm_defense import RSecureLLMDefense
-from .modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
-from .modules.protection.psychological_protection import RSecurePsychologicalProtection
-
-# Optional imports for ML modules (may not be available without tensorflow)
+from modules.detection.system_detector import SystemDetector
+from modules.detection.phishing_detector import PhishingDetector
+from modules.defense.psychical_protection import PsychologicalProtection
+from modules.defense.visual_security import VisualSecurityMonitor
+from modules.defense.network_defense import RSecureNetworkDefense
+from modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
+from modules.analysis.notifications import NotificationManager
+from modules.analysis.security_analytics import SecurityAnalytics
+from core.neural_security_core import RSecureNeuralCore
+from core.ollama_integration import OllamaSecurityAnalyzer, HybridSecurityAnalyzer
 try:
-    from .core.neural_security_core import RSecureNeuralCore, FeatureExtractor
-    NEURAL_CORE_AVAILABLE = True
+    from .core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
 except ImportError:
     NEURAL_CORE_AVAILABLE = False
     print("Warning: Neural Core not available (tensorflow required)")
-
-try:
-    from .core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
     RL_AVAILABLE = True
 except ImportError:
     RL_AVAILABLE = False

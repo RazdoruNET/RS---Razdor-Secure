@@ -204,3 +204,114 @@ defense_logs/
 process_kills/
 ip_blocks/
 file_quarantines/
+
+# Test reports and temporary files
+test_report_*.json
+pytest_report.json
+/tmp/
+*.pyc
+*.pyo
+
+# IDE and editor temporary files
+.vscode/settings.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/shelf
+.idea/contentModel.xml
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary and cache files
+*.cache
+*.swp
+*.swo
+*~
+.#*
+\#*#
+.*.swp
+.*.swo
+
+# Backup and temporary files
+*.bak
+*.backup
+*.tmp
+*.temp
+*.old
+*.orig
+*.rej
+~*
+
+# Build and distribution artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+*.tar.gz
+*.zip
+
+# Environment and configuration
+.env*
+!.env.example
+config.local.*
+settings.local.*
+
+# Documentation build artifacts
+docs/_build/
+site/
+.sphinx/
+
+# Performance and profiling
+*.prof
+*.profile
+profile_*.out
+
+# Database and data files
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+
+# Machine learning artifacts
+*.pkl
+*.pickle
+*.joblib
+model_*.h5
+model_*.pb
+checkpoints_*/
+tensorboard_*/
+
+# Network and security artifacts
+*.pcap
+*.pcapng
+network_*.log
+security_*.log
+threat_*.json
+
+# System monitoring files
+monitor_*.log
+system_*.state
+baseline_*.json
+
+# Development and testing
+coverage_*.xml
+junit_*.xml
+test_*.xml
+.tox/
+.nox/
+
+# Local development
+local_*/
+dev_*/
+sandbox_*/
+experimental_*/
