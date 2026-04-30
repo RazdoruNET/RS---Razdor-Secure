@@ -46,6 +46,26 @@ try:
 except ImportError:
     RL_AVAILABLE = False
     print("Warning: Reinforcement Learning not available")
+    # Create fallback classes
+    from dataclasses import dataclass
+    from typing import List, Tuple
+    
+    @dataclass
+    class SecurityState:
+        system_resources: List[float]
+        network_activity: List[float]
+        process_behavior: List[float]
+        file_operations: List[float]
+        user_activity: List[float]
+        threat_indicators: List[float]
+        historical_performance: List[float]
+    
+    @dataclass 
+    class SecurityAction:
+        action_id: int
+        action_type: str
+        parameters: dict
+        priority: float
 
 class RSecureMain:
     """Main RSecure security system integration"""
