@@ -16,18 +16,18 @@ from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
 # Import RSecure modules
-from system_detector import SystemDetector
-from monitoring_logger import RSecureLogger
-from neural_security_core import RSecureNeuralCore, FeatureExtractor
-from security_analytics import RSecureAnalytics, SecurityEvent
-from system_control import RSecureSystemControl
-from cvu_intelligence import RSecureCVU
-from reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
-from network_defense import RSecureNetworkDefense
-from phishing_detector import RSecurePhishingDetector
-from llm_defense import RSecureLLMDefense
-from audio_video_monitor import RSecureAudioVideoMonitor
-from psychological_protection import RSecurePsychologicalProtection
+from modules.detection import SystemDetector
+from utils.monitoring_logger import RSecureLogger
+from core.neural_security_core import RSecureNeuralCore, FeatureExtractor
+from utils.security_analytics import RSecureAnalytics, SecurityEvent
+from modules.defense.system_control import RSecureSystemControl
+from modules.detection.cvu_intelligence import RSecureCVU
+from core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
+from modules.defense.network_defense import RSecureNetworkDefense
+from modules.detection.phishing_detector import RSecurePhishingDetector
+from modules.defense.llm_defense import RSecureLLMDefense
+from modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
+from modules.protection.psychological_protection import RSecurePsychologicalProtection
 
 class RSecureMain:
     """Main RSecure security system integration"""

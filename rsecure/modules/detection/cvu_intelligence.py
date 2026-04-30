@@ -45,6 +45,10 @@ class RSecureCVU:
         self.active_threats = []
         self.processed_vulnerabilities = set()
         
+        # Offline knowledge base
+        self.offline_threats = []
+        self.offline_file = Path('./rsecure/config/offline_threats.json')
+        
         # Threading
         self.running = False
         self.update_thread = None
@@ -55,6 +59,11 @@ class RSecureCVU:
         handler = logging.FileHandler('./cvu_intelligence.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
+        
+        # Initialize components
+        self._initialize_data_storage()
+        self._load_existing_data()
+        self._load_offline_knowledge_base()
         
     def _get_default_config(self) -> Dict:
         return {
@@ -434,17 +443,33 @@ class RSecureCVU:
     
     def get_high_risk_threats(self, threshold: float = 7.0) -> List[Dict]:
         """Get high risk threats above threshold"""
-        return [t for t in self.active_threats if t.get('final_risk', 0) >= threshold]
+        # Try online threats first
+        online_threats = [t for t in self.active_threats if t.get('final_risk', 0) >= threshold]
+        
+        # If no online threats available, use offline knowledge base
+        if not online_threats and self.is_offline_available():
+            offline_threats = self.get_offline_threats(min_score=threshold)
+            self.logger.info(f"Using offline knowledge base: {len(offline_threats)} threats found")
+            return offline_threats
+        
+        return online_threats
     
     def search_threats(self, query: str) -> List[Dict]:
         """Search threats by text query"""
         query = query.lower()
         results = []
         
+        # Search online threats first
         for threat in self.active_threats:
             text = f"{threat.get('id', '')} {threat.get('summary', '')} {threat.get('cve', '')}".lower()
             if query in text:
                 results.append(threat)
+        
+        # If no online results, search offline knowledge base
+        if not results and self.is_offline_available():
+            offline_results = self.search_offline_threats(query)
+            self.logger.info(f"Using offline search: {len(offline_results)} results found")
+            results.extend(offline_results)
         
         return results
     
@@ -468,13 +493,20 @@ class RSecureCVU:
         
         return {
             'total_threats': total_threats,
-            'kev_threats': kev_count,
-            'high_risk_threats': high_risk_count,
-            'tag_distribution': tag_counts,
             'source_distribution': source_counts,
-            'last_update': datetime.now().isoformat(),
-            'kev_cache_size': len(self.kev_cache)
+            'tag_distribution': tag_counts,
+            'average_score': avg_score
         }
+    
+    def is_offline_available(self) -> bool:
+        """Check if offline knowledge base is available"""
+        return len(self.offline_threats) > 0
+    
+    def get_fallback_threats(self, limit: int = 50) -> List[Dict]:
+        """Get fallback threats from offline knowledge base when internet is unavailable"""
+        if self.is_offline_available():
+            return self.offline_threats[:limit]
+        return []
 
 if __name__ == "__main__":
     # Example usage
