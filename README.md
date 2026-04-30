@@ -2,9 +2,9 @@
 
 <img src="assets/we_razdor_logo.png" alt="Logo" width="100%">
 
-**RSecure - комплексная система безопасности с нейросетевым анализом, обучением с подкреплением и многоуровневой защитой от цифровых и психологических угроз.**
+**RSecure - революционная комплексная система безопасности с нейросетевым анализом, обучением с подкреплением, DPI обходом и многоуровневой защитой от цифровых и психологических угроз.**
 
-*Проект разработан **WE RAZDOR** с уникальным подходом к безопасности через множественные слои защиты.*
+*Проект разработан **WE RAZDOR** с уникальным подходом к безопасности через множественные слои защиты и передовые методы обхода ограничений.*
 
 ## 🛡️ Ключевые слои защиты
 
@@ -21,6 +21,17 @@
 - Генерация синтетических многолучевых помех
 - Рандомизация фазы и амплитуды сигнала
 - [Подробнее →](docs/wifi-antipositioning-defense.md)
+
+### 🔓 **DPI Обход и Сетевая Свобода**
+- Фрагментация пакетов для обхода инспекции
+- TLS SNI Splitting для обхода блокировок
+- Обфускация HTTP заголовков и Domain Fronting
+- Цепочки прокси и VPN маршрутизация
+- Tor интеграция с кастомными circuits
+- Шифрование трафика (AES, ChaCha20)
+- Мимикрия протоколов (SSH, FTP, SMTP)
+- Стеганография и многослойная обфускация
+- [Подробнее →](docs/defense/dpi-bypass-guide.md)
 
 ### � **Психологическая защита**
 - Мониторинг нейронных весов через поведенческий анализ
@@ -41,9 +52,11 @@
 - [Подробнее →](docs/defense/llm-defense.md)
 
 ### 🌐 **Активная сетевая оборона**
-- Обнаружение port scanning и DDoS
+- Обнаружение port scanning и DDoS атак
 - Автоматическая блокировка вредоносных IP
-- Honeypot сервисы
+- Honeypot сервисы и ловушки
+- Интеллектуальная фильтрация трафика
+- Адаптивная защита от сетевых угроз
 - [Подробнее →](docs/defense/network-defense.md)
 
 ### 🎣 **Защита от фишинга**
@@ -54,17 +67,21 @@
 
 ### 🧬 **Нейросетевое ядро**
 - Многослойные сверточные сети
-- Обучение с подкреплением
+- Обучение с подкреплением (Reinforcement Learning)
 - Ансамблевая модель решений
+- Ollama интеграция с LLM анализом
+- Адаптивные нейронные архитектуры
 - [Подробнее →](docs/core-modules/neural-security-core.md)
 
 ## ⚙️ Быстрый старт
 
 ### Системные требования
 - **Python 3.11+** (рекомендуется)
-- **macOS/Linux**
-- **8GB+ RAM**
+- **macOS/Linux** (Windows частичная поддержка)
+- **8GB+ RAM** (16GB+ рекомендуется для DPI обхода)
 - **Ollama** (для LLM анализа)
+- **Tor** (для анонимных соединений)
+- **OpenSSL** (для шифрования)
 
 ### Установка
 ```bash
@@ -82,6 +99,13 @@ pip install -r requirements.txt
 # Установка Ollama
 brew install ollama && brew services start ollama
 ollama pull qwen2.5-coder:1.5b
+ollama pull gemma2:2b
+
+# Установка Tor (macOS)
+brew install tor && brew services start tor
+
+# Установка дополнительных зависимостей
+pip install cryptography stem pysocks requests
 ```
 
 ### Запуск
@@ -105,12 +129,29 @@ python simple_dashboard.py
 - ✅ Visual Security (защита от визуальных атак)
 - ✅ Network Defense (активная оборона)
 - ✅ Web Dashboard (мониторинг в реальном времени)
+- ✅ DPI Bypass Engine (10+ методов обхода)
+- ✅ VPN & Proxy Manager (OpenVPN, WireGuard, SOCKS5)
+- ✅ Traffic Obfuscation (AES, ChaCha20, стеганография)
+- ✅ Tor Integration (полный контроль сети)
+- ✅ WiFi Anti-Positioning (защита от отражений)
 
 ### Доступные LLM модели:
 - 🤖 qwen2.5-coder:1.5b (анализ кода)
 - 🤖 jarvis_secure:latest (безопасность)
 - 🤖 gemma2:2b (общий анализ)
 - 🤖 codeqwen:latest (анализ программ)
+
+### DPI Обход методы:
+- 🔓 Фрагментация пакетов
+- 🔓 TLS SNI Splitting
+- 🔓 HTTP Header Obfuscation
+- 🔓 Domain Fronting
+- 🔓 Proxy Chaining
+- 🔓 Tor Routing
+- 🔓 VPN Tunneling
+- 🔓 Protocol Mimicking
+- 🔓 Encoded Payload
+- 🔓 Stealth Ports
 
 ## 🌐 Веб-дешборд
 
@@ -134,6 +175,10 @@ python simple_dashboard.py
 - [Нейросетевое ядро](docs/core-modules/neural-security-core.md)
 - [Ollama интеграция](docs/core-modules/ollama-integration.md)
 - [Обучение с подкреплением](docs/core-modules/reinforcement-learning.md)
+- [🔓 DPI Обход - полное руководство](docs/defense/dpi-bypass-guide.md)
+- [🛡️ VPN и Прокси интеграция](docs/defense/vpn-proxy-guide.md)
+- [🔐 Обфускация трафика](docs/defense/traffic-obfuscation-guide.md)
+- [🌐 Tor интеграция](docs/defense/tor-integration-guide.md)
 
 ### Модули защиты:
 - [Психологическая защита](docs/defense/psychical-protection.md)
@@ -143,6 +188,8 @@ python simple_dashboard.py
 - [Защита от LLM атак](docs/defense/llm-defense.md)
 - [Сетевая оборона](docs/defense/network-defense.md)
 - [Мониторинг устройств](docs/monitoring/audio-video-monitor.md)
+- [🔓 DPI Обход - технические детали](docs/defense/dpi-bypass-technical.md)
+- [🌐 Анонимность и приватность](docs/defense/anonymity-privacy.md)
 
 ### Научные исследования:
 - [🔬 Научные основания](docs/research/scientific-foundations.md)
@@ -178,6 +225,17 @@ python simple_dashboard.py
   "network_defense": {
     "enabled": true,
     "monitored_ports": [22, 80, 443]
+  },
+  "dpi_bypass": {
+    "enabled": true,
+    "default_method": "fragmentation",
+    "tor_enabled": true,
+    "vpn_enabled": false
+  },
+  "traffic_obfuscation": {
+    "enabled": true,
+    "default_method": "aes",
+    "encryption_key": "auto_generated"
   }
 }
 ```
@@ -192,7 +250,16 @@ rsecure/
 ├── modules/
 │   ├── detection/          # Детекторы угроз
 │   ├── defense/            # Модули защиты
+│   │   ├── dpi_bypass.py           # DPI обход (10+ методов)
+│   │   ├── vpn_proxy.py             # VPN и прокси
+│   │   ├── traffic_obfuscation.py  # Обфускация трафика
+│   │   └── tor_integration.py       # Tor интеграция
 │   └── analysis/           # Аналитика
+├── tests/                   # Тесты
+│   ├── test_dpi_bypass.py          # Тесты DPI обхода
+│   ├── test_vpn_proxy.py            # Тесты VPN/прокси
+│   ├── test_traffic_obfuscation.py # Тесты обфускации
+│   └── test_tor_integration.py     # Тесты Tor
 ├── docs/                    # Документация
 ├── assets/                  # Ресурсы
 └── rsecure_main.py         # Основной файл
@@ -202,7 +269,23 @@ rsecure/
 
 ### Тестирование
 ```bash
-python -m pytest tests/
+# Все тесты
+python -m pytest tests/ -v
+
+# Тесты DPI обхода
+python -m pytest tests/test_dpi_bypass.py -v
+
+# Тесты VPN и прокси
+python -m pytest tests/test_vpn_proxy.py -v
+
+# Тесты обфускации
+python -m pytest tests/test_traffic_obfuscation.py -v
+
+# Тесты Tor интеграции
+python -m pytest tests/test_tor_integration.py -v
+
+# Тестирование производительности
+python -m pytest tests/ -k performance
 ```
 
 ### Вклад в проект
@@ -210,10 +293,22 @@ python -m pytest tests/
 - Распознавание новых типов атак
 - Оптимизация производительности
 - Дополнительные платформы
+- 🔓 Новые методы DPI обхода
+- 🛡️ Улучшение VPN/прокси протоколов
+- 🌐 Расширение Tor функциональности
+- 🔐 Новые алгоритмы шифрования и обфускации
 
-## � Лицензия
+## ⚠️ Лицензия и Предупреждение
 
 RSecure - экспериментальная система безопасности. Используйте на свой страх и риск.
+
+**ВАЖНО:** Модули DPI обхода предназначены для:
+- Исследовательских целей
+- Тестирования безопасности
+- Обхода легитимных ограничений
+- Защиты приватности
+
+**Ответственность:** Пользователь несет полную ответственность за использование модулей обхода в соответствии с законодательством своей страны.
 
 ---
 
@@ -237,4 +332,10 @@ RSecure - экспериментальная система безопаснос
 
 ---
 
-**Важно**: RSecure является мощной системой безопасности. Тщательно тестируйте в безопасной среде перед использованием в production.
+**Важно**: RSecure является мощной системой безопасности с DPI обходом. Тщательно тестируйте в безопасной среде перед использованием в production.
+
+**Безопасность:**
+- Используйте в тестовой среде
+- Проверяйте законодательство страны
+- Не используйте для незаконных действий
+- Тестируйте все методы обхода аккуратно
