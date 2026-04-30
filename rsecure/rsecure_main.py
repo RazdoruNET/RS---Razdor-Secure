@@ -32,6 +32,11 @@ except ImportError:
     PsychologicalProtection = None
 
 try:
+    from modules.defense.wifi_antipositioning import WiFiAntiPositioningSystem
+except ImportError:
+    WiFiAntiPositioningSystem = None
+
+try:
     from modules.defense.visual_security import VisualSecurityMonitor
 except ImportError:
     VisualSecurityMonitor = None
@@ -127,6 +132,7 @@ class RSecureMain:
         self.llm_defense = None
         self.audio_video_monitor = None
         self.psychological_protection = None
+        self.wifi_antipositioning = None
         
         # System state
         self.system_info = {}
@@ -242,6 +248,18 @@ class RSecureMain:
                 'enable_pattern_detection': True,
                 'enable_consciousness_protection': True,
                 'soft_signal_mode': True
+            },
+            'wifi_antipositioning': {
+                'enabled': True,
+                'interface': 'wlan0',
+                'sampling_rate': 100,
+                'threat_threshold': 0.7,
+                'confidence_threshold': 0.8,
+                'auto_activate': True,
+                'protection_level': 'medium',
+                'signal_obfuscation': True,
+                'multipath_noise': True,
+                'pattern_disruption': True
             },
             'integration': {
                 'enable_ml_decisions': True,
@@ -400,6 +418,16 @@ class RSecureMain:
                 self.psychological_protection.start_protection()
                 self.logger.info("Psychological protection initialized")
             
+            # WiFi anti-positioning
+            if self.config['wifi_antipositioning']['enabled'] and WiFiAntiPositioningSystem:
+                self.wifi_antipositioning = WiFiAntiPositioningSystem(
+                    config=self.config['wifi_antipositioning']
+                )
+                self.wifi_antipositioning.start_protection()
+                self.logger.info("WiFi anti-positioning initialized")
+            elif self.config['wifi_antipositioning']['enabled'] and not WiFiAntiPositioningSystem:
+                self.logger.warning("WiFi anti-positioning enabled but module not available")
+            
             self.logger.info("All RSecure components initialized successfully")
             
         except Exception as e:
@@ -480,6 +508,9 @@ class RSecureMain:
             
             if hasattr(self, 'psychological_protection') and self.psychological_protection:
                 self.psychological_protection.stop_protection()
+            
+            if hasattr(self, 'wifi_antipositioning') and self.wifi_antipositioning:
+                self.wifi_antipositioning.stop_protection()
             
             # Wait for integration thread
             if hasattr(self, 'integration_thread'):
@@ -563,6 +594,11 @@ class RSecureMain:
             if self.psychological_protection:
                 psych_stats = self.psychological_protection.get_protection_statistics()
                 self._process_psychological_status(psych_stats)
+            
+            # Get WiFi anti-positioning status
+            if self.wifi_antipositioning:
+                wifi_status = self.wifi_antipositioning.get_protection_status()
+                self._process_wifi_antipositioning_status(wifi_status)
         
         except Exception as e:
             self.logger.error(f"Error processing system state: {e}")
@@ -702,6 +738,35 @@ class RSecureMain:
                 self.logger.info(f"Brain signals generated: {brain_signals}")
         except Exception as e:
             self.logger.error(f"Error processing psychological status: {e}")
+    
+    def _process_wifi_antipositioning_status(self, status: Dict):
+        """Process WiFi anti-positioning protection status"""
+        try:
+            attacks_detected = status.get('attacks_detected', 0)
+            if attacks_detected > 0:
+                self.logger.warning(f"WiFi positioning attacks detected: {attacks_detected}")
+                self.metrics['threats_detected'] += attacks_detected
+            
+            attacks_prevented = status.get('attacks_prevented', 0)
+            if attacks_prevented > 0:
+                self.logger.info(f"WiFi positioning attacks prevented: {attacks_prevented}")
+            
+            protection_level = status.get('protection_level', 0.0)
+            threat_level = status.get('threat_level', 0.0)
+            
+            if threat_level > 0.7:
+                self.logger.warning(f"High WiFi positioning threat level: {threat_level:.2f}")
+            
+            if protection_level > 0.8:
+                self.logger.info(f"WiFi anti-positioning protection active at level: {protection_level:.2f}")
+            
+            # Log last threat if available
+            last_threat = status.get('last_threat')
+            if last_threat:
+                self.logger.info(f"Last WiFi positioning threat: {last_threat.get('attack_indicators', [])}")
+                
+        except Exception as e:
+            self.logger.error(f"Error processing WiFi anti-positioning status: {e}")
     
     def _correlate_events(self):
         """Correlate security events"""

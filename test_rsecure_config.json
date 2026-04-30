@@ -1,0 +1,54 @@
+{
+  "wifi_antipositioning": {
+    "enabled": true,
+    "interface": "wlan0",
+    "sampling_rate": 10,
+    "threat_threshold": 0.5,
+    "confidence_threshold": 0.6,
+    "auto_activate": true,
+    "protection_level": "medium",
+    "signal_obfuscation": true,
+    "multipath_noise": true,
+    "pattern_disruption": true
+  },
+  "system_detection": {
+    "enabled": false
+  },
+  "monitoring": {
+    "enabled": false
+  },
+  "neural_core": {
+    "enabled": false
+  },
+  "analytics": {
+    "enabled": false
+  },
+  "system_control": {
+    "enabled": false
+  },
+  "cvu_intelligence": {
+    "enabled": false
+  },
+  "reinforcement_learning": {
+    "enabled": false
+  },
+  "network_defense": {
+    "enabled": false
+  },
+  "phishing_detection": {
+    "enabled": false
+  },
+  "llm_defense": {
+    "enabled": false
+  },
+  "audio_video_monitoring": {
+    "enabled": false
+  },
+  "psychological_protection": {
+    "enabled": false
+  },
+  "integration": {
+    "enable_ml_decisions": false,
+    "enable_auto_response": false
+  }
+}
