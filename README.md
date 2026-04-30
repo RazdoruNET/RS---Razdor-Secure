@@ -15,9 +15,9 @@
 - Биометрическая корреляция угроз
 - [Подробнее →](docs/defense/neural-wave-protection.md)
 
-### 🛡️ **Антипозиционирование (WiFi reflection defense)**
+### 🛡️ **Антипозиционирование (защита от WiFi отражений)**
 - Защита от определения местоположения через WiFi отражения
-- Обфускация Channel State Information (CSI)
+- Обфускация канальной информации состояния (CSI)
 - Генерация синтетических многолучевых помех
 - Рандомизация фазы и амплитуды сигнала
 - [Подробнее →](docs/wifi-antipositioning-defense.md)
@@ -138,7 +138,7 @@ python simple_dashboard.py
 ### Модули защиты:
 - [Психологическая защита](docs/defense/psychical-protection.md)
 - [🧠 Нейроволновая защита](docs/defense/neural-wave-protection.md)
-- [🛡️ Антипозиционирование (WiFi reflection defense)](docs/wifi-antipositioning-defense.md)
+- [🛡️ Антипозиционирование (защита от WiFi отражений)](docs/wifi-antipositioning-defense.md)
 - [Визуальная безопасность](docs/defense/visual-security.md)
 - [Защита от LLM атак](docs/defense/llm-defense.md)
 - [Сетевая оборона](docs/defense/network-defense.md)
