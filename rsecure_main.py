@@ -12,7 +12,7 @@ import logging
 import json
 import signal
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
 # Import RSecure modules
