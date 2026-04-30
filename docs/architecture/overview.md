@@ -85,6 +85,7 @@ graph LR
 - **VPN & Proxy Manager** - управление VPN и прокси
 - **Tor Integration** - анонимная маршрутизация
 - **WiFi Anti-Positioning** - защита от WiFi отражений
+- **Neural Encryptor** - нейро-шифрование данных
 
 ### 5. Уровень управления (Management Layer)
 
@@ -144,6 +145,7 @@ sequenceDiagram
 - **DPI Bypass Core** координирует методы обхода
 - **Traffic Obfuscation Core** управляет обфускацией
 - **Network Route Core** управляет маршрутизацией через VPN/Tor
+- **Neural Encryptor Core** управляет нейро-шифрованием данных
 
 ### Детекционные модули
 
@@ -164,6 +166,7 @@ sequenceDiagram
 - **Traffic Obfuscator** - многослойная обфускация
 - **WiFi Shield** - защита от WiFi отражений
 - **Protocol Mimicry** - мимикрия под легальные протоколы
+- **Neural Encryptor** - шифрование данных в нейро-свертки
 
 ## Конфигурация и управление
 
@@ -174,8 +177,9 @@ sequenceDiagram
 3. **DPI Bypass конфигурация** - методы обхода и настройки
 4. **VPN/Tor конфигурация** - маршруты и учетные данные
 5. **Обфускация конфигурация** - алгоритмы и ключи
-6. **Runtime конфигурация** - изменения через API
-7. **Пользовательские настройки** - через dashboard
+6. **Neural Encryptor конфигурация** - модели и параметры шифрования
+7. **Runtime конфигурация** - изменения через API
+8. **Пользовательские настройки** - через dashboard
 
 ### Управление состоянием
 
@@ -185,6 +189,7 @@ sequenceDiagram
 - **Bypass Method State** - состояние активных методов обхода
 - **Network Route State** - активные сетевые маршруты
 - **Obfuscation Key Manager** - управление ключами шифрования
+- **Neural Model State** - состояние нейросетевых моделей
 - **Threat Intelligence Cache** - кэш данных об угрозах
 
 ## Масштабирование и производительность

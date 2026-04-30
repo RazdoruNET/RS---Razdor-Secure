@@ -73,6 +73,14 @@
 - Адаптивные нейронные архитектуры
 - [Подробнее →](docs/core-modules/neural-security-core.md)
 
+### 🔐 **Нейро-шифратор/дешифратор**
+- Нейросетевое преобразование данных в латентные векторы
+- Маскировка под HTTP, DNS, ICMP, SSH трафик
+- Autoencoder, VAE, GAN, Transformer методы
+- Adversarial устойчивость к детекции
+- 100% восстановление данных на выходе
+- [Подробнее →](docs/defense/neural-encryptor.md)
+
 ## ⚙️ Быстрый старт
 
 ### Системные требования
@@ -134,6 +142,7 @@ python simple_dashboard.py
 - ✅ Traffic Obfuscation (AES, ChaCha20, стеганография)
 - ✅ Tor Integration (полный контроль сети)
 - ✅ WiFi Anti-Positioning (защита от отражений)
+- ✅ Neural Encryptor (нейро-шифрование данных)
 
 ### Доступные LLM модели:
 - 🤖 qwen2.5-coder:1.5b (анализ кода)
@@ -179,6 +188,7 @@ python simple_dashboard.py
 - [🛡️ VPN и Прокси интеграция](docs/defense/vpn-proxy-guide.md)
 - [🔐 Обфускация трафика](docs/defense/traffic-obfuscation-guide.md)
 - [🌐 Tor интеграция](docs/defense/tor-integration-guide.md)
+- [🧠 Нейро-шифратор - руководство](docs/defense/neural-encryptor.md)
 
 ### Модули защиты:
 - [Психологическая защита](docs/defense/psychical-protection.md)
@@ -253,7 +263,8 @@ rsecure/
 │   │   ├── dpi_bypass.py           # DPI обход (10+ методов)
 │   │   ├── vpn_proxy.py             # VPN и прокси
 │   │   ├── traffic_obfuscation.py  # Обфускация трафика
-│   │   └── tor_integration.py       # Tor интеграция
+│   │   ├── tor_integration.py       # Tor интеграция
+│   │   └── neural_encryptor.py      # Нейро-шифратор
 │   └── analysis/           # Аналитика
 ├── tests/                   # Тесты
 │   ├── test_dpi_bypass.py          # Тесты DPI обхода
@@ -283,6 +294,9 @@ python -m pytest tests/test_traffic_obfuscation.py -v
 
 # Тесты Tor интеграции
 python -m pytest tests/test_tor_integration.py -v
+
+# Тесты нейро-шифратора
+python test_neural_encryptor.py
 
 # Тестирование производительности
 python -m pytest tests/ -k performance
