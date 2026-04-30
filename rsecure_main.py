@@ -24,6 +24,9 @@ from system_control import RSecureSystemControl
 from cvu_intelligence import RSecureCVU
 from reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
 from network_defense import RSecureNetworkDefense
+from phishing_detector import RSecurePhishingDetector
+from llm_defense import RSecureLLMDefense
+from audio_video_monitor import RSecureAudioVideoMonitor
 
 class RSecureMain:
     """Main RSecure security system integration"""
@@ -43,6 +46,9 @@ class RSecureMain:
         self.cvu_intelligence = None
         self.rl_agent = None
         self.network_defense = None
+        self.phishing_detector = None
+        self.llm_defense = None
+        self.audio_video_monitor = None
         
         # System state
         self.system_info = {}
@@ -108,9 +114,46 @@ class RSecureMain:
             },
             'network_defense': {
                 'enabled': True,
-                'monitored_ports': [22, 80, 443, 3389],
+                'monitored_ports': [22, 80, 443, 3389, 1433, 3306, 5432, 6379, 27017],
                 'auto_block_threshold': 10,
-                'block_duration': 3600
+                'block_duration': 3600,
+                'max_block_duration': 86400,
+                'packet_capture_size': 65535,
+                'analysis_interval': 5,
+                'enable_honeypot': True,
+                'honeypot_ports': [8080, 8888, 9999],
+                'enable_rate_limiting': True,
+                'rate_limit_threshold': 100,
+                'enable_port_scanning_detection': True,
+                'enable_ddos_detection': True,
+                'enable_brute_force_detection': True,
+                'enable_anomaly_detection': True
+            },
+            'phishing_detection': {
+                'enabled': True,
+                'confidence_threshold': 0.7,
+                'risk_threshold': 0.8,
+                'enable_real_time_detection': True,
+                'enable_url_analysis': True,
+                'enable_content_analysis': True
+            },
+            'llm_defense': {
+                'enabled': True,
+                'confidence_threshold': 0.7,
+                'severity_threshold': 0.8,
+                'enable_pattern_detection': True,
+                'enable_content_analysis': True,
+                'enable_behavior_analysis': True,
+                'enable_adversarial_detection': True
+            },
+            'audio_video_monitoring': {
+                'enabled': True,
+                'monitoring_interval': 30,
+                'enable_audio_monitoring': True,
+                'enable_video_monitoring': True,
+                'enable_capacitor_analysis': True,
+                'enable_hardware_scanning': True,
+                'enable_process_monitoring': True
             },
             'integration': {
                 'enable_ml_decisions': True,
@@ -231,6 +274,30 @@ class RSecureMain:
                 self.network_defense.start_defense()
                 self.logger.info("Network defense initialized")
             
+            # Phishing detection
+            if self.config['phishing_detection']['enabled']:
+                self.phishing_detector = RSecurePhishingDetector(
+                    config=self.config['phishing_detection']
+                )
+                self.phishing_detector.start_detection()
+                self.logger.info("Phishing detection initialized")
+            
+            # LLM defense
+            if self.config['llm_defense']['enabled']:
+                self.llm_defense = RSecureLLMDefense(
+                    config=self.config['llm_defense']
+                )
+                self.llm_defense.start_defense()
+                self.logger.info("LLM defense initialized")
+            
+            # Audio/video monitoring
+            if self.config['audio_video_monitoring']['enabled']:
+                self.audio_video_monitor = RSecureAudioVideoMonitor(
+                    config=self.config['audio_video_monitoring']
+                )
+                self.audio_video_monitor.start_monitoring()
+                self.logger.info("Audio/video monitoring initialized")
+            
             self.logger.info("All RSecure components initialized successfully")
             
         except Exception as e:
@@ -299,6 +366,16 @@ class RSecureMain:
             if hasattr(self, 'monitoring_logger') and self.monitoring_logger:
                 self.monitoring_logger.stop_monitoring()
             
+            # Stop new defense layers
+            if hasattr(self, 'phishing_detector') and self.phishing_detector:
+                self.phishing_detector.stop_detection()
+            
+            if hasattr(self, 'llm_defense') and self.llm_defense:
+                self.llm_defense.stop_defense()
+            
+            if hasattr(self, 'audio_video_monitor') and self.audio_video_monitor:
+                self.audio_video_monitor.stop_monitoring()
+            
             # Wait for integration thread
             if hasattr(self, 'integration_thread'):
                 self.integration_thread.join(timeout=10)
@@ -361,6 +438,21 @@ class RSecureMain:
             if self.network_defense:
                 defense_status = self.network_defense.get_defense_status()
                 self._process_defense_status(defense_status)
+            
+            # Get phishing detection status
+            if self.phishing_detector:
+                phishing_stats = self.phishing_detector.get_detection_statistics()
+                self._process_phishing_status(phishing_stats)
+            
+            # Get LLM defense status
+            if self.llm_defense:
+                llm_stats = self.llm_defense.get_defense_statistics()
+                self._process_llm_defense_status(llm_stats)
+            
+            # Get audio/video monitoring status
+            if self.audio_video_monitor:
+                av_status = self.audio_video_monitor.get_device_status()
+                self._process_audio_video_status(av_status)
         
         except Exception as e:
             self.logger.error(f"Error processing system state: {e}")
@@ -443,6 +535,39 @@ class RSecureMain:
         
         except Exception as e:
             self.logger.error(f"Error processing defense status: {e}")
+    
+    def _process_phishing_status(self, stats: Dict):
+        """Process phishing detection statistics"""
+        try:
+            if stats.get('total_detections', 0) > 0:
+                self.logger.info(f"Phishing threats detected: {stats['total_detections']}")
+                self.metrics['threats_detected'] += stats['total_detections']
+        except Exception as e:
+            self.logger.error(f"Error processing phishing status: {e}")
+    
+    def _process_llm_defense_status(self, stats: Dict):
+        """Process LLM defense statistics"""
+        try:
+            if stats.get('total_attacks', 0) > 0:
+                self.logger.info(f"LLM attacks detected: {stats['total_attacks']}")
+                self.metrics['threats_detected'] += stats['total_attacks']
+        except Exception as e:
+            self.logger.error(f"Error processing LLM defense status: {e}")
+    
+    def _process_audio_video_status(self, status: Dict):
+        """Process audio/video monitoring status"""
+        try:
+            suspicious_devices = status.get('suspicious_devices', 0)
+            if suspicious_devices > 0:
+                self.logger.warning(f"Suspicious audio/video devices: {suspicious_devices}")
+                self.metrics['threats_detected'] += suspicious_devices
+            
+            high_risk_capacitors = status.get('high_risk_capacitors', 0)
+            if high_risk_capacitors > 0:
+                self.logger.warning(f"High-risk capacitor devices: {high_risk_capacitors}")
+                self.metrics['threats_detected'] += high_risk_capacitors
+        except Exception as e:
+            self.logger.error(f"Error processing audio/video status: {e}")
     
     def _correlate_events(self):
         """Correlate security events"""
@@ -790,6 +915,15 @@ class RSecureMain:
             
             if self.network_defense:
                 status['components']['network_defense'] = 'running' if self.network_defense.running else 'stopped'
+            
+            if self.phishing_detector:
+                status['components']['phishing_detector'] = 'running' if self.phishing_detector.running else 'stopped'
+            
+            if self.llm_defense:
+                status['components']['llm_defense'] = 'running' if self.llm_defense.running else 'stopped'
+            
+            if self.audio_video_monitor:
+                status['components']['audio_video_monitor'] = 'running' if self.audio_video_monitor.monitoring_active else 'stopped'
             
             return status
         
