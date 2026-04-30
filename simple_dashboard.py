@@ -7,8 +7,9 @@ Standalone web dashboard for monitoring system security
 import os
 import json
 import time
+import platform
 from datetime import datetime
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, jsonify
 import psutil
 
 app = Flask(__name__)
@@ -268,6 +269,7 @@ DASHBOARD_HTML = """
 </head>
 <body>
     <div class="header">
+        <img src="https://i.ibb.co/L84m126/WE-RAZDOR-LOGO.png" width="200" alt="WE RAZDOR Logo" style="margin-bottom: 1rem;">
         <h1>🌑 RSecure Dashboard</h1>
         <div class="subtitle">A Gift from the Shadows - Created by the Fragmented Mind of WE RAZDOR</div>
     </div>
@@ -440,8 +442,8 @@ def get_system_info():
     """Get system information"""
     try:
         return {
-            'platform': psutil.platform.platform(),
-            'hostname': psutil.platform.node(),
+            'platform': platform.platform(),
+            'hostname': platform.node(),
             'cpu_count': psutil.cpu_count(),
             'memory_gb': round(psutil.virtual_memory().total / (1024**3), 1)
         }
