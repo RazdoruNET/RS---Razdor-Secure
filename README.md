@@ -120,6 +120,7 @@ python simple_dashboard.py
 - [Нейросетевое ядро](docs/core-modules/neural-security-core.md)
 - [Ollama интеграция](docs/core-modules/ollama-integration.md)
 - [Обучение с подкреплением](docs/core-modules/reinforcement-learning.md)
+- [🔬 Научные основания](docs/research/scientific-foundations.md)
 
 ### Модули защиты:
 - [Психологическая защита](docs/defense/psychical-protection.md)
