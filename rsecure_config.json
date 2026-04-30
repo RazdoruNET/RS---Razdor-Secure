@@ -5,7 +5,7 @@
   },
   "monitoring": {
     "enabled": true,
-    "log_dir": "/var/log/rsecure",
+    "log_dir": "./logs",
     "log_interval": 1,
     "network_scan_interval": 30,
     "file_scan_interval": 60,
