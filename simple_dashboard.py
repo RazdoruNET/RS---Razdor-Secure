@@ -20,7 +20,7 @@ DASHBOARD_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSecure Dashboard - WE RAZDOR</title>
+    <title>RSecure Dashboard - A Gift of Protection by WE RAZDOR</title>
     <style>
         * {
             margin: 0;
