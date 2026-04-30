@@ -42,7 +42,7 @@
 - Многослойные сверточные сети
 - Обучение с подкреплением
 - Ансамблевая модель решений
-- [Подробнее →](docs/core-modules/neural-core.md)
+- [Подробнее →](docs/core-modules/neural-security-core.md)
 
 ## ⚙️ Быстрый старт
 
@@ -117,11 +117,12 @@ python simple_dashboard.py
 
 ### Основные модули:
 - [Архитектура системы](docs/architecture/overview.md)
-- [Нейросетевое ядро](docs/core-modules/neural-core.md)
+- [Нейросетевое ядро](docs/core-modules/neural-security-core.md)
 - [Ollama интеграция](docs/core-modules/ollama-integration.md)
 - [Обучение с подкреплением](docs/core-modules/reinforcement-learning.md)
 
 ### Модули защиты:
+- [Психологическая защита](docs/defense/psychical-protection.md)
 - [Визуальная безопасность](docs/defense/visual-security.md)
 - [Защита от LLM атак](docs/defense/llm-defense.md)
 - [Сетевая оборона](docs/defense/network-defense.md)
