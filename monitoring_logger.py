@@ -59,7 +59,7 @@ class RSecureLogger:
         """Setup structured logging"""
         # Main security log
         self.rsecure_log = logging.getLogger('rsecure_monitor')
-        self.security_log.setLevel(logging.INFO)
+        self.rsecure_log.setLevel(logging.INFO)
         
         # File handler for main log
         main_handler = logging.FileHandler(
