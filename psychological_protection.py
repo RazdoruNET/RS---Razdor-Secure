@@ -23,6 +23,14 @@ except ImportError:
     RSecureAudioStreamMonitor = None
     AudioThreat = None
 
+# Import macOS notifications
+try:
+    from macos_notifications import get_notification_instance, send_psychological_threat_alert, send_audio_threat_alert
+except ImportError:
+    get_notification_instance = None
+    send_psychological_threat_alert = None
+    send_audio_threat_alert = None
+
 @dataclass
 class PsychologicalThreat:
     """Psychological threat information"""
@@ -66,6 +74,9 @@ class RSecurePsychologicalProtection:
         self.audio_monitor = None
         self.audio_threats = deque(maxlen=1000)
         
+        # macOS notifications
+        self.notification_system = None
+        
         # Setup logging
         self.logger = logging.getLogger('rsecure_psychological')
         self.logger.setLevel(logging.INFO)
@@ -77,6 +88,7 @@ class RSecurePsychologicalProtection:
         self._initialize_neural_networks()
         self._load_psychological_patterns()
         self._initialize_audio_monitor()
+        self._initialize_notification_system()
     
     def _get_default_config(self) -> Dict:
         return {
@@ -90,7 +102,9 @@ class RSecurePsychologicalProtection:
             'soft_signal_mode': True,
             'enable_audio_monitoring': True,
             'audio_monitoring_interval': 5,
-            'audio_confidence_threshold': 0.6
+            'audio_confidence_threshold': 0.6,
+            'enable_notifications': True,
+            'notification_cooldown': 30
         }
     
     def _initialize_neural_networks(self):
@@ -206,6 +220,22 @@ class RSecurePsychologicalProtection:
                 self.logger.info("Audio monitoring disabled")
         except Exception as e:
             self.logger.error(f"Error initializing audio monitor: {e}")
+    
+    def _initialize_notification_system(self):
+        """Initialize macOS notification system"""
+        try:
+            if self.config.get('enable_notifications', True) and get_notification_instance:
+                self.notification_system = get_notification_instance({
+                    'enabled': True,
+                    'notification_cooldown': self.config.get('notification_cooldown', 30),
+                    'enable_sound': True,
+                    'enable_icon': True
+                })
+                self.logger.info("macOS notification system initialized")
+            else:
+                self.logger.info("Notifications disabled")
+        except Exception as e:
+            self.logger.error(f"Error initializing notification system: {e}")
     
     def _load_psychological_patterns(self):
         """Load psychological manipulation patterns"""
@@ -411,6 +441,10 @@ class RSecurePsychologicalProtection:
                     # Generate soft brain signal
                     if self.config['soft_signal_mode']:
                         self._generate_soft_brain_signal(psych_threat)
+                    
+                    # Send notification for high-severity audio threats
+                    if self.notification_system and audio_threat.severity in ['high', 'critical']:
+                        self._send_audio_threat_notification(audio_threat)
                     
         except Exception as e:
             self.logger.error(f"Error converting audio to psychological threats: {e}")
@@ -975,12 +1009,70 @@ class RSecurePsychologicalProtection:
                 'source': threat.source
             }
             
+            # Send macOS notification for high-severity threats
+            if self.notification_system and threat.severity in ['high', 'critical']:
+                self._send_psychological_threat_notification(threat)
+            
             # Increment weight adjustment attempts counter
             if 'weight_adjustment' in threat.threat_type:
                 self.weight_adjustment_attempts += 1
             
         except Exception as e:
             self.logger.error(f"Error generating soft brain signal: {e}")
+    
+    def _send_psychological_threat_notification(self, threat: PsychologicalThreat):
+        """Send macOS notification for psychological threat"""
+        try:
+            if not self.notification_system:
+                return
+            
+            # Prepare threat data for notification
+            threat_data = {
+                'threat_type': threat.threat_type,
+                'confidence': threat.confidence,
+                'severity': threat.severity,
+                'source': threat.source,
+                'brain_signal': threat.brain_signal,
+                'content_indicators': threat.content_indicators
+            }
+            
+            # Send notification
+            success = self.notification_system.send_psychological_threat_notification(threat_data)
+            
+            if success:
+                self.logger.info(f"Psychological threat notification sent: {threat.threat_type}")
+            else:
+                self.logger.warning(f"Failed to send psychological threat notification")
+                
+        except Exception as e:
+            self.logger.error(f"Error sending psychological threat notification: {e}")
+    
+    def _send_audio_threat_notification(self, audio_threat):
+        """Send macOS notification for audio threat"""
+        try:
+            if not self.notification_system:
+                return
+            
+            # Prepare audio threat data for notification
+            audio_threat_data = {
+                'threat_type': audio_threat.threat_type,
+                'confidence': audio_threat.confidence,
+                'severity': audio_threat.severity,
+                'source_app': audio_threat.source_app,
+                'transcription': audio_threat.transcription,
+                'audio_indicators': audio_threat.audio_indicators
+            }
+            
+            # Send notification
+            success = self.notification_system.send_audio_threat_notification(audio_threat_data)
+            
+            if success:
+                self.logger.info(f"Audio threat notification sent: {audio_threat.threat_type}")
+            else:
+                self.logger.warning(f"Failed to send audio threat notification")
+                
+        except Exception as e:
+            self.logger.error(f"Error sending audio threat notification: {e}")
     
     def _create_safe_threat(self, content: str, source: str) -> PsychologicalThreat:
         """Create a safe threat object"""

@@ -30,27 +30,30 @@ DASHBOARD_HTML = """
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a0a0a 50%, #1a0a0a 75%, #0a0a0a 100%);
+            color: #e0e0e0;
             min-height: 100vh;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
         }
         
         .header {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.8);
             padding: 2rem;
             text-align: center;
-            border-bottom: 2px solid #ff4444;
+            border-bottom: 3px solid #ff0000;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
         }
         
         .header h1 {
             font-size: 2.5rem;
             font-weight: 300;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
             margin-bottom: 0.5rem;
+            color: #ffffff;
         }
         
         .header .subtitle {
-            color: #ccc;
+            color: #ffcccc;
             font-size: 1.2rem;
         }
         
@@ -68,25 +71,26 @@ DASHBOARD_HTML = """
         }
         
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 1.5rem;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2);
         }
         
         .card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
+            border-color: rgba(255, 0, 0, 0.5);
         }
         
         .card h3 {
-            margin-bottom: 1.5rem;
-            color: #ff4444;
-            font-size: 1.4rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #ff6666;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
         }
         
         .metric {
@@ -95,7 +99,7 @@ DASHBOARD_HTML = """
             align-items: center;
             margin-bottom: 1rem;
             padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
         }
         
         .metric:last-child {
@@ -103,14 +107,15 @@ DASHBOARD_HTML = """
         }
         
         .metric-label {
-            color: #ccc;
+            color: #cc9999;
             font-size: 0.9rem;
         }
         
         .metric-value {
-            font-size: 1.8rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            color: #4CAF50;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
         }
         
         .status-indicator {
@@ -123,18 +128,31 @@ DASHBOARD_HTML = """
         }
         
         .status-online {
-            background: #4CAF50;
-            box-shadow: 0 0 10px #4CAF50;
+            background-color: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
         }
         
-        .status-warning {
-            background: #ff9800;
-            box-shadow: 0 0 10px #ff9800;
+        .status-offline {
+            background-color: #666666;
         }
         
-        .status-critical {
-            background: #f44336;
-            box-shadow: 0 0 10px #f44336;
+        .btn {
+            background: linear-gradient(45deg, #cc0000, #ff0000);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+        }
+        
+        .btn:hover {
+            background: linear-gradient(45deg, #ff0000, #ff3333);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.5);
         }
         
         @keyframes pulse {
@@ -145,18 +163,19 @@ DASHBOARD_HTML = """
         
         .progress-bar {
             width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 10px;
             overflow: hidden;
-            margin-top: 0.5rem;
+            margin-bottom: 1rem;
         }
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff4444, #ff6666);
-            transition: width 0.5s ease;
-            border-radius: 4px;
+            background: linear-gradient(45deg, #cc0000, #ff0000);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
         }
         
         .threat-level {
@@ -167,24 +186,40 @@ DASHBOARD_HTML = """
             font-size: 1.2rem;
             margin-bottom: 1.5rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .threat-low {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: rgba(102, 102, 102, 0.3);
+            color: #cccccc;
+            border: 1px solid #666666;
         }
         
         .threat-medium {
-            background: linear-gradient(135deg, #ff9800, #f57c00);
+            background: rgba(255, 102, 0, 0.2);
+            color: #ff6600;
+            border: 1px solid #ff6600;
         }
         
         .threat-high {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
+            background: rgba(255, 0, 0, 0.3);
+            color: #ff0000;
+            border: 1px solid #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
         }
         
-        .threat-critical {
-            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
-            animation: pulse 1s infinite;
+        .log-section {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2);
+        }
+        
+        .log-section h3 {
+            color: #ff6666;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
         }
         
         .feature-list {
@@ -193,7 +228,7 @@ DASHBOARD_HTML = """
         
         .feature-list li {
             padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -204,7 +239,8 @@ DASHBOARD_HTML = """
         }
         
         .feature-icon {
-            color: #4CAF50;
+            color: #ff6666;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
         }
         
         .refresh-info {
@@ -215,17 +251,18 @@ DASHBOARD_HTML = """
         }
         
         .alert {
-            background: rgba(244, 67, 54, 0.2);
-            border: 1px solid #f44336;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff0000;
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
             text-align: center;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
         }
         
         .success {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
+            background: rgba(102, 102, 102, 0.2);
+            border: 1px solid #666666;
         }
     </style>
 </head>
