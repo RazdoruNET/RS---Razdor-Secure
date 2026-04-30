@@ -11,6 +11,7 @@ import time
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request
 import psutil
+import platform
 import logging
 from pathlib import Path
 
@@ -30,6 +31,7 @@ class RSecureDashboard:
                         template_folder=str(template_dir),
                         static_folder=str(static_dir),
                         static_url_path='/assets')
+        self.app.config['TEMPLATES_AUTO_RELOAD'] = True
         self.rsecure = rsecure_instance
         self.dashboard_data = {}
         
@@ -204,8 +206,8 @@ class RSecureDashboard:
         try:
             return {
                 'system_info': {
-                    'platform': psutil.platform.platform(),
-                    'hostname': psutil.platform.node(),
+                    'platform': platform.platform(),
+                    'hostname': platform.node(),
                     'cpu_count': psutil.cpu_count(),
                     'memory_total': psutil.virtual_memory().total
                 },
@@ -216,6 +218,14 @@ class RSecureDashboard:
                     'events_processed': 0,
                     'threats_detected': 0,
                     'system_checks': 0
+                },
+                'components': {
+                    'neural_core': 'stopped',
+                    'network_defense': 'stopped',
+                    'cvu_intelligence': 'stopped',
+                    'phishing_detector': 'stopped',
+                    'llm_defense': 'stopped',
+                    'psychological_protection': 'stopped'
                 }
             }
         except Exception as e:
