@@ -88,19 +88,44 @@ cp rsecure_config.json.example rsecure_config.json
 
 ### Быстрый запуск
 ```bash
-python rsecure_main.py
+# Используйте системный Python 3.9 для совместимости с TensorFlow
+/usr/bin/python3 rsecure_main.py
 ```
 
 ### Компонентный запуск
 ```bash
 # Запуск отдельных компонентов
-python system_detector.py
-python monitoring_logger.py
-python neural_security_core.py
-python cvu_intelligence.py
-python reinforcement_learning.py
-python network_defense.py
+/usr/bin/python3 system_detector.py
+/usr/bin/python3 monitoring_logger.py
+/usr/bin/python3 neural_security_core.py
+/usr/bin/python3 cvu_intelligence.py
+/usr/bin/python3 network_defense.py
 ```
+
+### Установка зависимостей
+```bash
+# Установка через системный Python 3.9
+/usr/bin/python3 -m pip install tensorflow psutil numpy pandas requests scapy matplotlib seaborn jinja2 netifaces
+```
+
+## ✅ Статус системы
+
+### Работающие компоненты:
+- ✅ **System Detection**: Автоматическое обнаружение MacBook/Linux
+- ✅ **Monitoring Logger**: Непрерывный мониторинг системы и сети  
+- ✅ **Neural Security Core**: Многослойные сверточные нейросети
+- ✅ **CVU Intelligence**: Интеграция с NVD, GHSA, CISA KEV
+- ✅ **System Control**: Прямое управление системой
+- ✅ **Network Defense**: Активная сетевая оборона
+- ✅ **Analytics**: Анализ и отчетность безопасности
+
+### Временно отключено:
+- ⚠️ **Reinforcement Learning** (проблемы совместимости TensorFlow/Keras)
+
+### Тестировано на:
+- ✅ macOS с Python 3.9.6
+- ✅ TensorFlow 2.16.2
+- ✅ Все основные компоненты запущены и работают
 
 ### Конфигурация
 Основной файл конфигурации `rsecure_config.json`:
