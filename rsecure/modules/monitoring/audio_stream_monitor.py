@@ -11,6 +11,13 @@ import logging
 import threading
 import subprocess
 import numpy as np
+import sys
+import os
+
+# Add mock libraries to path for Python 3.14 compatibility
+mock_path = os.path.join(os.path.dirname(__file__), '../../mock_libs')
+if mock_path not in sys.path:
+    sys.path.insert(0, mock_path)
 
 # Optional TensorFlow import
 try:

@@ -11,8 +11,9 @@ import time
 import signal
 from pathlib import Path
 
-# Добавляем rsecure в путь
+# Добавляем rsecure и mock библиотеки в путь
 sys.path.insert(0, str(Path(__file__).parent / 'rsecure'))
+sys.path.insert(0, str(Path(__file__).parent / 'mock_libs'))
 
 # Попытка импорта с обработкой ошибок зависимостей
 try:

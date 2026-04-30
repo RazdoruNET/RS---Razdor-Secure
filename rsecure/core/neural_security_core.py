@@ -5,9 +5,23 @@ Multi-layer specialized neural network with convolutions for security analysis
 """
 
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers, models, optimizers
+import sys
+import os
+
+# Add mock libraries to path for Python 3.14 compatibility
+mock_path = os.path.join(os.path.dirname(__file__), '../../mock_libs')
+if mock_path not in sys.path:
+    sys.path.insert(0, mock_path)
+
+# Try to import TensorFlow (real or mock)
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers, models, optimizers
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    print("Warning: TensorFlow not available - neural core using mock mode")
 from typing import Dict, List, Tuple, Optional, Any
 import json
 import pickle
@@ -72,6 +86,11 @@ class RSecureNeuralCore:
     
     def _initialize_models(self):
         """Initialize specialized neural network models"""
+        if not TENSORFLOW_AVAILABLE:
+            self.logger.warning("TensorFlow not available - using mock neural models")
+            self._create_fallback_models()
+            return
+            
         try:
             # Network traffic analyzer
             self.models['network'] = self._build_network_analyzer()
