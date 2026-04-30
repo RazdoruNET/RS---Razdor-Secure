@@ -208,6 +208,7 @@ file_quarantines/
 # Test reports and temporary files
 test_report_*.json
 pytest_report.json
+installation_report.json
 /tmp/
 *.pyc
 *.pyo

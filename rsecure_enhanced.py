@@ -51,9 +51,9 @@ class EnhancedRSecure:
         
         # Analysis modules
         self.analysis_modules = {
-            'security': 'rsecure-security',
-            'analyst': 'rsecure-analyst', 
-            'scanner': 'rsecure-scanner'
+            'security': 'rsecure-security:latest',
+            'analyst': 'rsecure-analyst:latest', 
+            'scanner': 'rsecure-scanner:latest'
         }
         
     def setup_logging(self):

@@ -21,6 +21,14 @@ except ImportError:
     VISUAL_SECURITY_AVAILABLE = False
     print("Warning: Visual security module not available")
 
+# Import neural wave protection module
+try:
+    from ..modules.defense.neural_wave_protection import NeuralWaveProtectionSystem
+    NEURAL_WAVE_PROTECTION_AVAILABLE = True
+except ImportError:
+    NEURAL_WAVE_PROTECTION_AVAILABLE = False
+    print("Warning: Neural wave protection module not available")
+
 # Try to import TensorFlow (real or mock)
 try:
     import tensorflow as tf
@@ -82,6 +90,12 @@ class RSecureNeuralCore:
             self.visual_monitor = VisualSecurityMonitor()
             self.visual_filter = VisualProtectionFilter()
             self.logger.info("Visual security system initialized")
+        
+        # Initialize neural wave protection
+        self.neural_wave_protection = None
+        if NEURAL_WAVE_PROTECTION_AVAILABLE:
+            self.neural_wave_protection = NeuralWaveProtectionSystem()
+            self.logger.info("Neural wave protection system initialized")
         
         # Analysis thread
         self.analysis_thread = None
@@ -369,6 +383,10 @@ class RSecureNeuralCore:
         if self.visual_monitor:
             self.visual_monitor.start_monitoring()
         
+        # Start neural wave protection
+        if self.neural_wave_protection:
+            self.neural_wave_protection.start_protection()
+        
         self.logger.info("RSecure neural analysis started")
     
     def stop_analysis(self):
@@ -380,6 +398,10 @@ class RSecureNeuralCore:
         # Stop visual monitoring
         if self.visual_monitor:
             self.visual_monitor.stop_monitoring()
+        
+        # Stop neural wave protection
+        if self.neural_wave_protection:
+            self.neural_wave_protection.stop_protection()
         
         self.logger.info("RSecure neural analysis stopped")
     
@@ -613,6 +635,48 @@ class RSecureNeuralCore:
         if self.visual_monitor:
             self.visual_monitor.clear_threat_history()
             self.logger.info("Visual threat history cleared")
+    
+    def get_neural_wave_status(self) -> Dict:
+        """Get neural wave protection status"""
+        if self.neural_wave_protection:
+            return self.neural_wave_protection.get_protection_status()
+        return {'protection_active': False, 'error': 'Neural wave protection not available'}
+    
+    def get_neural_wave_threats(self) -> Dict:
+        """Get neural wave threat report"""
+        if self.neural_wave_protection:
+            return self.neural_wave_protection.get_threat_report()
+        return {'total_threats': 0, 'error': 'Neural wave protection not available'}
+    
+    def activate_neural_wave_protection(self):
+        """Activate neural wave protection"""
+        if self.neural_wave_protection:
+            if not self.neural_wave_protection.protection_active:
+                self.neural_wave_protection.start_protection()
+                self.logger.info("Neural wave protection manually activated")
+            else:
+                self.logger.info("Neural wave protection already active")
+        else:
+            self.logger.error("Neural wave protection not available")
+    
+    def deactivate_neural_wave_protection(self):
+        """Deactivate neural wave protection"""
+        if self.neural_wave_protection:
+            if self.neural_wave_protection.protection_active:
+                self.neural_wave_protection.stop_protection()
+                self.logger.info("Neural wave protection manually deactivated")
+            else:
+                self.logger.info("Neural wave protection already inactive")
+        else:
+            self.logger.error("Neural wave protection not available")
+    
+    def clear_neural_wave_threats(self):
+        """Clear neural wave threat history"""
+        if self.neural_wave_protection:
+            self.neural_wave_protection.threat_history.clear()
+            self.logger.info("Neural wave threat history cleared")
+        else:
+            self.logger.error("Neural wave protection not available")
     
     def train_models(self, training_data: Dict):
         """Train models with provided data"""
