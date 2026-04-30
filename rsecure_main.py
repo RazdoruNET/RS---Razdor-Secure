@@ -27,6 +27,7 @@ from network_defense import RSecureNetworkDefense
 from phishing_detector import RSecurePhishingDetector
 from llm_defense import RSecureLLMDefense
 from audio_video_monitor import RSecureAudioVideoMonitor
+from psychological_protection import RSecurePsychologicalProtection
 
 class RSecureMain:
     """Main RSecure security system integration"""
@@ -49,6 +50,7 @@ class RSecureMain:
         self.phishing_detector = None
         self.llm_defense = None
         self.audio_video_monitor = None
+        self.psychological_protection = None
         
         # System state
         self.system_info = {}
@@ -154,6 +156,16 @@ class RSecureMain:
                 'enable_capacitor_analysis': True,
                 'enable_hardware_scanning': True,
                 'enable_process_monitoring': True
+            },
+            'psychological_protection': {
+                'enabled': True,
+                'sensitivity_level': 0.7,
+                'brain_signal_threshold': 0.6,
+                'weight_adjustment_threshold': 0.8,
+                'enable_brain_monitoring': True,
+                'enable_pattern_detection': True,
+                'enable_consciousness_protection': True,
+                'soft_signal_mode': True
             },
             'integration': {
                 'enable_ml_decisions': True,
@@ -298,6 +310,14 @@ class RSecureMain:
                 self.audio_video_monitor.start_monitoring()
                 self.logger.info("Audio/video monitoring initialized")
             
+            # Psychological protection
+            if self.config['psychological_protection']['enabled']:
+                self.psychological_protection = RSecurePsychologicalProtection(
+                    config=self.config['psychological_protection']
+                )
+                self.psychological_protection.start_protection()
+                self.logger.info("Psychological protection initialized")
+            
             self.logger.info("All RSecure components initialized successfully")
             
         except Exception as e:
@@ -376,6 +396,9 @@ class RSecureMain:
             if hasattr(self, 'audio_video_monitor') and self.audio_video_monitor:
                 self.audio_video_monitor.stop_monitoring()
             
+            if hasattr(self, 'psychological_protection') and self.psychological_protection:
+                self.psychological_protection.stop_protection()
+            
             # Wait for integration thread
             if hasattr(self, 'integration_thread'):
                 self.integration_thread.join(timeout=10)
@@ -453,6 +476,11 @@ class RSecureMain:
             if self.audio_video_monitor:
                 av_status = self.audio_video_monitor.get_device_status()
                 self._process_audio_video_status(av_status)
+            
+            # Get psychological protection status
+            if self.psychological_protection:
+                psych_stats = self.psychological_protection.get_protection_statistics()
+                self._process_psychological_status(psych_stats)
         
         except Exception as e:
             self.logger.error(f"Error processing system state: {e}")
@@ -568,6 +596,24 @@ class RSecureMain:
                 self.metrics['threats_detected'] += high_risk_capacitors
         except Exception as e:
             self.logger.error(f"Error processing audio/video status: {e}")
+    
+    def _process_psychological_status(self, stats: Dict):
+        """Process psychological protection statistics"""
+        try:
+            if stats.get('total_threats', 0) > 0:
+                self.logger.info(f"Psychological threats detected: {stats['total_threats']}")
+                self.metrics['threats_detected'] += stats['total_threats']
+            
+            weight_attempts = stats.get('weight_adjustment_attempts', 0)
+            if weight_attempts > 0:
+                self.logger.warning(f"Consciousness weight adjustment attempts: {weight_attempts}")
+                self.metrics['threats_detected'] += weight_attempts
+            
+            brain_signals = stats.get('brain_signals_count', 0)
+            if brain_signals > 0:
+                self.logger.info(f"Brain signals generated: {brain_signals}")
+        except Exception as e:
+            self.logger.error(f"Error processing psychological status: {e}")
     
     def _correlate_events(self):
         """Correlate security events"""
@@ -924,6 +970,9 @@ class RSecureMain:
             
             if self.audio_video_monitor:
                 status['components']['audio_video_monitor'] = 'running' if self.audio_video_monitor.monitoring_active else 'stopped'
+            
+            if self.psychological_protection:
+                status['components']['psychological_protection'] = 'running' if self.psychological_protection.running else 'stopped'
             
             return status
         
