@@ -16,7 +16,20 @@ from pathlib import Path
 
 class RSecureDashboard:
     def __init__(self, rsecure_instance=None):
-        self.app = Flask(__name__)
+        # Setup Flask with correct template and static folders
+        template_dir = Path(__file__).parent.parent.parent / 'templates'
+        static_dir = Path(__file__).parent.parent.parent / 'assets'
+        
+        # Verify paths exist
+        if not template_dir.exists():
+            print(f"Warning: Template directory not found: {template_dir}")
+        if not static_dir.exists():
+            print(f"Warning: Static directory not found: {static_dir}")
+        
+        self.app = Flask(__name__, 
+                        template_folder=str(template_dir),
+                        static_folder=str(static_dir),
+                        static_url_path='/assets')
         self.rsecure = rsecure_instance
         self.dashboard_data = {}
         
@@ -176,6 +189,15 @@ class RSecureDashboard:
                     'success': False,
                     'error': str(e)
                 })
+        
+        @self.app.route('/assets/<path:filename>')
+        def serve_assets(filename):
+            """Serve static assets"""
+            try:
+                return self.app.send_static_file(filename)
+            except Exception as e:
+                self.logger.error(f"Error serving asset {filename}: {e}")
+                return "Asset not found", 404
     
     def _get_system_status(self):
         """Get basic system status without RSecure instance"""
@@ -309,23 +331,69 @@ class RSecureDashboard:
         """Get network information"""
         try:
             # Get network interfaces
-            interfaces = psutil.net_if_addrs()
+            try:
+                interfaces = psutil.net_if_addrs()
+                interface_list = list(interfaces.keys())
+            except Exception as e:
+                self.logger.warning(f"Error getting network interfaces: {e}")
+                interface_list = []
             
-            # Get network connections
-            connections = psutil.net_connections()
+            # Get network connections (may require elevated permissions on macOS)
+            try:
+                connections = psutil.net_connections()
+                connection_count = len([c for c in connections if c.status == 'ESTABLISHED'])
+            except (psutil.AccessDenied, PermissionError) as e:
+                self.logger.warning(f"Permission denied for network connections: {e}")
+                connection_count = 0
+            except Exception as e:
+                self.logger.warning(f"Error getting network connections: {e}")
+                connection_count = 0
             
             # Get network IO stats
-            net_io = psutil.net_io_counters(pernic=True)
+            try:
+                net_io_raw = psutil.net_io_counters(pernic=True)
+                
+                # Convert namedtuple to dict for JSON serialization
+                net_io = {}
+                total_bytes_sent = 0
+                total_bytes_recv = 0
+                for iface, stats in net_io_raw.items():
+                    net_io[iface] = {
+                        'bytes_sent': stats.bytes_sent,
+                        'bytes_recv': stats.bytes_recv,
+                        'packets_sent': stats.packets_sent,
+                        'packets_recv': stats.packets_recv,
+                        'errin': stats.errin,
+                        'errout': stats.errout,
+                        'dropin': stats.dropin,
+                        'dropout': stats.dropout
+                    }
+                    total_bytes_sent += stats.bytes_sent
+                    total_bytes_recv += stats.bytes_recv
+            except Exception as e:
+                self.logger.warning(f"Error getting network IO stats: {e}")
+                net_io = {}
+                total_bytes_sent = 0
+                total_bytes_recv = 0
             
             return {
-                'interfaces': list(interfaces.keys()),
-                'connection_count': len([c for c in connections if c.status == 'ESTABLISHED']),
+                'interfaces': interface_list,
+                'connection_count': connection_count,
                 'io_stats': net_io,
+                'total_bytes_sent': total_bytes_sent,
+                'total_bytes_recv': total_bytes_recv,
                 'timestamp': datetime.now().isoformat()
             }
         except Exception as e:
             self.logger.error(f"Error getting network info: {e}")
-            return {'error': str(e)}
+            return {
+                'interfaces': [],
+                'connection_count': 0,
+                'io_stats': {},
+                'total_bytes_sent': 0,
+                'total_bytes_recv': 0,
+                'error': str(e)
+            }
     
     def _execute_action(self, action: str, target: str):
         """Execute system control action"""
