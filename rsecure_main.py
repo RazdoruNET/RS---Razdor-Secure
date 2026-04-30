@@ -215,8 +215,8 @@ class RSecureMain:
                 self.cvu_intelligence.start_intelligence()
                 self.logger.info("CVU intelligence initialized")
             
-            # Reinforcement learning
-            if self.config['reinforcement_learning']['enabled']:
+            # Reinforcement learning (temporarily disabled due to TF compatibility)
+            if False and self.config['reinforcement_learning']['enabled']:
                 self.rl_agent = RSecureReinforcementLearning(
                     config=self.config['reinforcement_learning']
                 )
