@@ -32,9 +32,11 @@ class RSecureMain:
         self.config_path = config_path
         self.config = self._load_config()
         
+        # Setup main logging first
+        self._setup_logging()
+        
         # Initialize components
         self.system_detector = None
-        self.logger = None
         self.neural_core = None
         self.analytics = None
         self.system_control = None
@@ -46,9 +48,6 @@ class RSecureMain:
         self.system_info = {}
         self.running = False
         self.shutdown_event = threading.Event()
-        
-        # Setup main logging
-        self._setup_logging()
         
         # Component threads
         self.component_threads = []
@@ -174,11 +173,11 @@ class RSecureMain:
             # Monitoring logger
             if self.config['monitoring']['enabled']:
                 monitoring_config = self.config['monitoring']
-                self.logger = RSecureLogger(
+                self.monitoring_logger = RSecureLogger(
                     log_dir=monitoring_config['log_dir'],
                     config=monitoring_config
                 )
-                self.logger.add_alert_callback(self._handle_security_alert)
+                self.monitoring_logger.add_alert_callback(self._handle_security_alert)
                 self.logger.info("Monitoring logger initialized")
             
             # Neural core
@@ -297,8 +296,8 @@ class RSecureMain:
             if self.neural_core:
                 self.neural_core.stop_analysis()
             
-            if self.logger:
-                self.logger.stop_monitoring()
+            if hasattr(self, 'monitoring_logger') and self.monitoring_logger:
+                self.monitoring_logger.stop_monitoring()
             
             # Wait for integration thread
             if hasattr(self, 'integration_thread'):
@@ -344,8 +343,8 @@ class RSecureMain:
         """Process current system state"""
         try:
             # Get monitoring data
-            if self.logger:
-                recent_logs = self.logger.get_recent_logs('rsecure', 50)
+            if hasattr(self, 'monitoring_logger') and self.monitoring_logger:
+                recent_logs = self.monitoring_logger.get_recent_logs('rsecure', 50)
                 self._process_monitoring_data(recent_logs)
             
             # Get neural analysis

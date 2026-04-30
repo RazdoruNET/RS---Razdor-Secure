@@ -1,0 +1,206 @@
+# RSecure .gitignore - Exclude sensitive files and logs
+
+# Logs and monitoring data
+logs/
+*.log
+rsecure_main.log
+network_activity.log
+process_activity.log
+file_integrity.log
+neural_analysis.log
+analytics.log
+system_control.log
+cvu_intelligence.log
+reinforcement_learning.log
+network_defense.log
+
+# Data directories
+data/
+quarantine/
+models/
+rl_models/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+security_analytics.db
+
+# Configuration files with sensitive data
+rsecure_config.json
+system_config.json
+config.json
+*.config
+
+# Python cache and temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.vscode/settings.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# TensorFlow/ML model files
+*.h5
+*.pb
+*.ckpt
+*.weights.h5
+model_*
+checkpoints/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Security and keys
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+private_key*
+public_key*
+id_rsa*
+id_dsa*
+
+# Network captures and analysis
+*.pcap
+*.pcapng
+network_capture*
+packet_analysis*
+
+# Threat intelligence data
+active_threats.json
+threat_intelligence*
+vulnerability_data*
+cve_data*
+
+# System state files
+system_state*
+baseline.json
+monitoring_state*
+
+# Performance and metrics
+metrics.json
+performance_stats*
+benchmark_results*
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS specific
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Process and system files
+process_monitor*
+system_monitor*
+file_monitor*
+
+# Quarantine and isolated files
+quarantined_*
+isolated_*
+blocked_*
+
+# Report exports
+reports/
+*.pdf
+*.html.reports/
+security_reports*
+
+# API keys and credentials (just in case)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+api_keys.txt
+credentials.txt
+
+# Test outputs
+test_results/
+coverage/
+.coverage
+.pytest_cache/
+.tox/
+
+# Documentation build
+docs/_build/
+site/
+
+# Package files
+*.egg
+*.egg-info
+dist/
+build/
+
+# Local development
+local/
+dev/
+development/
+
+# Monitoring and analytics data
+analytics_data/
+monitoring_data/
+security_events/
+threat_logs/
+
+# Neural network training data
+training_data/
+training_logs/
+model_checkpoints/
+tensorboard_logs/
+
+# Network defense data
+blocked_ips.txt
+firewall_rules*
+honeypot_logs/
+defense_logs/
+
+# System control data
+process_kills/
+ip_blocks/
+file_quarantines/
