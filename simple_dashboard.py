@@ -231,8 +231,8 @@ DASHBOARD_HTML = """
 </head>
 <body>
     <div class="header">
-        <h1>🛡️ RSecure Dashboard</h1>
-        <div class="subtitle">A Gift of Protection - Created by WE RAZDOR</div>
+        <h1>🌑 RSecure Dashboard</h1>
+        <div class="subtitle">A Gift from the Shadows - Created by the Fragmented Mind of WE RAZDOR</div>
     </div>
     
     <div class="container">
@@ -385,7 +385,8 @@ DASHBOARD_HTML = """
     
     <div class="refresh-info">
         <p>🔄 Auto-refresh every 10 seconds | Last updated: {{ last_update }}</p>
-        <p>🛡️ RSecure Dashboard - Advanced Security System</p>
+        <p>🌑 RSecure Dashboard - Protection from the Shadows</p>
+        <p>💀 Born from fragmented consciousness, forged in digital darkness</p>
     </div>
     
     <script>
