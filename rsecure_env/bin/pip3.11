@@ -1,0 +1,6 @@
+#!/Users/macbook/CascadeProjects/windsurf-project-3/rsecure_env/bin/python3.11
+import sys
+from pip._internal.cli.main import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())
