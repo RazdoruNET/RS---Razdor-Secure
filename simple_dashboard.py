@@ -523,22 +523,42 @@ def get_metrics():
         # Disk
         disk = psutil.disk_usage('/')
         
-        # Network
-        net_io = psutil.net_io_counters()
-        connections = psutil.net_connections()
-        interfaces = psutil.net_if_addrs()
+        # Network with error handling
+        try:
+            net_io = psutil.net_io_counters()
+            bytes_sent_mb = round(net_io.bytes_sent / (1024**2), 1)
+            bytes_recv_mb = round(net_io.bytes_recv / (1024**2), 1)
+            packets_sent = net_io.packets_sent
+            packets_recv = net_io.packets_recv
+        except:
+            bytes_sent_mb = 0
+            bytes_recv_mb = 0
+            packets_sent = 0
+            packets_recv = 0
+        
+        try:
+            connections = psutil.net_connections()
+            connection_count = len([c for c in connections if c.status == 'ESTABLISHED'])
+        except:
+            connection_count = 0
+        
+        try:
+            interfaces = psutil.net_if_addrs()
+            interface_count = len(interfaces)
+        except:
+            interface_count = 0
         
         return {
             'cpu_percent': round(cpu_percent, 1),
             'memory_percent': round(memory.percent, 1),
             'disk_percent': round(disk.percent, 1),
-            'process_count': len(psutil.pids()),
-            'connection_count': len([c for c in connections if c.status == 'ESTABLISHED']),
-            'interface_count': len(interfaces),
-            'bytes_sent_mb': round(net_io.bytes_sent / (1024**2), 1),
-            'bytes_recv_mb': round(net_io.bytes_recv / (1024**2), 1),
-            'packets_sent': net_io.packets_sent,
-            'packets_recv': net_io.packets_recv
+            'process_count': len(psutil.process_iter()),
+            'connection_count': connection_count,
+            'interface_count': interface_count,
+            'bytes_sent_mb': bytes_sent_mb,
+            'bytes_recv_mb': bytes_recv_mb,
+            'packets_sent': packets_sent,
+            'packets_recv': packets_recv
         }
     except Exception as e:
         print(f"Error getting metrics: {e}")
