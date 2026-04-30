@@ -16,28 +16,70 @@ from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
 # Import RSecure modules
-from .modules.detection.system_detector import SystemDetector
-from .utils.monitoring_logger import RSecureLogger
 try:
-    from .modules.analysis.security_analytics import RSecureAnalytics, SecurityEvent
+    from modules.detection.system_detector import SystemDetector
 except ImportError:
+    SystemDetector = None
+
+try:
+    from modules.detection.phishing_detector import PhishingDetector
+except ImportError:
+    PhishingDetector = None
+
+try:
+    from modules.defense.psychical_protection import PsychologicalProtection
+except ImportError:
+    PsychologicalProtection = None
+
+try:
+    from modules.defense.visual_security import VisualSecurityMonitor
+except ImportError:
+    VisualSecurityMonitor = None
+
+try:
+    from modules.defense.network_defense import RSecureNetworkDefense
+except ImportError:
+    RSecureNetworkDefense = None
+
+try:
+    from modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
+except ImportError:
+    RSecureAudioVideoMonitor = None
+
+try:
+    from modules.analysis.notifications import NotificationManager
+except ImportError:
+    NotificationManager = None
+
+try:
+    from modules.analysis.security_analytics import SecurityAnalytics
+    RSecureAnalytics = SecurityAnalytics
+except ImportError:
+    SecurityAnalytics = None
     RSecureAnalytics = None
-    SecurityEvent = None
-from modules.detection.system_detector import SystemDetector
-from modules.detection.phishing_detector import PhishingDetector
-from modules.defense.psychical_protection import PsychologicalProtection
-from modules.defense.visual_security import VisualSecurityMonitor
-from modules.defense.network_defense import RSecureNetworkDefense
-from modules.monitoring.audio_video_monitor import RSecureAudioVideoMonitor
-from modules.analysis.notifications import NotificationManager
-from modules.analysis.security_analytics import SecurityAnalytics
-from core.neural_security_core import RSecureNeuralCore
-from core.ollama_integration import OllamaSecurityAnalyzer, HybridSecurityAnalyzer
+
 try:
-    from .core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
+    from core.neural_security_core import RSecureNeuralCore
 except ImportError:
-    NEURAL_CORE_AVAILABLE = False
-    print("Warning: Neural Core not available (tensorflow required)")
+    RSecureNeuralCore = None
+
+try:
+    from core.ollama_integration import OllamaSecurityAnalyzer, HybridSecurityAnalyzer
+except ImportError:
+    OllamaSecurityAnalyzer = None
+    HybridSecurityAnalyzer = None
+
+try:
+    from utils.monitoring_logger import RSecureLogger
+except ImportError:
+    RSecureLogger = None
+
+# Set availability flags
+NEURAL_CORE_AVAILABLE = RSecureNeuralCore is not None
+OLLAMA_AVAILABLE = OllamaSecurityAnalyzer is not None
+
+try:
+    from core.reinforcement_learning import RSecureReinforcementLearning, SecurityState, SecurityAction
     RL_AVAILABLE = True
 except ImportError:
     RL_AVAILABLE = False

@@ -90,6 +90,11 @@ def create_basic_config():
         'notifications': {
             'enabled': True,
             'level': 'INFO'
+        },
+        'logging': {
+            'level': 'INFO',
+            'file': 'rsecure.log',
+            'console': True
         }
     }
 
