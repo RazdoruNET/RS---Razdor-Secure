@@ -1,115 +1,115 @@
-# WiFi Anti-Positioning Defense System
+# Система защиты от WiFi антипозиционирования
 
-## Overview
+## Обзор
 
-The WiFi Anti-Positioning Defense System is a specialized security module designed to protect against WiFi reflection-based positioning attacks. This system implements advanced countermeasures to prevent unauthorized location tracking through WiFi signal analysis.
+Система защиты от WiFi антипозиционирования - это специализированный модуль безопасности, предназначенный для защиты от атак позиционирования на основе WiFi отражений. Система реализует продвинутые контрмеры для предотвращения несанкционированного отслеживания местоположения через анализ WiFi сигналов.
 
-## Scientific Foundation
+## Научные основы
 
-### WiFi Reflection Positioning Threat
+### Угроза позиционирования через WiFi отражения
 
-WiFi positioning attacks exploit the physical layer characteristics of wireless communications:
+Атаки позиционирования через WiFi используют характеристики физического уровня беспроводной связи:
 
-- **Channel State Information (CSI)**: Contains amplitude and phase data from OFDM subcarriers
-- **Multipath Propagation**: Signal reflections create location-specific interference patterns
-- **Doppler Shift Analysis**: Movement causes predictable frequency shifts
-- **Temporal Correlation**: Consistent patterns enable tracking over time
+- **Канальная информация состояния (CSI)**: Содержит данные об амплитуде и фазе OFDM поднесущих
+- **Многолучевое распространение**: Отражения сигнала создают специфические для местоположения интерференционные паттерны
+- **Анализ доплеровского сдвига**: Движение вызывает предсказуемые частотные сдвиги
+- **Временная корреляция**: Согласованные паттерны позволяют отслеживание во времени
 
-### Attack Vectors
+### Векторы атак
 
-1. **CSI Probing**: Active scanning to collect channel state information
-2. **Coordinated Scanning**: Multi-device synchronized signal collection
-3. **Signal Correlation**: Statistical analysis of WiFi patterns
-4. **Doppler Analysis**: Movement detection through frequency shifts
-5. **Multipath Analysis**: Location fingerprinting via reflection patterns
+1. **CSI зондирование**: Активное сканирование для сбора канальной информации состояния
+2. **Координированное сканирование**: Синхронизированный сбор сигналов с нескольких устройств
+3. **Корреляция сигналов**: Статистический анализ WiFi паттернов
+4. **Доплеровский анализ**: Обнаружение движения через частотные сдвиги
+5. **Анализ многолучевости**: Определение местоположения через паттерны отражений
 
-## Defense Mechanisms
+## Механизмы защиты
 
-### 1. Signal Obfuscation
+### 1. Обфускация сигнала
 
-**Method**: Random phase injection and amplitude modulation
+**Метод**: Рандомизация фазы и модуляция амплитуды
 
-**Implementation**:
-- Phase randomization across OFDM subcarriers
-- Amplitude modulation with controlled noise
-- Frequency-specific obfuscation patterns
-- Configurable obfuscation strength (0.0-1.0)
+**Реализация**:
+- Рандомизация фазы на OFDM поднесущих
+- Модуляция амплитуды с контролируемым шумом
+- Частотно-специфические паттерны обфускации
+- Настраиваемая сила обфускации (0.0-1.0)
 
-**Scientific Basis**: Breaks the linear relationship between position and CSI measurements by introducing controlled randomness into the signal characteristics.
+**Научная основа**: Нарушает линейную зависимость между положением и измерениями CSI путем введения контролируемой случайности в характеристики сигнала.
 
-### 2. Multipath Noise Generation
+### 2. Генерация многолучевого шума
 
-**Method**: Synthetic reflection creation
+**Метод**: Создание синтетических отражений
 
-**Implementation**:
-- Generation of artificial multipath components
-- Configurable noise levels (-50 to -20 dB)
-- Omnidirectional or directional coverage
-- Multiple synthetic reflections (3-10)
+**Реализация**:
+- Генерация искусственных многолучевых компонентов
+- Настраиваемые уровни шума (-50 до -20 dB)
+- Всенаправленное или направленное покрытие
+- Множественные синтетические отражения (3-10)
 
-**Scientific Basis**: Masks natural multipath patterns with synthetic noise, making it difficult to distinguish genuine location-dependent reflections from defense-generated interference.
+**Научная основа**: Маскирует естественные многолучевые паттерны синтетическим шумом, затрудняя различение подлинных отражений, зависящих от местоположения, и помех, генерируемых защитой.
 
-### 3. Pattern Disruption
+### 3. Нарушение паттернов
 
-**Method**: Temporal pattern randomization
+**Метод**: Рандомизация временных паттернов
 
-**Implementation**:
-- Disruption intervals (10-1000 ms)
-- Randomization depth levels (shallow/moderate/deep)
-- Coordinated multi-antenna disruption
-- Adaptive timing patterns
+**Реализация**:
+- Интервалы нарушения (10-1000 мс)
+- Уровни глубины рандомизации (неглубокий/умеренный/глубокий)
+- Координированное нарушение с нескольких антенн
+- Адаптивные временные паттерны
 
-**Scientific Basis**: Disrupts temporal consistency required for tracking algorithms while maintaining legitimate communication functionality.
+**Научная основа**: Нарушает временную согласованность, необходимую для алгоритмов отслеживания, сохраняя при этом функциональность легитимной связи.
 
-### 4. Spatial Diversity
+### 4. Пространственное разнообразие
 
-**Method**: Multi-antenna coordinated defense
+**Метод**: Координированная защита с нескольких антенн
 
-**Implementation**:
-- 2-8 antenna coordination
-- Wavelength spacing (0.5-2.0 λ)
-- Phase offset control (0-360°)
-- Centralized or distributed coordination
+**Реализация**:
+- Координация 2-8 антенн
+- Расстояние между антеннами (0.5-2.0 λ)
+- Контроль сдвига фазы (0-360°)
+- Централизованная или распределенная координация
 
-**Scientific Basis**: Creates spatial inconsistencies that confuse positioning algorithms while preserving communication quality.
+**Научная основа**: Создает пространственные несогласованности, которые сбивают с толку алгоритмы позиционирования, сохраняя при этом качество связи.
 
-## Detection Capabilities
+## Возможности обнаружения
 
-### Attack Pattern Recognition
+### Распознавание паттернов атак
 
-The system detects several attack indicators:
+Система обнаруживает несколько индикаторов атак:
 
-1. **CSI Probing Detection**
-   - Amplitude variance > 0.5
-   - Unusual scanning patterns
-   - High-frequency sampling attempts
+1. **Обнаружение CSI зондирования**
+   - Дисперсия амплитуды > 0.5
+   - Необычные паттерны сканирования
+   - Попытки высокочастотной дискретизации
 
-2. **Coordinated Scanning Detection**
-   - Subcarrier correlation > 0.8
-   - Synchronized multi-device activity
-   - Consistent timing patterns
+2. **Обнаружение координированного сканирования**
+   - Корреляция поднесущих > 0.8
+   - Синхронизированная активность нескольких устройств
+   - Согласованные временные паттерны
 
-3. **Signal Correlation Attacks**
-   - Signal stability > 0.9
-   - Statistical anomalies
-   - Pattern matching attempts
+3. **Атаки корреляции сигналов**
+   - Стабильность сигнала > 0.9
+   - Статистические аномалии
+   - Попытки сопоставления паттернов
 
-4. **Doppler Anomalies**
-   - Doppler shift > 50 Hz
-   - Unusual movement patterns
-   - Inconsistent frequency changes
+4. **Доплеровские аномалии**
+   - Доплеровский сдвиг > 50 Гц
+   - Необычные паттерны движения
+   - Несогласованные изменения частоты
 
-### Threat Assessment
+### Оценка угроз
 
-The system calculates threat scores based on:
-- Attack indicator severity
-- Confidence levels
-- Pattern consistency
-- Temporal persistence
+Система рассчитывает оценки угроз на основе:
+- Серьезности индикаторов атаки
+- Уровней уверенности
+- Согласованности паттернов
+- Временной устойчивости
 
-## Configuration
+## Конфигурация
 
-### Basic Configuration
+### Базовая конфигурация
 
 ```json
 {
@@ -125,7 +125,7 @@ The system calculates threat scores based on:
 }
 ```
 
-### Advanced Configuration
+### Расширенная конфигурация
 
 ```json
 {
@@ -157,36 +157,36 @@ The system calculates threat scores based on:
 }
 ```
 
-## Implementation Details
+## Детали реализации
 
-### Architecture
+### Архитектура
 
-The system consists of four main components:
+Система состоит из четырех основных компонентов:
 
-1. **CSI Monitor**: Collects and analyzes channel state information
-2. **Signal Obfuscator**: Applies phase and amplitude randomization
-3. **Multipath Generator**: Creates synthetic reflections
-4. **Pattern Disruptor**: Implements temporal randomization
+1. **CSI Монитор**: Собирает и анализирует канальную информацию состояния
+2. **Обфускатор сигнала**: Применяет рандомизацию фазы и амплитуды
+3. **Генератор многолучевости**: Создает синтетические отражения
+4. **Нарушитель паттернов**: Реализует временную рандомизацию
 
-### Integration
+### Интеграция
 
-The WiFi anti-positioning system integrates with RSecure through:
+Система антипозиционирования WiFi интегрируется с RSecure через:
 
-- **Main System Integration**: Automatic initialization and monitoring
-- **Status Reporting**: Real-time protection status and metrics
-- **Threat Correlation**: Integration with overall security analysis
-- **Logging**: Comprehensive event logging and audit trails
+- **Интеграция с основной системой**: Автоматическая инициализация и мониторинг
+- **Отчет о статусе**: Статус защиты в реальном времени и метрики
+- **Корреляция угроз**: Интеграция с общим анализом безопасности
+- **Журналирование**: Комплексное ведение событий и аудит-трейлов
 
-### Performance Impact
+### Влияние на производительность
 
-- **CPU Overhead**: 5-20% depending on protection level
-- **Memory Usage**: 100-512 MB for buffers and analysis
-- **Network Impact**: Minimal impact on legitimate traffic
-- **Power Consumption**: Low additional power draw
+- **Нагрузка на CPU**: 5-20% в зависимости от уровня защиты
+- **Использование памяти**: 100-512 МБ для буферов и анализа
+- **Влияние на сеть**: Минимальное влияние на легитимный трафик
+- **Потребление энергии**: Низкое дополнительное потребление мощности
 
-## Usage Examples
+## Примеры использования
 
-### Basic Usage
+### Базовое использование
 
 ```python
 from rsecure.modules.defense.wifi_antipositioning import WiFiAntiPositioningSystem
@@ -205,7 +205,7 @@ print(f"Protection level: {status['protection_level']}")
 system.stop_protection()
 ```
 
-### Advanced Usage
+### Расширенное использование
 
 ```python
 # Custom configuration
@@ -232,7 +232,7 @@ print(f"Total threats: {threat_report['total_threats']}")
 print(f"Protection effectiveness: {threat_report['protection_effectiveness']}")
 ```
 
-### RSecure Integration
+### Интеграция с RSecure
 
 ```python
 from rsecure.rsecure_main import RSecureMain
@@ -252,23 +252,23 @@ rsecure.start()
 # Status available through rsecure.wifi_antipositioning
 ```
 
-## Testing
+## Тестирование
 
-### Test Suite
+### Набор тестов
 
-The system includes comprehensive tests:
+Система включает комплексные тесты:
 
 ```bash
 python3 test_wifi_antipositioning.py
 ```
 
-### Test Results
+### Результаты тестов
 
-- **Standalone System**: ✓ PASS
-- **RSecure Integration**: ✓ PASS  
-- **Ollama Integration**: ✗ FAIL (TensorFlow dependency)
+- **Автономная система**: ✓ ПРОЙДЕН
+- **Интеграция с RSecure**: ✓ ПРОЙДЕНА  
+- **Интеграция с Ollama**: ✗ НЕ ПРОЙДЕНА (зависимость TensorFlow)
 
-### Manual Testing
+### Ручное тестирование
 
 ```python
 # Test individual components
@@ -287,125 +287,127 @@ assert status['protection_level'] >= 0.0
 system.stop_protection()
 ```
 
-## Security Considerations
+## Соображения безопасности
 
-### Protection Levels
+### Уровни защиты
 
-- **Low**: Basic obfuscation, minimal performance impact
-- **Medium**: Balanced protection and performance
-- **High**: Maximum protection, higher resource usage
+- **Низкий**: Базовая обфускация, минимальное влияние на производительность
+- **Средний**: Сбалансированная защита и производительность
+- **Высокий**: Максимальная защита, повышенное использование ресурсов
 
-### False Positives
+### Ложные срабатывания
 
-The system includes mechanisms to minimize false positives:
-- Configurable thresholds
-- Pattern validation
-- Temporal consistency checks
-- Confidence scoring
+Система включает механизмы для минимизации ложных срабатываний:
+- Настраиваемые пороги
+- Валидация паттернов
+- Проверки временной согласованности
+- Оценка уверенности
 
-### Privacy Protection
+### Защита конфиденциальности
 
-- No sensitive data collection
-- Local processing only
-- No external communications
-- Configurable data retention
+- Нет сбора чувствительных данных
+- Только локальная обработка
+- Нет внешних коммуникаций
+- Настраиваемое хранение данных
 
-## Limitations
+## Ограничения
 
-### Hardware Requirements
+### Аппаратные требования
 
-- WiFi interface with CSI monitoring capability
-- Multiple antennas for spatial diversity (optional)
-- Sufficient CPU for real-time processing
+- WiFi интерфейс с возможностью мониторинга CSI
+- Несколько антенн для пространственного разнообразия (опционально)
+- Достаточная производительность CPU для обработки в реальном времени
 
-### Environmental Factors
+### Факторы окружающей среды
 
-- Signal strength affects detection accuracy
-- Multipath-rich environments improve protection
-- High interference may reduce effectiveness
+- Сила сигнала влияет на точность обнаружения
+- Среды с богатой многолучевостью улучшают защиту
+- Высокие помехи могут снизить эффективность
 
-### Attack Sophistication
+### Сложность атак
 
-- Advanced attacks may require higher protection levels
+- Продвинутые атаки могут потребовать более высоких уровней защиты
 - Coordinated multi-device attacks need comprehensive defense
 - Persistent attackers may adapt to countermeasures
 
-## Future Enhancements
+## Будущие улучшения
 
-### Planned Features
+### Запланированные функции
 
-1. **Machine Learning Integration**: AI-powered threat detection
-2. **Adaptive Defense**: Automatic adjustment based on attack patterns
-3. **Multi-band Support**: Extended frequency range protection
-4. **Hardware Acceleration**: GPU/FPGA support for high-performance
-5. **Distributed Defense**: Coordinated multi-system protection
+1. **Интеграция с машинным обучением**: Обнаружение угроз на базе ИИ
+2. **Адаптивная защита**: Автоматическая настройка на основе паттернов атак
+3. **Поддержка нескольких диапазонов**: Расширенная защита диапазона частот
+4. **Аппаратное ускорение**: Поддержка GPU/FPGA для высокой производительности
+5. **Распределенная защита**: Координированная защита нескольких систем
 
-### Research Directions
+### Направления исследований
 
-1. **Quantum-Resistant Protection**: Future-proofing against quantum attacks
-2. **Cognitive Radio Integration**: Intelligent spectrum management
-3. **5G/6G Support**: Next-generation wireless protection
-4. **IoT Device Protection**: Specialized protection for connected devices
+1. **Квантово-устойчивая защита**: Защита от будущих квантовых атак
+2. **Интеграция с когнитивным радио**: Интеллектуальное управление спектром
+3. **Поддержка 5G/6G**: Защита беспроводной связи следующего поколения
+4. **Защита IoT устройств**: Специализированная защита для подключенных устройств
 
-## Conclusion
+## Заключение
 
-The WiFi Anti-Positioning Defense System provides comprehensive protection against WiFi reflection-based positioning attacks through scientifically-grounded countermeasures. The system balances effective protection with minimal performance impact, making it suitable for deployment in various environments from personal devices to enterprise networks.
+Система защиты от WiFi антипозиционирования обеспечивает комплексную защиту от атак позиционирования на основе WiFi отражений через научно обоснованные контрмеры. Система сбалансирована между эффективной защитой и минимальным влиянием на производительность, что делает ее подходящей для развертывания в различных средах - от персональных устройств до корпоративных сетей.
 
-The modular architecture allows for easy integration with existing security systems, while the configurable nature enables customization for specific requirements and threat landscapes.
+Модульная архитектура позволяет легкую интеграцию с существующими системами безопасности, а настраиваемый характер обеспечивает кастомизацию для конкретных требований и ландшафтов угроз.
 
-## References
+## Ссылки
 
-### WiFi Positioning and CSI Analysis
+### Позиционирование WiFi и анализ CSI
 1. **Halperin, D., et al. (2011). "Tool release: gathering 802.11n traces with channel state information."** ACM SIGCOMM Computer Communication Review, 41(1), 53-53.
 2. **Xiao, Y., et al. (2018). "FiLoc: Fine-grained indoor localization using WiFi."** IEEE INFOCOM 2018 - IEEE Conference on Computer Communications.
 3. **Wu, C., et al. (2019). "CSI-based indoor localization."** IEEE Communications Surveys & Tutorials, 22(1), 524-545.
 
-### WiFi Security and Privacy
+### Безопасность и конфиденциальность WiFi
 4. **Matsumoto, A., et al. (2011). "A novel WiFi positioning method using channel state information."** IEEE International Conference on Communications (ICC).
 5. **Zhou, F., et al. (2017). "Privacy-preserving WiFi fingerprint localization with channel state information."** IEEE Access, 5, 26524-26531.
 6. **Bshara, M., et al. (2018). "Fingerprint-based WiFi positioning using channel state information."** IEEE International Conference on Communications (ICC).
 
-### Multipath Propagation and Signal Analysis
+### Многолучевое распространение и анализ сигналов
 7. **Zhang, D., et al. (2015). "WiFi fingerprint localization with channel state information."** IEEE International Conference on Distributed Computing in Sensor Systems.
 8. **Wang, W., et al. (2016). "Device-free localization with CSI."** IEEE International Conference on Computer Communications (INFOCOM).
 9. **Gao, Q., et al. (2018). "CSI-based device-free WiFi localization."** IEEE Internet of Things Journal, 5(6), 4628-4641.
 
-### Anti-Tracking and Location Privacy
+### Анти-отслеживание и конфиденциальность местоположения
 10. **Li, H., et al. (2017). "Anti-tracking: A survey of location privacy protection techniques."** IEEE Communications Surveys & Tutorials, 19(2), 889-913.
 11. **Xie, Y., et al. (2018). "Location privacy protection in WiFi networks."** IEEE Transactions on Mobile Computing, 17(6), 1312-1325.
 12. **Wang, J., et al. (2019). "Privacy-preserving WiFi localization with adversarial learning."** IEEE International Conference on Computer Communications.
 
-### Signal Obfuscation and Anti-Positioning
+### Обфускация сигнала и антипозиционирование
 13. **Liu, H., et al. (2020). "Signal obfuscation for location privacy protection."** IEEE Transactions on Information Forensics and Security, 15, 2855-2869.
 14. **Chen, Y., et al. (2021). "Anti-positioning techniques for wireless networks."** IEEE Security & Privacy, 19(2), 78-86.
 15. **Zhang, Z., et al. (2022). "Multipath noise generation for location privacy."** IEEE Transactions on Wireless Communications, 21(4), 2456-2471.
 
-### Pattern Disruption and Temporal Randomization
+### Нарушение паттернов и временная рандомизация
 16. **Wang, X., et al. (2020). "Temporal pattern disruption for WiFi fingerprinting attacks."** ACM Conference on Security and Privacy in Wireless and Mobile Networks.
 17. **Li, S., et al. (2021). "Adaptive pattern disruption for location privacy."** IEEE International Conference on Communications (ICC).
 18. **Zhou, M., et al. (2022). "Time-series analysis for WiFi positioning attacks."** IEEE Transactions on Information Forensics and Security, 17(8), 4212-4225.
 
-### Spatial Diversity and Multi-Antenna Systems
+### Пространственное разнообразие и многоантенные системы
 19. **Alaziz, M., et al. (2017). "Multi-antenna techniques for location privacy."** IEEE Transactions on Mobile Computing, 16(9), 2589-2602.
 20. **Yang, Z., et al. (2018). "Spatial diversity in WiFi positioning systems."** IEEE Communications Letters, 22(1), 177-180.
 21. **Chen, L., et al. (2019). "Coordinated multi-antenna defense against positioning attacks."** IEEE International Conference on Computer Communications.
 
-### Attack Detection and Defense Mechanisms
+### Обнаружение атак и механизмы защиты
 22. **Ali, S., et al. (2020). "Detection of WiFi positioning attacks using machine learning."** IEEE Transactions on Information Forensics and Security, 15, 3125-3138.
 23. **Wang, Y., et al. (2021). "Deep learning for WiFi positioning attack detection."** IEEE Internet of Things Journal, 8(15), 11923-11934.
 24. **Zhang, H., et al. (2022). "Real-time detection of WiFi positioning attacks."** IEEE Transactions on Network and Service Management, 19(3), 2345-2358.
 
-### Standards and Protocols
+### Стандарты и протоколы
 25. **IEEE 802.11-2020. "IEEE Standard for Information technology—Telecommunications and information exchange between systems—Local and metropolitan area networks—Specific requirements - Part 11: Wireless LAN Medium Access Control (MAC) and Physical Layer (PHY) Specifications."** IEEE Standards Association.
 26. **IEEE 802.11ax-2021. "IEEE Standard for High Efficiency Wireless LAN Amendment."** IEEE Standards Association.
 27. **ETSI TS 103 645. "Cybersecurity for consumer IoT."** European Telecommunications Standards Institute.
 
-### Implementation and Performance Evaluation
+### Реализация и оценка производительности
 28. **Gupta, S., et al. (2020). "Implementation of WiFi anti-positioning systems."** IEEE International Conference on Communications (ICC).
 29. **Kumar, P., et al. (2021). "Performance evaluation of location privacy protection techniques."** IEEE Transactions on Mobile Computing, 20(3), 987-1001.
 30. **Lee, J., et al. (2022). "Benchmarking WiFi positioning defense mechanisms."** ACM Computing Surveys, 55(1), 1-32.
 
 ---
+
+*Документация актуальна для версии RSecure 1.0+*
 
 *Document Version: 1.0*  
 *Last Updated: April 30, 2026*  
