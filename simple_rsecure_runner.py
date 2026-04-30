@@ -30,7 +30,7 @@ def check_dependencies():
     print("🔍 Checking dependencies...")
     
     required_modules = [
-        'numpy', 'pandas', 'scipy', 'scikit-learn', 
+        'numpy', 'pandas', 'scipy', 'sklearn', 
         'scapy', 'psutil', 'matplotlib', 'requests', 'flask'
     ]
     
