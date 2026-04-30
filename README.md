@@ -127,14 +127,27 @@ python simple_dashboard.py
 - [Нейросетевое ядро](docs/core-modules/neural-security-core.md)
 - [Ollama интеграция](docs/core-modules/ollama-integration.md)
 - [Обучение с подкреплением](docs/core-modules/reinforcement-learning.md)
-- [🔬 Научные основания](docs/research/scientific-foundations.md)
 
 ### Модули защиты:
 - [Психологическая защита](docs/defense/psychical-protection.md)
+- [🧠 Нейроволновая защита](docs/defense/neural-wave-protection.md)
+- [🛡️ Антипозиционирование (WiFi reflection defense)](docs/wifi-antipositioning-defense.md)
 - [Визуальная безопасность](docs/defense/visual-security.md)
 - [Защита от LLM атак](docs/defense/llm-defense.md)
 - [Сетевая оборона](docs/defense/network-defense.md)
 - [Мониторинг устройств](docs/monitoring/audio-video-monitor.md)
+
+### Научные исследования:
+- [🔬 Научные основания](docs/research/scientific-foundations.md)
+- [🧠 Нейроволновые исследования](docs/research/neural-wave-scientific-foundations.md)
+
+### Алгоритмы и методы:
+- [Анализ поведения](docs/algorithms/behavioral-analysis.md)
+- [Спектральный анализ](docs/algorithms/spectral-analysis.md)
+- [Нейросетевые архитектуры](docs/neural/architectures.md)
+
+### Технические спецификации:
+- [🛡️ Нейроволновая защита - тех. спецификации](docs/defense/neural-wave-technical-specs.md)
 
 ### Детекторы:
 - [Детектор системы](docs/detection/system-detector.md)
