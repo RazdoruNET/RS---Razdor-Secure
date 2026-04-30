@@ -1,6 +1,6 @@
 # RSecure - Advanced Security System
 
-<img src="assets/we_razdor_logo.png" alt="Logo" width="200">
+<img src="assets/we_razdor_logo.png" alt="Logo" width="100%">
 
 **RSecure - комплексная система безопасности с нейросетевым анализом, обучением с подкреплением и многоуровневой защитой от цифровых и психологических угроз.**
 
