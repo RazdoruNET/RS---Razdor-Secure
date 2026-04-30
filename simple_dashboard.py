@@ -12,7 +12,7 @@ from datetime import datetime
 from flask import Flask, render_template_string, jsonify
 import psutil
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='assets')
 
 # HTML Template for Dashboard
 DASHBOARD_HTML = """
@@ -30,130 +30,179 @@ DASHBOARD_HTML = """
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a0a0a 50%, #1a0a0a 75%, #0a0a0a 100%);
-            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
             min-height: 100vh;
-            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('./assets/we_razdor_logo.png') center/cover no-repeat fixed;
+            opacity: 0.15;
+            z-index: -1;
         }
         
         .header {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 2rem;
-            text-align: center;
-            border-bottom: 3px solid #ff0000;
-            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+            background: #111111;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #2a2a2a;
+            backdrop-filter: blur(10px);
         }
         
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
-            margin-bottom: 0.5rem;
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-left h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
             color: #ffffff;
         }
         
-        .header .subtitle {
-            color: #ffcccc;
-            font-size: 1.2rem;
+        .header-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-center img {
+            height: 40px;
+            width: auto;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .status-badge {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff3333;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            color: #888888;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1rem;
         }
         
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
             margin-bottom: 2rem;
         }
         
         .card {
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 10px;
+            background: #111111;
+            border-radius: 8px;
             padding: 1.5rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2);
+            border: 1px solid #2a2a2a;
+            transition: all 0.2s ease;
         }
         
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
-            border-color: rgba(255, 0, 0, 0.5);
+            border-color: #333333;
+            transform: translateY(-2px);
         }
         
         .card h3 {
             margin-bottom: 1rem;
-            color: #ff6666;
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .metric {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
         }
         
         .metric:last-child {
             border-bottom: none;
+            margin-bottom: 0;
         }
         
         .metric-label {
-            color: #cc9999;
-            font-size: 0.9rem;
+            color: #888888;
+            font-size: 0.875rem;
         }
         
         .metric-value {
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1rem;
+            font-weight: 500;
             color: #ffffff;
-            text-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
         }
         
         .status-indicator {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 0.5rem;
-            animation: pulse 2s infinite;
         }
         
         .status-online {
-            background-color: #ff3333;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            background-color: #22c55e;
         }
         
         .status-offline {
-            background-color: #666666;
+            background-color: #6b7280;
         }
         
         .btn {
-            background: linear-gradient(45deg, #cc0000, #ff0000);
+            background: #ff3333;
             color: white;
             border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            margin: 0.5rem;
-            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
         
         .btn:hover {
-            background: linear-gradient(45deg, #ff0000, #ff3333);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.5);
+            background: #ff4444;
         }
         
         @keyframes pulse {
@@ -252,26 +301,33 @@ DASHBOARD_HTML = """
         }
         
         .alert {
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid #ff0000;
-            border-radius: 8px;
-            padding: 1rem;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 6px;
+            padding: 0.75rem;
             margin-bottom: 1rem;
             text-align: center;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+            font-size: 0.875rem;
+            color: #22c55e;
         }
         
         .success {
-            background: rgba(102, 102, 102, 0.2);
-            border: 1px solid #666666;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <img src="https://i.ibb.co/L84m126/WE-RAZDOR-LOGO.png" width="200" alt="WE RAZDOR Logo" style="margin-bottom: 1rem;">
-        <h1>🌑 RSecure Dashboard</h1>
-        <div class="subtitle">A Gift from the Shadows - Created by the Fragmented Mind of WE RAZDOR</div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>RSecure</h1>
+                <div class="subtitle">Neural Security System</div>
+            </div>
+            <div class="header-right">
+                <div class="status-badge">🛡️ Protected</div>
+            </div>
+        </div>
     </div>
     
     <div class="container">
@@ -512,6 +568,11 @@ def dashboard():
         metrics=metrics,
         last_update=last_update
     )
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files"""
+    return app.send_static_file(filename)
 
 @app.route('/api/status')
 def api_status():
