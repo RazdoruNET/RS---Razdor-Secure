@@ -369,7 +369,7 @@ patterns = psych_protection.get_user_patterns()
 ### Научные основы
 - [Нейропластичность и когнитивная модуляция](https://www.nature.com/neuro)
 - [Психологические манипуляции в цифровых средах](https://www.apa.org/monitor)
-- [Бинауральные ритмы и мозговые волны](https://www.frontiersin.org/neuroscience)
+- [Бинауральные ритмы и мозговые волны](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6378473/)
 
 ### Техническая документация
 - [Алгоритмы анализа поведения](../algorithms/behavioral-analysis.md)
