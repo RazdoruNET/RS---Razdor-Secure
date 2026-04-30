@@ -30,11 +30,16 @@ class WiFiAntiPositioningSystem:
         # Setup logging
         self._setup_logging()
         
-        # Initialize components
-        self.csi_monitor = CSIMonitor(self.config.get('csi_monitoring', {}))
-        self.signal_obfuscator = SignalObfuscator(self.config.get('signal_obfuscation', {}))
-        self.multipath_generator = MultipathNoiseGenerator(self.config.get('multipath_noise', {}))
-        self.pattern_disruptor = PatternDisruptor(self.config.get('pattern_disruption', {}))
+        # Initialize components with safe config access
+        csi_config = self.config.get('csi_monitoring', {}) if isinstance(self.config, dict) else {}
+        signal_config = self.config.get('signal_obfuscation', {}) if isinstance(self.config, dict) else {}
+        multipath_config = self.config.get('multipath_noise', {}) if isinstance(self.config, dict) else {}
+        pattern_config = self.config.get('pattern_disruption', {}) if isinstance(self.config, dict) else {}
+        
+        self.csi_monitor = CSIMonitor(csi_config)
+        self.signal_obfuscator = SignalObfuscator(signal_config)
+        self.multipath_generator = MultipathNoiseGenerator(multipath_config)
+        self.pattern_disruptor = PatternDisruptor(pattern_config)
         
         # Defense status
         self.defense_active = False
@@ -198,7 +203,8 @@ class WiFiAntiPositioningSystem:
                 # Update protection level
                 self._update_protection_level()
                 
-                time.sleep(1.0 / self.config['csi_monitoring']['sampling_rate'])
+                sampling_rate = self.config.get('csi_monitoring', {}).get('sampling_rate', 100)
+                time.sleep(1.0 / sampling_rate)
                 
             except Exception as e:
                 self.logger.error(f"Error in monitoring loop: {e}")
@@ -214,7 +220,8 @@ class WiFiAntiPositioningSystem:
                     # Apply countermeasures
                     self._apply_countermeasures()
                 
-                time.sleep(self.config['pattern_disruption']['disruption_interval_ms'] / 1000.0)
+                disruption_interval = self.config.get('pattern_disruption', {}).get('disruption_interval_ms', 100)
+                time.sleep(disruption_interval / 1000.0)
                 
             except Exception as e:
                 self.logger.error(f"Error in defense loop: {e}")
@@ -223,11 +230,12 @@ class WiFiAntiPositioningSystem:
     def _analyze_positioning_threat(self) -> Optional[Dict]:
         """Analyze WiFi signals for positioning attack indicators"""
         try:
-            if len(self.csi_data) < self.config['csi_monitoring']['analysis_window']:
+            analysis_window = self.config.get('csi_monitoring', {}).get('analysis_window', 50)
+            if len(self.csi_data) < analysis_window:
                 return None
             
             # Get recent CSI samples
-            recent_samples = list(self.csi_data)[-self.config['csi_monitoring']['analysis_window']:]
+            recent_samples = list(self.csi_data)[-analysis_window:]
             
             # Extract features for analysis
             features = self._extract_csi_features(recent_samples)
@@ -238,7 +246,8 @@ class WiFiAntiPositioningSystem:
             # Calculate threat level
             threat_score = self._calculate_threat_score(attack_indicators)
             
-            if threat_score > self.config['detection']['threat_threshold']:
+            threat_threshold = self.config.get('detection', {}).get('threat_threshold', 0.7)
+            if threat_score > threat_threshold:
                 return {
                     'threat_level': threat_score,
                     'attack_indicators': attack_indicators,
@@ -365,7 +374,8 @@ class WiFiAntiPositioningSystem:
             self.threat_history.append(threat)
             
             # Auto-activate defense if enabled
-            if self.config['defense']['auto_activate']:
+            auto_activate = self.config.get('defense', {}).get('auto_activate', True)
+            if auto_activate:
                 self._activate_defense_level(threat['threat_level'])
             
         except Exception as e:
@@ -381,7 +391,8 @@ class WiFiAntiPositioningSystem:
             else:
                 level = 'low'
             
-            protection_strength = self.config['defense']['protection_levels'][level]
+            protection_levels = self.config.get('defense', {}).get('protection_levels', {'low': 0.3, 'medium': 0.6, 'high': 0.9})
+            protection_strength = protection_levels.get(level, 0.6)
             
             # Activate countermeasures
             self.signal_obfuscator.set_strength(protection_strength)
@@ -397,15 +408,15 @@ class WiFiAntiPositioningSystem:
         """Apply active countermeasures"""
         try:
             # Signal obfuscation
-            if self.config['signal_obfuscation']['enabled']:
+            if self.config.get('signal_obfuscation', {}).get('enabled', True):
                 self.signal_obfuscator.apply_obfuscation()
             
             # Multipath noise generation
-            if self.config['multipath_noise']['enabled']:
+            if self.config.get('multipath_noise', {}).get('enabled', True):
                 self.multipath_generator.generate_noise()
             
             # Pattern disruption
-            if self.config['pattern_disruption']['enabled']:
+            if self.config.get('pattern_disruption', {}).get('enabled', True):
                 self.pattern_disruptor.disrupt_patterns()
             
             self.defense_metrics['attacks_prevented'] += 1
@@ -572,7 +583,7 @@ class CSIMonitor:
     """Channel State Information monitoring component"""
     
     def __init__(self, config: Dict):
-        self.config = config
+        self.config = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger('rsecure_csi_monitor')
         self.monitoring_active = False
     
@@ -612,7 +623,7 @@ class SignalObfuscator:
     """Signal obfuscation component"""
     
     def __init__(self, config: Dict):
-        self.config = config
+        self.config = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger('rsecure_signal_obfuscator')
         self.obfuscation_active = False
         self.strength = 0.5
@@ -656,7 +667,7 @@ class MultipathNoiseGenerator:
     """Multipath noise generation component"""
     
     def __init__(self, config: Dict):
-        self.config = config
+        self.config = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger('rsecure_multipath_generator')
         self.generation_active = False
         self.intensity = 0.5
@@ -699,7 +710,7 @@ class PatternDisruptor:
     """Pattern disruption component"""
     
     def __init__(self, config: Dict):
-        self.config = config
+        self.config = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger('rsecure_pattern_disruptor')
         self.disruption_active = False
         self.disruption_level = 'medium'
