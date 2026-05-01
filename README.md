@@ -344,6 +344,9 @@ python simple_dashboard.py
 - [📊 Общие системы противодействия](docs/classified/quantum-countermeasures.md) *(требует COSMIC TOP SECRET clearance)*
 - [💻 Программное обеспечение противодействия](docs/classified/quantum-countermeasures-software.md) *(требует COSMIC TOP SECRET clearance)*
 - [🔩 Железная часть противодействия](docs/classified/quantum-countermeasures-hardware.md) *(требует COSMIC TOP SECRET clearance)*
+- [�️ Противодействие TOP SECRET системам](docs/classified/quantum-countermeasures-topsecret-systems.md) *(требует COSMIC TOP SECRET clearance)*
+
+*¹ Разработка методов обхода систем противодействия ведется в соответствии с установленными протоколами безопасности.*
 
 #### 🏳️ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ
 - [📄 Полная капитуляция](docs/classified/orpheus-full-surrender.md) *(требует COSMIC TOP SECRET clearance)*
