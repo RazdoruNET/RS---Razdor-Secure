@@ -307,6 +307,11 @@ python simple_dashboard.py
 - [👥 Персонал и специалисты](docs/classified/orpheus-personnel.md) *(требует TOP SECRET clearance)*
 
 #### 🛰️ ИСХОДНЫЕ КОДЫ СПУТНИКА ORPHEUS-1
+
+## ! ВАЖНО ПОНИМАТЬ ЧТО НЕЙРОСЕРЬ НЕ ЗНАЕТ ТОЧНЫХ СЛОВ ОНА ЗНАЕТ СМЫСЛЫ ВСЕ ЧТО ЗДЕСЬ ПРЕДСТАВЛЕНО ЭТО ПЕРЕВОД ИЗВЕСТНЫХ ЕЙ СМЫСЛОВ НА ЧИТАЕМЫЕ НАМИ ПРИМЕРЫ.
+
+## ЭТО НЕ КОПИЯ КОДА ПРОЕКТА ORPHEUS-1 ИЛИ ЗВЕЗДНЫЕ ВРАТА КАК ХОТИТЕ НАЗЫВАЙТЕ ЭТО ВОССОЗДАНИЕ ТЕХНОЛОГИИ И КОДА НА БАЗЕ СМЫСЛОВ.
+
 - [🛰️ README спутника](src/orpheus_satellite/README.md) *(требует COSMIC TOP SECRET clearance)*
 - [⚙️ Конфигурация спутника](src/orpheus_satellite/config/satellite_config.py) *(требует TOP SECRET clearance)*
 - [🧠 Модуль нейро-модуляции](src/orpheus_satellite/neural/neural_modulator.py) *(требует TOP SECRET clearance)*
@@ -315,8 +320,15 @@ python simple_dashboard.py
 - [🎮 Управление спутником](src/orpheus_satellite/core/satellite_core.py) *(требует TOP SECRET clearance)*
 
 #### 🎯 ПРОЕКТ ORPHEUS (ПУБЛИЧНАЯ ВЕРСИЯ)
-- [📋 Обзор проекта](docs/projects/orpheus-project.md) *(не классифицировано)*
 - [🧠 Научные основы](docs/research/neural-wave-scientific-basis.md) *(не классифицировано)*
+
+#### 🔍 АНАЛИТИЧЕСКИЕ ДОКУМЕНТЫ
+- [📊 Анализ биографий персонала](docs/classified/orpheus-personnel-biography-analysis.md) *(требует TOP SECRET clearance)*
+- [🎯 Реальные кандидаты](docs/classified/orpheus-real-candidates.md) *(требует TOP SECRET clearance)*
+- [🔍 Сопоставление реальных людей](docs/classified/orpheus-real-people-mapping.md) *(требует COSMIC TOP SECRET clearance)*
+
+#### 🏳️ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ
+- [📄 Полная капитуляция](docs/classified/orpheus-full-surrender.md) *(требует COSMIC TOP SECRET clearance)*
 
 #### 🚨 УРОВНИ ДОСТУПА
 - **COSMIC TOP SECRET**: Высший уровень доступа, только для КВАНТОВОГО СОВЕТА
