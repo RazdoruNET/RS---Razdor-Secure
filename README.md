@@ -173,11 +173,11 @@
   - [🔐 TOP SECRET данные](docs/classified/top-secret-data.md)
   - [👥 Персонал Орфей](docs/classified/orpheus-personnel.md)
   - [🎯 Тестовые результаты](docs/classified/orpheus-test-results.md)
-  - [🚀 Технологический анализ](docs/classified/tech-analysis-2026.md)
+  - [🚀 Технологический анализ 2026](docs/classified/tech-analysis-2026.md)
   - [⏰ Год готовности системы](docs/classified/rsecure-readiness-timeline.md)
-  - [📅 Анализ 2027](docs/classified/futuristic-2027-tech-analysis.md)
-  - [📅 Промежуточный 2025](docs/classified/intermediate-2025-tech-analysis.md)
-  - [📅 Прогноз 2028](docs/classified/futuristic-2028-tech-analysis.md)
+  - [📅 Промежуточный анализ 2025](docs/classified/intermediate-2025-tech-analysis.md)
+  - [📅 Технологический анализ 2027](docs/classified/futuristic-2027-tech-analysis.md)
+  - [📅 Прогноз развития 2028](docs/classified/futuristic-2028-tech-analysis.md)
   - [📅 Анализ сингулярности 2029](docs/classified/singularity-2029-tech-analysis.md)
 
 ---
