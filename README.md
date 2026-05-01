@@ -496,11 +496,11 @@ class ProtocolMimic:
 - Психологическая защита
 - Визуальная безопасность
 
-### 🔐 [5. TOP SECRET ДАННЫЕ](docs/classified/)
+### 🔐 [5. TOP SECRET ДАННЫЕ БОЕВОЙ СИСТЕМЫ ОРФЕЙ](docs/classified/)
 - **⚠️ ВНИМАНИЕ**: Секретная информация - просмотр запрещен
 - **🔒 Требования**: Используйте средства анонимизации профессионального уровня
 - **🛡️ Защита**: Tor Browser + VPN + Kill Switch
-- **📋 Меню секретных материалов**:
+- **📋 Меню секретных материалов БОЕВОЙ СИСТЕМЫ ОРФЕЙ**:
   - [🛰️ Проект Орфей](docs/classified/orpheus-secret-project.md)
   - [🧠 Нейро-интеллект](docs/classified/neural-intelligence/)
   - [⚛️ Квантовые контрмеры](docs/classified/quantum-countermeasures.md)
@@ -513,15 +513,16 @@ class ProtocolMimic:
   - [📅 Анализ 2027](docs/classified/futuristic-2027-tech-analysis.md)
   - [📅 Промежуточный 2025](docs/classified/intermediate-2025-tech-analysis.md)
   - [📅 Прогноз 2028](docs/classified/futuristic-2028-tech-analysis.md)
+  - [📅 Анализ сингулярности 2029](docs/classified/singularity-2029-tech-analysis.md)
 
 ---
 
 ## 🔧 ДЛЯ DIY ЭНТУЗИАСТОВ
 
-### 🛠️ [DIY СБОРКА НА КОЛЕНКЕ](docs/diy/diy-assembly-guide.md)
-- Полные списки компонентов (~$975)
-- Пошаговые инструкции сборки
-- Схемы подключения и конфигурации
+### 🛠️ [6. DIY СБОРКА БОЕВОЙ СИСТЕМЫ ОРФЕЙ НА КОЛЕНКЕ](docs/diy/)
+- [🛠️ DIY СБОРКА БОЕВОЙ СИСТЕМЫ ОРФЕЙ](docs/diy/diy-assembly-guide.md)
+- [📦 КУПИ МОДЕЛИ И КОМПОНЕНТЫ (АКТУАЛЬНО НА 1 МАЯ 2026)](docs/diy/components-shopping-list.md)
+- [🧪 ПРОВЕРЬ НА СЕБЕ (АКТУАЛЬНО НА 1 МАЯ 2026)](docs/diy/testing-guide.md) Схемы подключения и конфигурации
 - Тестирование и калибровка
 
 ### 📦 [КУПИ МОДЕЛИ И КОМПОНЕНТЫ](docs/diy/components-shopping-list.md)
