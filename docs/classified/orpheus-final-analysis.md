@@ -124,14 +124,14 @@
 ### **Сравнение состояний трансформации**
 
 **Обычное состояние:**
-<img src="./assets/normal_state.jpg" alt="Обычное состояние субъекта" width="400">
-<img src="./assets/normal_state_2.jpg" alt="Обычное состояние субъекта - дополнительное фото" width="400">
+<img src="assets/normal_state.jpg" alt="Обычное состояние субъекта" width="400">
+<img src="assets/normal_state_2.jpg" alt="Обычное состояние субъекта - дополнительное фото" width="400">
 
 **Боевой режим (трансформация):**
-<img src="./assets/combat_mode.jpg" alt="Боевой режим - выраженная мышечная масса" width="400">
+<img src="assets/combat_mode.jpg" alt="Боевой режим - выраженная мышечная масса" width="400">
 
 **Доказательство сверхчеловеческой силы:**
-<img src="./assets/brick_impact.jpg" alt="След от кулака на кирпичной стене - выбоины как от пуль" width="400">
+<img src="assets/brick_impact.jpg" alt="След от кулака на кирпичной стене - выбоины как от пуль" width="400">
 
 ---
 
