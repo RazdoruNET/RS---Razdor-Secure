@@ -386,11 +386,18 @@ class ProtocolMimic:
 - Психологическая защита
 - Визуальная безопасность
 
-### 🔐 [5. TOP SECRET ДАННЫЕ](docs/classified/top-secret-data.md)
-- Секретные материалы проекта Орфей
-- Квантовые технологии
-- Протоколы безопасности
-- Специализированные контрмеры
+### 🔐 [5. TOP SECRET ДАННЫЕ](docs/classified/)
+- **⚠️ ВНИМАНИЕ**: Секретная информация - просмотр запрещен
+- **🔒 Требования**: Используйте средства анонимизации профессионального уровня
+- **🛡️ Защита**: Tor Browser + VPN + Kill Switch
+- **📋 Меню секретных материалов**:
+  - [🛰️ Проект Орфей](docs/classified/orpheus-secret-project.md)
+  - [🧠 Нейро-интеллект](docs/classified/neural-intelligence/)
+  - [⚛️ Квантовые контрмеры](docs/classified/quantum-countermeasures.md)
+  - [🌀 Квантовая телепортация](docs/classified/quantum-teleportation/)
+  - [🔐 TOP SECRET данные](docs/classified/top-secret-data.md)
+  - [👥 Персонал Орфей](docs/classified/orpheus-personnel.md)
+  - [🎯 Тестовые результаты](docs/classified/orpheus-test-results.md)
 
 ---
 
