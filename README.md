@@ -8,12 +8,15 @@
 
 ## 🛡️ Ключевые слои защиты
 
-### 🧠 **Нейроволновая защита**
-- Мониторинг WiFi/Bluetooth интерфейсов
-- Детекция электромагнитных аномалий
-- Анализ воздействия на мозговые волны
-- Биометрическая корреляция угроз
+### 🧠 **Нейроволновая защита (Гибридная система)**
+- **Встроенный режим**: Мониторинг WiFi/Bluetooth через macOS APIs
+- **Расширенный режим**: Внешние SDR модули (HackRF, RTL-SDR)
+- **DIY модули**: Самостоятельная сборка RF оборудования (~$975)
+- **Биометрическая корреляция**: ECG, GSR, температурные сенсоры
+- **Научное обоснование**: FFT анализ, статистическая валидация
 - [Подробнее →](docs/defense/neural-wave-protection.md)
+- [DIY Спецификации →](docs/hardware/diy-rf-neural-protection-specs.md)
+- [Гибридная архитектура →](docs/architecture/hybrid-neural-protection-system.md)
 
 ### 🛡️ **Антипозиционирование (защита от WiFi отражений)**
 - Защита от определения местоположения через WiFi отражения
@@ -90,6 +93,64 @@
 - **Ollama** (для LLM анализа)
 - **Tor** (для анонимных соединений)
 - **OpenSSL** (для шифрования)
+
+### 🧠 Нейроволновая защита - режимы работы
+
+#### **Режим 1: Встроенный (бесплатно)**
+```bash
+# Автоопределение и запуск
+python rsecure/modules/defense/neural_wave_protection.py --mode builtin
+```
+- Использует WiFi/Bluetooth адаптеры MacBook
+- Мониторинг через системные API
+- Базовая детекция аномалий
+
+#### **Режим 2: Расширенный (требует оборудование)**
+```bash
+# С внешними SDR модулями
+python rsecure/modules/defense/neural_wave_protection.py --mode external
+
+# Автоопределение оборудования
+python scripts/configure_hardware.py
+```
+- Требуется HackRF One ($300) или RTL-SDR ($30)
+- Расширенный спектральный анализ 1 МГц - 6 ГГц
+- Повышенная точность детекции
+
+#### **Режим 3: Гибридный (максимальная защита)**
+```bash
+# Комбинированный режим
+python rsecure/modules/defense/neural_wave_protection.py --mode hybrid
+
+# Автоматическая конфигурация
+python scripts/setup_hybrid_system.py
+```
+- Использует все доступные источники данных
+- Максимальная точность детекции
+- Корреляция между источниками
+
+### 📋 DIY оборудование для расширенного режима
+
+**Компоненты (~$975):**
+- HackRF One или RTL-SDR
+- Raspberry Pi 4B
+- Arduino Pro Mini + сенсоры (ECG, GSR)
+- Антенны 1 МГц - 6 ГГц
+- Блок питания + UPS
+
+**Быстрая сборка:**
+```bash
+# Автоматическая установка
+bash scripts/install_diy_hardware.sh
+
+# Проверка оборудования
+python scripts/test_hardware_setup.py
+
+# Запуск с DIY модулями
+python run_hybrid_neural_protection.py --config config/diy_setup.json
+```
+
+**⚠️ Важно:** DIY оборудование требует лицензий в большинстве стран. Используйте только в экранированных помещениях.
 
 ### Установка
 ```bash
@@ -204,6 +265,13 @@ python simple_dashboard.py
 ### Научные исследования:
 - [🔬 Научные основания](docs/research/scientific-foundations.md)
 - [🧠 Нейроволновые исследования](docs/research/neural-wave-scientific-foundations.md)
+- [📊 Научное обоснование нейроволновой защиты](docs/research/neural-wave-scientific-basis.md)
+
+### Технические спецификации и DIY:
+- [🛡️ Нейроволновая защита - тех. спецификации](docs/defense/neural-wave-technical-specs.md)
+- [🔧 DIY RF модули - спецификации](docs/hardware/diy-rf-neural-protection-specs.md)
+- [📐 Схемы и чертежи](docs/hardware/circuit-diagrams.md)
+- [🏗️ Гибридная архитектура](docs/architecture/hybrid-neural-protection-system.md)
 
 ### Алгоритмы и методы:
 - [Анализ поведения](docs/algorithms/behavioral-analysis.md)
