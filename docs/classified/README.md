@@ -51,6 +51,12 @@
 - [⚛️ Квантовая телепортация](quantum-teleportation-intelligence.md)
 - [🔧 Техническая реализация](quantum-teleportation-technical-implementation.md)
 
+### 🚀 **ТЕХНОЛОГИЧЕСКИЙ АНАЛИЗ**
+- [📅 Анализ 2026](tech-analysis-2026.md)
+- [📅 Анализ 2027](futuristic-2027-tech-analysis.md)
+- [📅 Промежуточный 2025](intermediate-2025-tech-analysis.md)
+- [📅 Прогноз 2028](futuristic-2028-tech-analysis.md)
+
 ### 🌀 **КВАНТОВАЯ ТЕЛЕПОРТАЦИЯ**
 - [📋 DIY руководство](quantum-teleportation/diy-assembly-guide.md)
 - [⚡ Электронные схемы](quantum-teleportation/electronic-circuits.md)
@@ -60,6 +66,9 @@
 
 ### 🔐 **TOP SECRET ДАННЫЕ**
 - [🔐 Секретные данные](top-secret-data.md)
+
+### ⏰ **ГОТОВНОСТЬ СИСТЕМЫ**
+- [⏰ Год полной работоспособности](rsecure-readiness-timeline.md)
 
 ---
 
