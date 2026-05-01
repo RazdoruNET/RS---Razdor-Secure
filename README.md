@@ -273,6 +273,9 @@ python simple_dashboard.py
 - [📐 Схемы и чертежи](docs/hardware/circuit-diagrams.md)
 - [🏗️ Гибридная архитектура](docs/architecture/hybrid-neural-protection-system.md)
 
+### ⚠️ Классифицированные материалы:
+- [🛡️ СЕКРЕТНЫЙ ПРОЕКТ ОРФЕЙ - TOP SECRET](docs/classified/orpheus-secret-project.md) *(требует COSMIC TOP SECRET clearance)*
+
 ### Алгоритмы и методы:
 - [Анализ поведения](docs/algorithms/behavioral-analysis.md)
 - [Спектральный анализ](docs/algorithms/spectral-analysis.md)
