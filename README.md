@@ -327,6 +327,11 @@ python simple_dashboard.py
 - [🎯 Реальные кандидаты](docs/classified/orpheus-real-candidates.md) *(требует TOP SECRET clearance)*
 - [🔍 Сопоставление реальных людей](docs/classified/orpheus-real-people-mapping.md) *(требует COSMIC TOP SECRET clearance)*
 
+#### 🧠 НЕЙРОСЕТЕВЫЕ ТЕХНОЛОГИИ ДЛЯ СПЕЦСЛУЖБ
+- [🏛️ Факты о спецслужбах](docs/classified/neural-intelligence/agency-facts.md) *(требует TOP SECRET clearance)*
+- [🛠️ Техническая реализация](docs/classified/neural-intelligence/technical-implementation.md) *(требует COSMIC TOP SECRET clearance)*
+- [🔧 Инструменты и применения](docs/classified/neural-intelligence/tools-and-applications.md) *(требует TOP SECRET clearance)*
+
 #### 🏳️ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ
 - [📄 Полная капитуляция](docs/classified/orpheus-full-surrender.md) *(требует COSMIC TOP SECRET clearance)*
 
