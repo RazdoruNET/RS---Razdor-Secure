@@ -340,6 +340,11 @@ python simple_dashboard.py
 - [📡 Протоколы и интерфейсы](docs/classified/quantum-teleportation/protocols-interfaces.md) *(требует COSMIC TOP SECRET clearance)*
 - [🏗️ DIY сборка](docs/classified/quantum-teleportation/diy-assembly-guide.md) *(требует COSMIC TOP SECRET clearance)*
 
+#### 🛡️ СИСТЕМЫ ПРОТИВОДЕЙСТВИЯ КВАНТОВОЙ ТЕЛЕПОРТАЦИИ
+- [📊 Общие системы противодействия](docs/classified/quantum-countermeasures.md) *(требует COSMIC TOP SECRET clearance)*
+- [💻 Программное обеспечение противодействия](docs/classified/quantum-countermeasures-software.md) *(требует COSMIC TOP SECRET clearance)*
+- [🔩 Железная часть противодействия](docs/classified/quantum-countermeasures-hardware.md) *(требует COSMIC TOP SECRET clearance)*
+
 #### 🏳️ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ
 - [📄 Полная капитуляция](docs/classified/orpheus-full-surrender.md) *(требует COSMIC TOP SECRET clearance)*
 
