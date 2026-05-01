@@ -332,6 +332,14 @@ python simple_dashboard.py
 - [🛠️ Техническая реализация](docs/classified/neural-intelligence/technical-implementation.md) *(требует COSMIC TOP SECRET clearance)*
 - [🔧 Инструменты и применения](docs/classified/neural-intelligence/tools-and-applications.md) *(требует TOP SECRET clearance)*
 
+#### 🔐 КВАНТОВАЯ ТЕЛЕПОРТАЦИЯ ИНФОРМАЦИИ
+- [📊 Разведывательные данные](docs/classified/quantum-teleportation-intelligence.md) *(требует COSMIC TOP SECRET clearance)*
+- [🛠️ Аппаратное обеспечение](docs/classified/quantum-teleportation/hardware-specifications.md) *(требует COSMIC TOP SECRET clearance)*
+- [💻 Программное обеспечение](docs/classified/quantum-teleportation/software-implementation.md) *(требует COSMIC TOP SECRET clearance)*
+- [🔌 Электронные схемы](docs/classified/quantum-teleportation/electronic-circuits.md) *(требует COSMIC TOP SECRET clearance)*
+- [📡 Протоколы и интерфейсы](docs/classified/quantum-teleportation/protocols-interfaces.md) *(требует COSMIC TOP SECRET clearance)*
+- [🏗️ DIY сборка](docs/classified/quantum-teleportation/diy-assembly-guide.md) *(требует COSMIC TOP SECRET clearance)*
+
 #### 🏳️ ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ
 - [📄 Полная капитуляция](docs/classified/orpheus-full-surrender.md) *(требует COSMIC TOP SECRET clearance)*
 
