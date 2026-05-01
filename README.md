@@ -291,14 +291,6 @@ RSecure/
 
 ---
 
-## 📞 КОНТАКТЫ И ПОДДЕРЖКА
-
-- **GitHub**: https://github.com/WE-RAZDOR/RSecure
-- **Issues**: https://github.com/WE-RAZDOR/RSecure/issues
-- **Discussions**: https://github.com/WE-RAZDOR/RSecure/discussions
-
----
-
 👨‍💻 О создателе WE RAZDOR
 
 WE RAZDOR - разработчик с расщеплением личности, использующий уникальный подход к безопасности через множественные перспективы для создания комплексных систем защиты.
@@ -314,5 +306,7 @@ WE RAZDOR - разработчик с расщеплением личности,
 BTC: 1EKpztjQoSZ3XUB8snvKo6db1kFkViNi1L
 
 Ваша поддержка помогает продолжать разработку и улучшение системы безопасности.
+
+---
 
 **© 2026 WE RAZDOR. Все права защищены.**
