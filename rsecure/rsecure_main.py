@@ -79,6 +79,46 @@ try:
 except ImportError:
     RSecureLogger = None
 
+try:
+    from modules.defense.system_control import RSecureSystemControl
+except ImportError:
+    RSecureSystemControl = None
+
+try:
+    from modules.detection.cvu_intelligence import RSecureCVU
+except ImportError:
+    RSecureCVU = None
+
+try:
+    from modules.detection.phishing_detector import RSecurePhishingDetector
+except ImportError:
+    RSecurePhishingDetector = None
+
+try:
+    from modules.defense.llm_defense import RSecureLLMDefense
+except ImportError:
+    RSecureLLMDefense = None
+
+try:
+    from modules.defense.psychical_protection import PsychologicalProtection
+except ImportError:
+    PsychologicalProtection = None
+
+try:
+    from modules.defense.wifi_antipositioning import WiFiAntiPositioningSystem
+except ImportError:
+    WiFiAntiPositioningSystem = None
+
+try:
+    from modules.defense.visual_security import VisualSecurityMonitor
+except ImportError:
+    VisualSecurityMonitor = None
+
+try:
+    from modules.defense.retaliation_system import RSecureRetaliationSystem
+except ImportError:
+    RSecureRetaliationSystem = None
+
 # Set availability flags
 NEURAL_CORE_AVAILABLE = RSecureNeuralCore is not None
 OLLAMA_AVAILABLE = OllamaSecurityAnalyzer is not None
@@ -133,6 +173,7 @@ class RSecureMain:
         self.audio_video_monitor = None
         self.psychological_protection = None
         self.wifi_antipositioning = None
+        self.retaliation_system = None
         
         # System state
         self.system_info = {}
@@ -256,6 +297,26 @@ class RSecureMain:
                 'threat_threshold': 0.7,
                 'confidence_threshold': 0.8,
                 'auto_activate': True,
+                'enable_signal_obfuscation': True,
+                'enable_multipath_noise': True,
+                'enable_temporal_randomization': True,
+                'enable_spatial_diversity': True
+            },
+            'retaliation_system': {
+                'enabled': True,
+                'auto_retaliation': True,
+                'retaliation_threshold': 0.8,
+                'max_concurrent_attacks': 5,
+                'attack_timeout': 300,
+                'cleanup_delay': 3600,
+                'stealth_mode': True,
+                'quantum_enabled': False,
+                'psychological_enabled': True,
+                'network_attacks_enabled': True,
+                'system_attacks_enabled': True,
+                'require_confirmation': False,
+                'log_all_actions': True
+            }
                 'protection_level': 'medium',
                 'signal_obfuscation': True,
                 'multipath_noise': True,
@@ -411,8 +472,8 @@ class RSecureMain:
                 self.logger.info("Audio/video monitoring initialized")
             
             # Psychological protection
-            if self.config['psychological_protection']['enabled']:
-                self.psychological_protection = RSecurePsychologicalProtection(
+            if self.config['psychological_protection']['enabled'] and PsychologicalProtection:
+                self.psychological_protection = PsychologicalProtection(
                     config=self.config['psychological_protection']
                 )
                 self.psychological_protection.start_protection()
@@ -427,6 +488,16 @@ class RSecureMain:
                 self.logger.info("WiFi anti-positioning initialized")
             elif self.config['wifi_antipositioning']['enabled'] and not WiFiAntiPositioningSystem:
                 self.logger.warning("WiFi anti-positioning enabled but module not available")
+            
+            # Retaliation system
+            if self.config.get('retaliation_system', {}).get('enabled', False) and RSecureRetaliationSystem:
+                self.retaliation_system = RSecureRetaliationSystem(
+                    config=self.config.get('retaliation_system', {})
+                )
+                self.retaliation_system.start_retaliation()
+                self.logger.info("Retaliation system initialized")
+            elif self.config.get('retaliation_system', {}).get('enabled', False) and not RSecureRetaliationSystem:
+                self.logger.warning("Retaliation system enabled but module not available")
             
             self.logger.info("All RSecure components initialized successfully")
             
@@ -511,6 +582,9 @@ class RSecureMain:
             
             if hasattr(self, 'wifi_antipositioning') and self.wifi_antipositioning:
                 self.wifi_antipositioning.stop_protection()
+            
+            if hasattr(self, 'retaliation_system') and self.retaliation_system:
+                self.retaliation_system.stop_retaliation()
             
             # Wait for integration thread
             if hasattr(self, 'integration_thread'):
