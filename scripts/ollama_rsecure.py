@@ -25,10 +25,11 @@ class OllamaRSecure:
         self.setup_logging()
         self.logger = logging.getLogger(__name__)
         
-        # Ollama configuration
-        self.ollama_url = "http://localhost:11434"
+        # Ollama configuration - Local server
+        self.ollama_url = "http://127.0.0.1:11434"
         self.available_models = []
-        self.current_model = "rsecure-security"
+        self.current_model = "rsecure-security:latest"
+        self.server_type = "local"
         
         # Security events
         self.security_events = []
@@ -59,19 +60,21 @@ class OllamaRSecure:
         )
     
     def check_ollama_status(self):
-        """Check Ollama server status and available models"""
+        """Check local Ollama server status and available models"""
         try:
+            # Check Ollama API directly
             response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 self.available_models = [model['name'] for model in data.get('models', [])]
-                self.logger.info(f"🤖 Ollama connected: {len(self.available_models)} models available")
+                self.logger.info(f"🤖 Local Ollama connected: {len(self.available_models)} models available")
+                self.logger.info(f"📦 Available models: {', '.join(self.available_models[:3])}")
                 return True
             else:
-                self.logger.error(f"❌ Ollama returned HTTP {response.status_code}")
+                self.logger.error(f"❌ Ollama API returned HTTP {response.status_code}")
                 return False
         except Exception as e:
-            self.logger.error(f"❌ Cannot connect to Ollama: {e}")
+            self.logger.error(f"❌ Cannot connect to local Ollama: {e}")
             return False
     
     def analyze_with_ollama(self, event_data, analysis_type="security"):
@@ -134,10 +137,11 @@ class OllamaRSecure:
                 }
             }
             
+            # Make API request to Ollama
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=30
+                timeout=60
             )
             
             if response.status_code == 200:
@@ -339,14 +343,16 @@ class OllamaRSecure:
         """Display current system status"""
         uptime = datetime.now() - self.metrics['start_time']
         
-        print(f"\n📊 RSecure Ollama Status:")
+        print(f"\n📊 RSecure Local Ollama Status:")
         print(f"   ⏱️  Uptime: {uptime}")
+        print(f"   �️  Server type: {self.server_type}")
         print(f"   📈 Events processed: {self.metrics['events_processed']}")
         print(f"   🧠 LLM analyses: {self.metrics['llm_analyses']}")
         print(f"   🚨 Threats detected: {self.metrics['threats_detected']}")
         print(f"   🤖 Ollama requests: {self.metrics['ollama_requests']}")
         print(f"   📦 Current model: {self.current_model}")
         print(f"   💾 Available models: {len(self.available_models)}")
+        print(f"   🔗 Provider: Local Ollama Server")
     
     def switch_model(self, model_name):
         """Switch to different Ollama model"""
@@ -395,6 +401,18 @@ class OllamaRSecure:
         
         return summary
     
+    def start_monitoring(self):
+        """Start monitoring in background thread"""
+        if not self.running:
+            self.running = True
+            monitor_thread = threading.Thread(target=self.monitor_loop, daemon=True)
+            monitor_thread.start()
+            self.logger.info("🔄 Monitoring thread started")
+            return monitor_thread
+        else:
+            self.logger.warning("⚠️ Monitoring is already running")
+            return None
+    
     def start(self):
         """Start Ollama RSecure"""
         self.logger.info("🛡️  Starting RSecure with Ollama integration...")
@@ -404,14 +422,10 @@ class OllamaRSecure:
             self.logger.error("❌ Cannot connect to Ollama. Please ensure Ollama is running.")
             return False
         
-        self.running = True
-        
-        # Start monitoring loop
-        monitor_thread = threading.Thread(target=self.monitor_loop, daemon=True)
-        monitor_thread.start()
+        self.start_monitoring()
         
         self.logger.info("✅ RSecure Ollama integration started successfully")
-        return monitor_thread
+        return True
     
     def stop(self):
         """Stop Ollama RSecure"""

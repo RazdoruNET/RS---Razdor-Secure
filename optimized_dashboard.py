@@ -24,6 +24,7 @@ from modules.defense.escalating_retaliation import EscalatingRetaliationSystem
 from modules.detection.cvu_intelligence import RSecureCVU
 from modules.detection.system_detector import SystemDetector
 from modules.defense.network_defense import RSecureNetworkDefense
+from scripts.ollama_rsecure import OllamaRSecure
 
 # Ultra-optimized HTML template
 OPTIMIZED_DASHBOARD_HTML = """
@@ -202,6 +203,38 @@ OPTIMIZED_DASHBOARD_HTML = """
         </div>
 
         <div class="card">
+            <h3>�️ ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК</h3>
+            <div class="metric">
+                <span class="metric-label">Статус:</span>
+                <span class="metric-value" id="llmStatus">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Сервер:</span>
+                <span class="metric-value" id="serverType">Local</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Анализов:</span>
+                <span class="metric-value" id="llmAnalyses">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Угроз найдено:</span>
+                <span class="metric-value" id="llmThreats">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Запросов к Ollama:</span>
+                <span class="metric-value" id="ollamaRequests">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">AI проверено:</span>
+                <span class="metric-value" id="aiVerified">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Модель:</span>
+                <span class="metric-value" id="llmModel">--</span>
+            </div>
+        </div>
+
+        <div class="card">
             <h3>🎯 АКТИВНЫЕ УГРОЗЫ</h3>
             <div class="threat-list" id="threatList">
                 <div style="text-align: center; opacity: 0.6; padding: 20px;">
@@ -295,6 +328,9 @@ OPTIMIZED_DASHBOARD_HTML = """
                 effectiveness = 100;
             }
             document.getElementById('effectiveness').textContent = effectiveness + '%';
+
+            // Update LLM stats
+            updateLLMStats();
 
             // Calculate average level
             if (activeThreats.length > 0) {
@@ -402,6 +438,43 @@ OPTIMIZED_DASHBOARD_HTML = """
             updateAttackQueue();
         }
 
+        function updateLLMStats() {
+            fetch('/api/llm_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.stats;
+                        
+                        // Update LLM status
+                        const llmStatusEl = document.getElementById('llmStatus');
+                        if (stats.llm_active) {
+                            llmStatusEl.textContent = '🟢 Активен';
+                            llmStatusEl.className = 'metric-value success';
+                        } else {
+                            llmStatusEl.textContent = '🔴 Неактивен';
+                            llmStatusEl.className = 'metric-value danger';
+                        }
+                        
+                        // Update metrics
+                        document.getElementById('llmAnalyses').textContent = stats.llm_analyses;
+                        document.getElementById('llmThreats').textContent = stats.threats_detected;
+                        document.getElementById('ollamaRequests').textContent = stats.ollama_requests;
+                        document.getElementById('aiVerified').textContent = stats.ai_verified_threats;
+                        document.getElementById('llmModel').textContent = stats.current_model;
+                        
+                        // Update server type info
+                        if (stats.server_type) {
+                            document.getElementById('serverType').textContent = stats.server_type === 'local' ? 'Local' : 'Docker';
+                        } else {
+                            document.getElementById('serverType').textContent = 'Local';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения LLM статистики:', error);
+                });
+        }
+
         function emergencyStop() {
             addLog('CRITICAL', '🛑 ЭКСТРЕННЫЙ СТОП СИСТЕМЫ');
             if (updateInterval) {
@@ -468,6 +541,7 @@ class OptimizedTurboDashboard:
         self.cvu_intelligence = None
         self.system_detector = None
         self.network_defense = None
+        self.llm_defender = None
         
         # Setup
         self.setup_routes()
@@ -531,6 +605,47 @@ class OptimizedTurboDashboard:
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)})
         
+        @self.app.route('/api/llm_stats')
+        def get_llm_stats():
+            try:
+                if self.llm_defender:
+                    stats = {
+                        'llm_active': True,
+                        'events_processed': getattr(self.llm_defender.metrics, 'events_processed', 0),
+                        'llm_analyses': getattr(self.llm_defender.metrics, 'llm_analyses', 0),
+                        'threats_detected': getattr(self.llm_defender.metrics, 'threats_detected', 0),
+                        'ollama_requests': getattr(self.llm_defender.metrics, 'ollama_requests', 0),
+                        'current_model': getattr(self.llm_defender, 'current_model', 'unknown'),
+                        'available_models': len(getattr(self.llm_defender, 'available_models', [])),
+                        'uptime': str(datetime.now() - getattr(self.llm_defender.metrics, 'start_time', datetime.now())),
+                        'security_events': len(getattr(self.llm_defender, 'security_events', [])),
+                        'ai_verified_threats': len([t for t in self.threats_detected if t.get('ai_verified', False)]),
+                        'server_type': getattr(self.llm_defender, 'server_type', 'local'),
+                        'provider': 'Local Ollama Server'
+                    }
+                else:
+                    stats = {
+                        'llm_active': False,
+                        'events_processed': 0,
+                        'llm_analyses': 0,
+                        'threats_detected': 0,
+                        'ollama_requests': 0,
+                        'current_model': 'N/A',
+                        'available_models': 0,
+                        'uptime': 'N/A',
+                        'security_events': 0,
+                        'ai_verified_threats': 0,
+                        'server_type': 'local',
+                        'provider': 'Local Ollama Server (неактивен)'
+                    }
+                
+                return jsonify({
+                    'success': True,
+                    'stats': stats
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
         @self.app.route('/api/force_escalation', methods=['POST'])
         def force_escalation():
             try:
@@ -589,6 +704,7 @@ class OptimizedTurboDashboard:
                 'attack_timeout': 120,
                 'network_attacks_enabled': True,
                 'psychological_enabled': True,
+                'quantum_enabled': False,
                 'require_confirmation': False,
                 'log_all_actions': True
             }
@@ -615,22 +731,46 @@ class OptimizedTurboDashboard:
             
             # Initialize CVU Intelligence
             cvu_config = {
-                'save_dir': './data/vulnerabilities',
-                'interval_min': 5,
-                'max_results': 200,
-                'days_back': 3,
-                'request_timeout': 15,
-                'auto_classify': True,
-                'enable_kev': True,
-                'enable_nvd': True,
-                'enable_ghsa': True
+                'update_interval': 300,  # 5 minutes
+                'sources': ['nvd', 'ghsa', 'cisa_kev'],
+                'max_vulnerabilities': 1000,
+                'enable_real_time': True,
+                'cache_duration': 3600
             }
             
             self.cvu_intelligence = RSecureCVU(cvu_config)
-            self.cvu_intelligence.start_updates()
+            self.cvu_intelligence.start_intelligence()
+            self.logger.critical("📡 CVU Intelligence активирована")
             
-            self.logger.critical("🔥 Оптимизированная система инициализирована")
-            self.logger.critical("🎯 РЕАЛЬНОЕ СКАНИРОВАНИЕ СЕТИ АКТИВИРОВАНО")
+            # Initialize LLM Defender
+            try:
+                self.llm_defender = OllamaRSecure()
+                
+                # Check local Ollama status first
+                if self.llm_defender.check_ollama_status():
+                    self.llm_defender.running = True
+                    # Set appropriate model from local server
+                    if 'rsecure-security:latest' in self.llm_defender.available_models:
+                        self.llm_defender.current_model = 'rsecure-security:latest'
+                    elif 'rsecure-analyst:latest' in self.llm_defender.available_models:
+                        self.llm_defender.current_model = 'rsecure-analyst:latest'
+                    else:
+                        self.llm_defender.current_model = self.llm_defender.available_models[0] if self.llm_defender.available_models else 'qwen2.5-coder:1.5b'
+                    
+                    # Start monitoring 
+                    self.llm_defender.start()
+                    self.logger.critical(f"�️ ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК АКТИВИРОВАН")
+                    self.logger.critical(f"🤖 Модель: {self.llm_defender.current_model}")
+                    self.logger.critical(f"📦 Доступно моделей: {len(self.llm_defender.available_models)}")
+                else:
+                    self.logger.warning("�️ Локальный Ollama сервер недоступен - LLM защитник неактивен")
+                    self.llm_defender = None
+            except Exception as e:
+                self.logger.error(f"Ошибка активации локального LLM защитника: {e}")
+                self.llm_defender = None
+            
+            self.logger.critical("🔥 RSECURE OPTIMIZED TURBO СИСТЕМА ЗАПУЩЕНА")
+            self.logger.critical("⚡ Все боевые модули активированы - готовность к эскалации")
             
         except Exception as e:
             self.logger.error(f"Ошибка инициализации: {e}")
@@ -696,6 +836,41 @@ class OptimizedTurboDashboard:
             severity = vulnerability.get('severity', 'medium')
             confidence = vulnerability.get('confidence', 0.8)
         
+        # LLM Analysis
+        llm_analysis = None
+        if self.llm_defender:
+            try:
+                # Create threat data for LLM analysis
+                threat_data = {
+                    'ip': ip,
+                    'attack_type': attack_type,
+                    'severity': severity,
+                    'vulnerability': vulnerability.get('id', 'CVE-UNKNOWN'),
+                    'cvss_score': vulnerability.get('cvss_score', 5.0),
+                    'attack_vector': vulnerability.get('summary', 'Unknown attack vector'),
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                # Use process_events method from OllamaRSecure
+                llm_events = [{
+                    'type': 'security_threat',
+                    'source_ip': ip,
+                    'attack_type': attack_type,
+                    'severity': severity,
+                    'vulnerability': vulnerability.get('id', 'CVE-UNKNOWN'),
+                    'cvss_score': vulnerability.get('cvss_score', 5.0),
+                    'attack_vector': vulnerability.get('summary', 'Unknown attack vector'),
+                    'timestamp': datetime.now().isoformat()
+                }]
+                
+                processed_events = self.llm_defender.process_events(llm_events)
+                if processed_events:
+                    llm_analysis = processed_events[0].get('analysis', {})
+                    self.logger.critical(f"🤖 LLM анализ угрозы {ip}: {llm_analysis.get('threat_level', 'unknown')}")
+                
+            except Exception as e:
+                self.logger.error(f"Ошибка LLM анализа: {e}")
+        
         threat = {
             'ip': ip,
             'type': attack_type,
@@ -719,7 +894,9 @@ class OptimizedTurboDashboard:
             'cvu_data': vulnerability,
             'source': 'network_defense' if real_threats else 'cvu_intelligence',
             'real_threat': True,
-            'network_detected': len(real_threats) > 0
+            'network_detected': len(real_threats) > 0,
+            'llm_analysis': llm_analysis,
+            'ai_verified': llm_analysis is not None
         }
         
         self.threats_detected.append(threat)
