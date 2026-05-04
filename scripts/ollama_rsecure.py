@@ -81,6 +81,7 @@ class OllamaRSecure:
         """Analyze security event with Ollama"""
         try:
             self.metrics['ollama_requests'] += 1
+            self.logger.info(f"🤖 Запрос к Ollama #{self.metrics['ollama_requests']}: {analysis_type}")
             
             # Prepare prompt based on analysis type
             if analysis_type == "security":
@@ -138,15 +139,21 @@ class OllamaRSecure:
             }
             
             # Make API request to Ollama
+            self.logger.info(f"📤 Отправка запроса к {self.ollama_url}/api/generate с моделью {self.current_model}")
+            
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
                 timeout=60
             )
             
+            self.logger.info(f"📥 Получен ответ HTTP {response.status_code}")
+            
             if response.status_code == 200:
                 result = response.json()
                 analysis_text = result.get('response', '')
+                
+                self.logger.info(f"📝 Ответ от Ollama: {analysis_text[:200]}...")
                 
                 # Try to parse JSON response
                 try:
@@ -156,21 +163,28 @@ class OllamaRSecure:
                     if start_idx != -1 and end_idx != -1:
                         json_str = analysis_text[start_idx:end_idx]
                         analysis = json.loads(json_str)
+                        self.logger.info(f"✅ JSON успешно разобран: {list(analysis.keys())}")
                     else:
                         analysis = {"raw_analysis": analysis_text}
-                except json.JSONDecodeError:
-                    analysis = {"raw_analysis": analysis_text}
+                        self.logger.warning("⚠️ Не найден JSON в ответе, использован raw_analysis")
+                except json.JSONDecodeError as e:
+                    analysis = {"raw_analysis": analysis_text, "json_error": str(e)}
+                    self.logger.warning(f"⚠️ Ошибка парсинга JSON: {e}")
                 
                 self.metrics['llm_analyses'] += 1
-                self.logger.info(f"🧠 LLM analysis completed for {analysis_type}")
+                self.logger.info(f"🧠 LLM анализ #{self.metrics['llm_analyses']} завершен для {analysis_type}")
                 return analysis
                 
             else:
-                self.logger.error(f"❌ Ollama request failed: HTTP {response.status_code}")
+                error_text = response.text if response.text else "No error text"
+                self.logger.error(f"❌ Запрос к Ollama провален: HTTP {response.status_code}")
+                self.logger.error(f"📄 Текст ошибки: {error_text[:200]}")
                 return None
                 
         except Exception as e:
-            self.logger.error(f"❌ LLM analysis error: {e}")
+            self.logger.error(f"❌ Критическая ошибка LLM анализа: {e}")
+            import traceback
+            self.logger.error(f"🔍 Traceback: {traceback.format_exc()}")
             return None
     
     def collect_system_events(self):

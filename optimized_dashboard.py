@@ -44,7 +44,7 @@ OPTIMIZED_DASHBOARD_HTML = """
         .dashboard { 
             display: grid; 
             grid-template-columns: 1fr 1fr 1fr 1fr;
-            grid-template-rows: auto 1fr auto;
+            grid-template-rows: auto auto 1fr;
             gap: 4px; 
             height: 100vh; 
             padding: 4px;
@@ -64,6 +64,7 @@ OPTIMIZED_DASHBOARD_HTML = """
             border-radius: 4px; 
             padding: 8px; 
             overflow: hidden;
+            height: 200px;
         }
         .card h3 { font-size: 11px; margin-bottom: 6px; color: #ff6b6b; }
         .metric { display: flex; justify: space-between; margin: 2px 0; font-size: 10px; }
@@ -96,7 +97,6 @@ OPTIMIZED_DASHBOARD_HTML = """
             border: 1px solid rgba(255,255,255,0.1); 
             border-radius: 4px; 
             padding: 6px; 
-            max-height: 80px; 
             overflow-y: auto; 
             font-family: monospace; 
             font-size: 8px;
@@ -784,17 +784,21 @@ class OptimizedTurboDashboard:
             
             while True:
                 try:
-                    if random.random() < 0.8:  # 80% chance
+                    # Always generate threat for testing
+                    self._generate_threat()
+                    
+                    # Generate extra threats randomly
+                    if random.random() < 0.3:  # 30% chance for extra threat
                         self._generate_threat()
                     
                     # Clean up old threats
-                    if len(self.threats_detected) > 10:
-                        self.threats_detected = self.threats_detected[-10:]
+                    if len(self.threats_detected) > 15:
+                        self.threats_detected = self.threats_detected[-15:]
                     
-                    if len(self.pending_attacks) > 5:
-                        self.pending_attacks = self.pending_attacks[-5:]
+                    if len(self.pending_attacks) > 10:
+                        self.pending_attacks = self.pending_attacks[-10:]
                     
-                    time.sleep(1.5)  # 1.5 second interval
+                    time.sleep(1.0)  # 1 second interval for more activity
                     
                 except Exception as e:
                     self.logger.error(f"Ошибка симуляции: {e}")
@@ -807,39 +811,52 @@ class OptimizedTurboDashboard:
         """Generate threat from REAL network scanning and CVU intelligence"""
         import random
         
+        self.logger.info("🔄 Генерация новой угрозы...")
+        
         # Get REAL threats from network defense
         real_threats = []
         if self.network_defense:
             try:
                 network_threats = self.network_defense.get_threat_summary()
                 real_threats.extend(network_threats)
+                self.logger.info(f"📡 Получено {len(network_threats)} сетевых угроз")
             except Exception as e:
                 self.logger.error(f"Ошибка получения сетевых угроз: {e}")
+        else:
+            self.logger.warning("⚠️ Сетевая защита не инициализирована")
         
         # Get real vulnerability data from CVU
         vulnerability = self._get_real_vulnerability()
         
-        # Use real network threats if available, otherwise generate
-        if real_threats:
-            # Use real network threat data
-            network_threat = random.choice(real_threats)
-            ip = network_threat['source_ip']
-            attack_type = network_threat['attack_type']
-            severity = network_threat['severity']
-            confidence = network_threat['confidence']
-            
-            self.logger.critical(f"🚨 ОБНАРУЖЕНА РЕАЛЬНАЯ СЕТЕВАЯ УГРОЗА: {attack_type} от {ip}")
+        # Always generate simulated threat for testing
+        ip = f"192.168.{random.randint(1,255)}.{random.randint(1,255)}"
+        attack_type = random.choice(['network', 'system', 'psychological'])
+        
+        # More critical threats for testing
+        severity_weights = ['low'] + ['medium'] * 2 + ['high'] * 3 + ['critical'] * 2
+        severity = random.choice(severity_weights)
+        confidence = random.uniform(0.7, 0.95)
+        
+        # If we have real threats, use them occasionally
+        if real_threats and random.random() < 0.3:  # 30% chance for real threat
+            try:
+                network_threat = random.choice(real_threats)
+                ip = network_threat.get('source_ip', ip)
+                attack_type = network_threat.get('attack_type', attack_type)
+                severity = network_threat.get('severity', severity)
+                confidence = network_threat.get('confidence', confidence)
+                self.logger.critical(f"🚨 ОБНАРУЖЕНА РЕАЛЬНАЯ СЕТЕВАЯ УГРОЗА: {attack_type} от {ip}")
+            except Exception as e:
+                self.logger.error(f"Ошибка использования реальной угрозы: {e}")
         else:
-            # Fallback to simulated but realistic threat
-            ip = f"192.168.{random.randint(1,255)}.{random.randint(1,255)}"
-            attack_type = self._classify_threat_type(vulnerability)
-            severity = vulnerability.get('severity', 'medium')
-            confidence = vulnerability.get('confidence', 0.8)
+            self.logger.info(f"🎭 СИМУЛЯЦИЯ УГРОЗЫ: {attack_type} от {ip}")
         
         # LLM Analysis
         llm_analysis = None
         if self.llm_defender:
             try:
+                self.logger.info(f"🧠 Начинаю LLM анализ угрозы от {ip}")
+                
                 # Create threat data for LLM analysis
                 threat_data = {
                     'ip': ip,
@@ -866,10 +883,18 @@ class OptimizedTurboDashboard:
                 processed_events = self.llm_defender.process_events(llm_events)
                 if processed_events:
                     llm_analysis = processed_events[0].get('analysis', {})
-                    self.logger.critical(f"🤖 LLM анализ угрозы {ip}: {llm_analysis.get('threat_level', 'unknown')}")
+                    threat_level = llm_analysis.get('threat_level', 'unknown')
+                    self.logger.critical(f"🤖 LLM анализ угрозы {ip}: {threat_level}")
+                    self.logger.info(f"📊 Анализ: {llm_analysis.get('analysis', 'No analysis')[:100]}...")
+                else:
+                    self.logger.warning(f"⚠️ LLM не вернул анализ для угрозы {ip}")
                 
             except Exception as e:
-                self.logger.error(f"Ошибка LLM анализа: {e}")
+                self.logger.error(f"❌ Ошибка LLM анализа: {e}")
+                import traceback
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
+        else:
+            self.logger.warning("⚠️ LLM защитник недоступен - пропускаю анализ")
         
         threat = {
             'ip': ip,
