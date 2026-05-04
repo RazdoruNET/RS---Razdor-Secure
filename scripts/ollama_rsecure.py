@@ -28,7 +28,7 @@ class OllamaRSecure:
         # Ollama configuration
         self.ollama_url = "http://localhost:11434"
         self.available_models = []
-        self.current_model = "qwen2.5-coder:1.5b"
+        self.current_model = "rsecure-security"
         
         # Security events
         self.security_events = []
