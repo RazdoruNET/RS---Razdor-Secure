@@ -217,6 +217,90 @@ class PipelineChain:
     def execute(self, target_host: str, target_port: int = 443) -> PipelineResult:
         """Выполнение цепочки - должен быть переопределен"""
         raise NotImplementedError
+    
+    def resolve_hostname_for_chain(self, hostname: str) -> Optional[str]:
+        """Резолвинг hostname для цепочки через системный DNS"""
+        try:
+            return socket.gethostbyname(hostname)
+        except socket.gaierror:
+            # Если системный DNS не работает, пробуем прямые запросы
+            try:
+                # Пробуем разрешить через Google DNS (прямой запрос)
+                return self._direct_dns_query(hostname, '8.8.8.8')
+            except:
+                try:
+                    # Пробуем Cloudflare DNS
+                    return self._direct_dns_query(hostname, '1.1.1.1')
+                except:
+                    return None
+        except:
+            return None
+    
+    def _direct_dns_query(self, hostname: str, dns_server: str) -> Optional[str]:
+        """Прямой DNS запрос к серверу"""
+        try:
+            # Создаем UDP сокет для DNS запроса
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(2)
+            
+            # Простая DNS query для A записи
+            query = self._build_dns_query(hostname)
+            sock.sendto(query, (dns_server, 53))
+            
+            response, _ = sock.recvfrom(512)
+            sock.close()
+            
+            # Парсим ответ и извлекаем IP
+            return self._parse_dns_response(response, hostname)
+            
+        except:
+            return None
+    
+    def _build_dns_query(self, hostname: str) -> bytes:
+        """Создание DNS запроса"""
+        # Упрощенный DNS запрос для A записи
+        query = bytearray()
+        
+        # Header
+        query.extend(b'\x00\x01')  # ID
+        query.extend(b'\x01\x00')  # Flags
+        query.extend(b'\x00\x01')  # Questions
+        query.extend(b'\x00\x00')  # Answer RRs
+        query.extend(b'\x00\x00')  # Authority RRs
+        query.extend(b'\x00\x00')  # Additional RRs
+        
+        # Question
+        query.extend(b'\x00')  # QTYPE: A
+        query.extend(b'\x01')  # QCLASS: IN
+        
+        # Hostname
+        for part in hostname.split('.'):
+            if part:
+                query.append(len(part))
+                query.extend(part.encode())
+        query.extend(b'\x00')  # End of hostname
+        
+        return bytes(query)
+    
+    def _parse_dns_response(self, response: bytes, hostname: str) -> Optional[str]:
+        """Парсинг DNS ответа"""
+        try:
+            # Упрощенный парсинг - ищем 4 байта IP адреса
+            # Пропускаем header (12 байт)
+            if len(response) < 16:
+                return None
+                
+            # Ищем IP адрес в ответе (простой поиск)
+            for i in range(12, len(response) - 4):
+                # Проверяем похожий на IP паттерн
+                if all(0 <= b <= 255 for b in response[i:i+4]):
+                    ip = '.'.join(str(b) for b in response[i:i+4])
+                    # Простая проверка что это не локальный адрес
+                    if not ip.startswith('127.') and not ip.startswith('0.'):
+                        return ip
+            return None
+        except:
+            return None
 
 
 class GovernmentFragmentChain(PipelineChain):
@@ -232,8 +316,18 @@ class GovernmentFragmentChain(PipelineChain):
         try:
             print(f"   🟢 Запускаю цепочку '{self.name}'...")
             
-            # Этап 1: Создаем фрагментированный сокет
-            sock = self.packet_manipulator.create_fragmented_socket(target_host, target_port)
+            # Этап 1: Резолвим hostname
+            target_ip = self.resolve_hostname_for_chain(target_host)
+            if not target_ip:
+                return PipelineResult(
+                    success=False,
+                    stage_completed="dns_resolution",
+                    error=f"Не удалось разрешить {target_host}",
+                    duration=0.0
+                )
+            
+            # Этап 2: Создаем фрагментированный сокет
+            sock = self.packet_manipulator.create_fragmented_socket(target_ip, target_port)
             
             # Этап 2: Устанавливаем маленький размер окна
             self.packet_manipulator.set_tcp_window_size(sock, 8)
@@ -709,6 +803,7 @@ class DPIBypassCombinerV2:
     def __init__(self):
         self.auto_switcher = AutoSwitcher()
         self.whitelist_engine = WhitelistEngine()
+        self.dns_servers = ['8.8.8.8', '1.1.1.1', '208.67.222.222']  # Google, Cloudflare, OpenDNS
         
     def bypass_target(self, target_host: str, target_port: int = 443) -> Dict[str, Any]:
         """Основной метод обхода цели"""
@@ -740,13 +835,100 @@ class DPIBypassCombinerV2:
         
         return results
     
+    def resolve_hostname(self, hostname: str) -> Optional[str]:
+        """Резолвинг hostname через системный DNS"""
+        try:
+            return socket.gethostbyname(hostname)
+        except socket.gaierror:
+            # Если системный DNS не работает, пробуем прямые запросы
+            try:
+                return self._direct_dns_query(hostname, '8.8.8.8')
+            except:
+                try:
+                    return self._direct_dns_query(hostname, '1.1.1.1')
+                except:
+                    return None
+        except:
+            return None
+    
+    def _direct_dns_query(self, hostname: str, dns_server: str) -> Optional[str]:
+        """Прямой DNS запрос к серверу"""
+        try:
+            # Создаем UDP сокет для DNS запроса
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(2)
+            
+            # Простая DNS query для A записи
+            query = self._build_dns_query(hostname)
+            sock.sendto(query, (dns_server, 53))
+            
+            response, _ = sock.recvfrom(512)
+            sock.close()
+            
+            # Парсим ответ и извлекаем IP
+            return self._parse_dns_response(response, hostname)
+            
+        except:
+            return None
+    
+    def _build_dns_query(self, hostname: str) -> bytes:
+        """Создание DNS запроса"""
+        # Упрощенный DNS запрос для A записи
+        query = bytearray()
+        
+        # Header
+        query.extend(b'\x00\x01')  # ID
+        query.extend(b'\x01\x00')  # Flags
+        query.extend(b'\x00\x01')  # Questions
+        query.extend(b'\x00\x00')  # Answer RRs
+        query.extend(b'\x00\x00')  # Authority RRs
+        query.extend(b'\x00\x00')  # Additional RRs
+        
+        # Question
+        query.extend(b'\x00')  # QTYPE: A
+        query.extend(b'\x01')  # QCLASS: IN
+        
+        # Hostname
+        for part in hostname.split('.'):
+            if part:
+                query.append(len(part))
+                query.extend(part.encode())
+        query.extend(b'\x00')  # End of hostname
+        
+        return bytes(query)
+    
+    def _parse_dns_response(self, response: bytes, hostname: str) -> Optional[str]:
+        """Парсинг DNS ответа"""
+        try:
+            # Упрощенный парсинг - ищем 4 байта IP адреса
+            # Пропускаем header (12 байт)
+            if len(response) < 16:
+                return None
+                
+            # Ищем IP адрес в ответе (простой поиск)
+            for i in range(12, len(response) - 4):
+                # Проверяем похожий на IP паттерн
+                if all(0 <= b <= 255 for b in response[i:i+4]):
+                    ip = '.'.join(str(b) for b in response[i:i+4])
+                    # Простая проверка что это не локальный адрес
+                    if not ip.startswith('127.') and not ip.startswith('0.'):
+                        return ip
+            return None
+        except:
+            return None
+    
     def _check_direct_access(self, target_host: str, target_port: int) -> bool:
         """Проверка прямого доступа к цели"""
         try:
+            # Резолвим hostname
+            ip = self.resolve_hostname(target_host)
+            if not ip:
+                return False
+            
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             
-            result = sock.connect_ex((target_host, target_port))
+            result = sock.connect_ex((ip, target_port))
             sock.close()
             
             return result == 0
