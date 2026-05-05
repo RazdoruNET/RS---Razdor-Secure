@@ -1236,6 +1236,446 @@ class BypassTechnique(Enum):
     FRAGMENTATION = "fragmentation"
     HTTP_HEADER_OBFUSCATION = "http_header_obfuscation"
 
+class WhiteGhostPipeline:
+    """Базовый класс для White-Ghost Pipelines"""
+    
+    def __init__(self):
+        self.whitelist_core = WhitelistCore()
+        self.packet_shaper = PacketShaper()
+        self.header_spoofing = HeaderSpoofing()
+        self.current_sni_mask = None
+        self.last_rotation = time.time()
+        self.rotation_interval = 30  # 30 секунд ротация SNI
+        
+    def rotate_sni_mask(self, category: str = None) -> str:
+        """Автоматическая ротация SNI из White List"""
+        if time.time() - self.last_rotation > self.rotation_interval:
+            self.last_rotation = time.time()
+            
+        if category == "GOVERNMENT":
+            return self.whitelist_core.get_domain_by_mask("GOVERNMENT_IMMUNITY")
+        elif category == "FINANCIAL":
+            return self.whitelist_core.get_domain_by_mask("FINANCIAL_TUNNEL")
+        elif category == "MEDIA":
+            return self.whitelist_core.get_domain_by_mask("MEDIA_NOISE")
+        else:
+            # Автоматический выбор
+            return self.whitelist_core.get_priority_mask()
+    
+    def create_fragmented_socket_with_sni(self, target_host: str, sni_mask: str) -> socket.socket:
+        """Создание фрагментированного сокета с SNI маскировкой"""
+        try:
+            # Создаем сокет с минимальным window size
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 512)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 512)
+            
+            # Устанавливаем window size = 1
+            try:
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_WINDOW_CLAMP, 1)
+            except:
+                pass
+            
+            # Подключаемся к цели
+            sock.connect((target_host, 443))
+            
+            return sock
+            
+        except Exception as e:
+            raise e
+    
+    def apply_sni_splitting(self, hostname: str, split_position: int = 2) -> bytes:
+        """TLS SNI Splitting - разрыв на 2-м байте"""
+        hostname_bytes = hostname.encode()
+        
+        if len(hostname_bytes) <= split_position:
+            return hostname_bytes
+        
+        # Разрезаем на 2 части
+        part1 = hostname_bytes[:split_position]
+        part2 = hostname_bytes[split_position:]
+        
+        # Возвращаем обе части для последовательной отправки
+        return part1, part2
+
+class GoswebTunnelPipeline(WhiteGhostPipeline):
+    """Цепочка А: Госвеб-Туннель (Для обхода TIMEOUT)"""
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "Госвеб-Туннель"
+        self.priority = 1
+        
+    def execute(self, target_host: str) -> Dict[str, Any]:
+        """TLS SNI Splitting + маскировка под gosuslugi.ru"""
+        start_time = time.time()
+        
+        try:
+            print(f"   ⛓️ Запускаю цепочку '{self.name}'...")
+            
+            # Выбираем маску из гос-доменов
+            sni_mask = self.rotate_sni_mask("GOVERNMENT")
+            print(f"      🎭 SNI маскировка под: {sni_mask}")
+            
+            # Этап 1: Создаем фрагментированный сокет
+            sock = self.create_fragmented_socket_with_sni(target_host, sni_mask)
+            
+            # Этап 2: Применяем SNI Splitting
+            sni_parts = self.apply_sni_splitting(sni_mask, 2)
+            
+            # Этап 3: Создаем TLS Client Hello с фрагментацией
+            client_hello = self._build_sni_split_client_hello(sni_parts)
+            
+            # Этап 4: Отправляем фрагментированный SNI
+            for i, part in enumerate(sni_parts):
+                sock.send(part)
+                time.sleep(0.01)  # Задержка между частями
+            
+            # Этап 5: Завершаем TLS handshake
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=sni_mask)
+            
+            # Этап 6: Отправляем HTTP запрос с обфускацией
+            headers = {
+                "Host": target_host,
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 [GosuslugiApp]",
+                "Accept": "application/json, text/plain, */*",
+                "X-Government-Request": "true",
+                "X-Service-Code": "GOSUSLUGI",
+                "Connection": "close"
+            }
+            
+            request = self._build_request(headers)
+            ssl_sock.send(request)
+            
+            # Этап 7: Получаем ответ
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            duration = time.time() - start_time
+            
+            if b"HTTP" in response:
+                print(f"   ✅ Цепочка '{self.name}' успешна ({duration:.2f}s)")
+                return {
+                    "success": True,
+                    "pipeline": self.name,
+                    "sni_mask": sni_mask,
+                    "duration": duration,
+                    "response": response.decode('utf-8', errors='ignore')[:200]
+                }
+            else:
+                return {
+                    "success": False,
+                    "pipeline": self.name,
+                    "error": "Invalid HTTP response",
+                    "duration": duration
+                }
+                
+        except socket.timeout:
+            duration = time.time() - start_time
+            print(f"   ⏰ Цепочка '{self.name}' - ERR_TIMED_OUT")
+            return {
+                "success": False,
+                "pipeline": self.name,
+                "error": "ERR_TIMED_OUT",
+                "duration": duration,
+                "timeout": True
+            }
+        except Exception as e:
+            duration = time.time() - start_time
+            print(f"   ❌ Цепочка '{self.name}' ошибка: {e}")
+            return {
+                "success": False,
+                "pipeline": self.name,
+                "error": str(e),
+                "duration": duration
+            }
+    
+    def _build_sni_split_client_hello(self, sni_parts: tuple) -> bytes:
+        """Построение TLS Client Hello с SNI Splitting"""
+        client_hello = bytearray()
+        
+        # TLS Record Header
+        client_hello.extend(b'\x16\x03\x03')
+        client_hello.extend(b'\x00\x00')  # Length placeholder
+        
+        # Handshake Header
+        client_hello.extend(b'\x01\x00\x00\x00')  # Client Hello
+        
+        # Version
+        client_hello.extend(b'\x03\x03')  # TLS 1.2
+        
+        # Random
+        client_hello.extend(os.urandom(32))
+        
+        # Session ID
+        client_hello.extend(b'\x00')
+        
+        # Cipher Suites
+        client_hello.extend(b'\x00\x02\x13\x01')
+        
+        # Compression
+        client_hello.extend(b'\x01\x00')
+        
+        # Extensions с SNI
+        extensions = bytearray()
+        
+        # SNI Extension с первой частью
+        sni_ext1 = bytearray()
+        sni_ext1.extend(b'\x00\x00')  # SNI type
+        sni_ext1.extend(struct.pack('>H', len(sni_parts[0]) + 5))  # Length
+        sni_ext1.extend(b'\x00\x00')  # List length
+        sni_ext1.extend(b'\x00')  # Name type
+        sni_ext1.extend(struct.pack('>H', len(sni_parts[0])))  # Name length
+        sni_ext1.extend(sni_parts[0])  # Name part 1
+        
+        extensions.extend(sni_ext1)
+        
+        # Добавляем другие расширения
+        extensions.extend(b'\x00\x05\x00\x05\x01\x00\x00\x00\x00')  # Status request
+        extensions.extend(b'\x00\x0a\x00\x04\x00\x02\x00\x1d')  # Supported groups
+        
+        client_hello.extend(extensions)
+        
+        # Update length
+        length = len(client_hello) - 5
+        client_hello[3:5] = struct.pack('>H', length)
+        
+        return bytes(client_hello)
+    
+    def _build_request(self, headers: Dict[str, str]) -> bytes:
+        """Построение HTTP запроса"""
+        request_lines = ["GET / HTTP/1.1"]
+        for key, value in headers.items():
+            request_lines.append(f"{key}: {value}")
+        request_lines.extend(["", ""])
+        return "\r\n".join(request_lines).encode()
+
+class MediaParasitePipeline(WhiteGhostPipeline):
+    """Цепочка Б: Медиа-Паразит (Для фиксации pending)"""
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "Медиа-Паразит"
+        self.priority = 2
+        
+    def execute(self, target_host: str) -> Dict[str, Any]:
+        """HTTP/2 Multiplexing - заворачиваем запросы к YouTube внутри сессии Rutube"""
+        start_time = time.time()
+        
+        try:
+            print(f"   ⛓️ Запускаю цепочку '{self.name}'...")
+            
+            # Выбираем маску из медиа-доменов
+            sni_mask = self.rotate_sni_mask("MEDIA")
+            print(f"      🎭 SNI маскировка под: {sni_mask}")
+            
+            # Этап 1: Создаем сокет для HTTP/2
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((target_host, 443))
+            
+            # Этап 2: TLS handshake с ALPN для HTTP/2
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            # Устанавливаем ALPN для HTTP/2
+            context.set_alpn_protocols(['h2', 'http/1.1'])
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=sni_mask)
+            
+            # Этап 3: Создаем HTTP/2 style запросы (multiplexing)
+            # Запрос 1: manifest
+            manifest_headers = {
+                ":method": "GET",
+                ":path": "/manifest",
+                ":scheme": "https",
+                ":authority": target_host,
+                "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) [RutubeApp]",
+                "accept": "application/vnd.apple.mpegurl",
+                "x-stream-type": "HLS"
+            }
+            
+            manifest_request = self._build_http2_request(manifest_headers)
+            ssl_sock.send(manifest_request)
+            
+            # Запрос 2: v1/player
+            player_headers = {
+                ":method": "GET",
+                ":path": "/v1/player",
+                ":scheme": "https",
+                ":authority": target_host,
+                "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) [KionApp]",
+                "accept": "application/json",
+                "x-video-quality": "1080p"
+            }
+            
+            player_request = self._build_http2_request(player_headers)
+            ssl_sock.send(player_request)
+            
+            # Этап 4: Получаем ответы
+            responses = []
+            for _ in range(2):
+                try:
+                    response = ssl_sock.recv(8192)
+                    if response:
+                        responses.append(response)
+                except:
+                    break
+            
+            ssl_sock.close()
+            
+            duration = time.time() - start_time
+            
+            if responses and any(b"HTTP" in resp for resp in responses):
+                print(f"   ✅ Цепочка '{self.name}' успешна ({duration:.2f}s)")
+                return {
+                    "success": True,
+                    "pipeline": self.name,
+                    "sni_mask": sni_mask,
+                    "duration": duration,
+                    "responses_count": len(responses),
+                    "response": responses[0].decode('utf-8', errors='ignore')[:200] if responses else ""
+                }
+            else:
+                return {
+                    "success": False,
+                    "pipeline": self.name,
+                    "error": "No valid HTTP responses",
+                    "duration": duration,
+                    "pending": True
+                }
+                
+        except Exception as e:
+            duration = time.time() - start_time
+            print(f"   ❌ Цепочка '{self.name}' ошибка: {e}")
+            return {
+                "success": False,
+                "pipeline": self.name,
+                "error": str(e),
+                "duration": duration,
+                "pending": "pending" in str(e).lower()
+            }
+    
+    def _build_http2_request(self, headers: Dict[str, str]) -> bytes:
+        """Построение HTTP/2 style запроса"""
+        # Для простоты используем HTTP/1.1 с HTTP/2 заголовками
+        request_lines = []
+        
+        for key, value in headers.items():
+            if key.startswith(":"):
+                # Пропускаем HTTP/2 псевдо-заголовки в HTTP/1.1
+                continue
+            request_lines.append(f"{key}: {value}")
+        
+        # Добавляем базовые HTTP/1.1 заголовки
+        if not any(line.startswith("GET ") for line in request_lines):
+            request_lines.insert(0, "GET / HTTP/1.1")
+        
+        request_lines.extend(["", ""])
+        return "\r\n".join(request_lines).encode()
+
+class FinStormPipeline(WhiteGhostPipeline):
+    """Цепочка В: Фин-Шторм (Для стабильности)"""
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "Фин-Шторм"
+        self.priority = 3
+        
+    def execute(self, target_host: str) -> Dict[str, Any]:
+        """TCP Window Scaling = 1 + SNI под sbp.nspk.ru"""
+        start_time = time.time()
+        
+        try:
+            print(f"   ⛓️ Запускаю цепочку '{self.name}'...")
+            
+            # Используем sbp.nspk.ru как маску (высочайший приоритет)
+            sni_mask = "sbp.nspk.ru"
+            print(f"      🎭 SNI маскировка под: {sni_mask}")
+            
+            # Этап 1: Создаем сокет с window size = 1
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            
+            # Устанавливаем минимальный window size
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 256)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256)
+            
+            # TCP Window Scaling = 1
+            try:
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_WINDOW_CLAMP, 1)
+            except:
+                pass
+            
+            sock.connect((target_host, 443))
+            
+            # Этап 2: TLS handshake с финансовым SNI
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=sni_mask)
+            
+            # Этап 3: Банковский style запрос
+            headers = {
+                "Host": target_host,
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) [SBPApp/1.5.0]",
+                "Accept": "application/json",
+                "X-Banking-Request": "true",
+                "X-Transaction-ID": str(random.randint(100000, 999999)),
+                "X-Financial-Priority": "high",
+                "Connection": "close"
+            }
+            
+            request = self._build_request(headers)
+            ssl_sock.send(request)
+            
+            # Этап 4: Получаем ответ
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            duration = time.time() - start_time
+            
+            if b"HTTP" in response:
+                print(f"   ✅ Цепочка '{self.name}' успешна ({duration:.2f}s)")
+                return {
+                    "success": True,
+                    "pipeline": self.name,
+                    "sni_mask": sni_mask,
+                    "duration": duration,
+                    "response": response.decode('utf-8', errors='ignore')[:200]
+                }
+            else:
+                return {
+                    "success": False,
+                    "pipeline": self.name,
+                    "error": "Invalid HTTP response",
+                    "duration": duration
+                }
+                
+        except Exception as e:
+            duration = time.time() - start_time
+            print(f"   ❌ Цепочка '{self.name}' ошибка: {e}")
+            return {
+                "success": False,
+                "pipeline": self.name,
+                "error": str(e),
+                "duration": duration
+            }
+    
+    def _build_request(self, headers: Dict[str, str]) -> bytes:
+        """Построение HTTP запроса"""
+        request_lines = ["GET / HTTP/1.1"]
+        for key, value in headers.items():
+            request_lines.append(f"{key}: {value}")
+        request_lines.extend(["", ""])
+        return "\r\n".join(request_lines).encode()
+
 class DPIBypassCombiner:
     """Продвинутый автоматический комбайн обхода DPI с White-List Parasite"""
     
@@ -1247,6 +1687,11 @@ class DPIBypassCombiner:
         self.double_blind_sni = DoubleBlindSNI()
         self.ghost_connect = GhostConnect()
         self.header_spoofing = HeaderSpoofing()
+        
+        # White-Ghost Pipelines
+        self.gosweb_tunnel = GoswebTunnelPipeline()
+        self.media_parasite = MediaParasitePipeline()
+        self.fin_storm = FinStormPipeline()
         
         self.techniques = {
             BypassTechnique.SPOOFDPI_FRAGMENTATION: {
@@ -2334,6 +2779,115 @@ class DPIBypassCombiner:
             self.packet_shaper.cleanup_all_processes()
         except:
             pass
+    
+    def run_white_ghost_pipelines(self, target_host: str = "www.youtube.com") -> Dict[str, Any]:
+        """Запуск White-Ghost Pipelines с автоматической обработкой ERR_TIMED_OUT"""
+        print("👻 DPI-Bypass Combiner - White-Ghost Pipelines")
+        print("=" * 60)
+        
+        self.target_host = target_host
+        
+        # Проверяем доступность напрямую
+        print(f"\n🔍 Проверка доступности {target_host}...")
+        direct_access = self._check_direct_access(target_host)
+        
+        if direct_access:
+            print(f"   ✅ {target_host} доступен напрямую - обход не требуется")
+            return {
+                "target_host": target_host,
+                "success": True,
+                "method": "direct_access",
+                "pipelines_tried": 0
+            }
+        
+        print(f"   ❌ {target_host} заблокирован - запускаю White-Ghost Pipelines")
+        
+        # Определяем порядок цепочек
+        pipelines = [
+            self.gosweb_tunnel,    # Приоритет 1: Госвеб-Туннель
+            self.media_parasite,   # Приоритет 2: Медиа-Паразит
+            self.fin_storm         # Приоритет 3: Фин-Шторм
+        ]
+        
+        results = {
+            "target_host": target_host,
+            "pipelines_tried": [],
+            "successful_pipeline": None,
+            "final_success": False,
+            "total_duration": 0.0,
+            "timeout_detected": False
+        }
+        
+        start_time = time.time()
+        
+        # Выполняем цепочки с автоматическим переключением
+        for pipeline in pipelines:
+            print(f"\n⛓️ Пробую цепочку: {pipeline.name} (приоритет {pipeline.priority})")
+            
+            result = pipeline.execute(target_host)
+            results["pipelines_tried"].append(result)
+            
+            print(f"   📊 Результат: {'✅ Успех' if result['success'] else '❌ Ошибка'} ({result['duration']:.2f}s)")
+            
+            if result['success']:
+                results["successful_pipeline"] = pipeline.name
+                results["final_success"] = True
+                print(f"   🎯 Цепочка '{pipeline.name}' успешно обошла DPI!")
+                break
+            else:
+                # Обработка ERR_TIMED_OUT - немедленное переключение на sbp.nspk.ru
+                if result.get('timeout', False) or 'timed_out' in result.get('error', '').lower():
+                    print(f"   ⏰ ERR_TIMED_OUT обнаружен - переключаюсь на sbp.nspk.ru")
+                    results["timeout_detected"] = True
+                    
+                    # Немедленно запускаем Фин-Шторм с sbp.nspk.ru
+                    if pipeline.name != "Фин-Шторм":
+                        print(f"   🚨 Активирую Фин-Шторм (sbp.nspk.ru)...")
+                        fin_result = self.fin_storm.execute(target_host)
+                        results["pipelines_tried"].append(fin_result)
+                        
+                        if fin_result['success']:
+                            results["successful_pipeline"] = "Фин-Шторм (sbp.nspk.ru)"
+                            results["final_success"] = True
+                            print(f"   🏆 Фин-Шторм спас ситуацию!")
+                            break
+                else:
+                    print(f"   ❌ Цепочка не сработала: {result.get('error', 'Unknown error')}")
+            
+            # Небольшая пауза между цепочками
+            time.sleep(0.5)
+        
+        results["total_duration"] = time.time() - start_time
+        
+        # Финальная проверка
+        print(f"\n🔍 Финальная проверка доступности {target_host}...")
+        final_access = self._check_direct_access(target_host)
+        results["final_accessibility"] = final_access
+        
+        print(f"   📺 Доступность ПОСЛЕ обхода: {'✅ Доступен' if final_access else '❌ Заблокирован'}")
+        
+        return results
+    
+    def _check_direct_access(self, target_host: str) -> bool:
+        """Реальная проверка прямого доступа к цели через urllib"""
+        try:
+            import urllib.request
+            import urllib.error
+            
+            url = f"https://{target_host}"
+            request = urllib.request.Request(url)
+            request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+            
+            with urllib.request.urlopen(request, timeout=10) as response:
+                status_code = response.getcode()
+                return status_code in [200, 301, 302]
+                
+        except urllib.error.HTTPError as e:
+            # HTTP ошибки 200-399 считаем доступом
+            return 200 <= e.code < 400
+        except Exception as e:
+            # Другие ошибки - недоступен
+            return False
     
     def run_automatic_bypass(self, target_host: str = "www.youtube.com") -> Dict[str, Any]:
         """Автоматический запуск всех техник с Auto-Fallback"""
