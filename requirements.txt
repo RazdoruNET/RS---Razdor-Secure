@@ -29,6 +29,9 @@ jinja2>=3.0.0
 # HTTP Requests & API
 requests>=2.26.0
 
+# Tor & SOCKS5 Support
+PySocks>=1.7.1
+
 # Threading & Concurrency
 # threading is built into Python
 

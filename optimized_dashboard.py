@@ -1072,6 +1072,9 @@ class OptimizedTurboDashboard:
         
         # Initial scan for real threats
         self._process_real_threats()
+        
+        # Test YouTube accessibility at startup
+        self._test_youtube_at_startup()
     
     def setup_routes(self):
         """Setup Flask routes"""
@@ -1452,22 +1455,49 @@ class OptimizedTurboDashboard:
                 test_target = "www.youtube.com"
                 test_port = 443  # HTTPS port
                 
-                config = BypassConfig(
-                    method=BypassMethod.TLS_SNI_SPLITTING,  # Use TLS SNI splitting for HTTPS
-                    target_host=test_target,
-                    target_port=test_port,
-                    fragment_size=512,
-                    delay_ms=50
-                )
+                # Test multiple bypass methods for YouTube (HAR-based methods first)
+                bypass_methods = [
+                    BypassMethod.PROTOCOL_MIMICKERY,  # Now includes HAR-based Chrome headers
+                    BypassMethod.DOMAIN_FRONTING,
+                    BypassMethod.TLS_SNI_SPLITTING,
+                    BypassMethod.FRAGMENTATION,
+                    BypassMethod.STEALTH_PORTS,
+                    BypassMethod.HTTP_HEADER_OBFUSCATION,
+                    BypassMethod.ENCODED_PAYLOAD
+                ]
                 
                 # Test YouTube accessibility before bypass
                 accessible_before = self._test_youtube_accessibility()
                 
-                # Execute real bypass attempt
-                success = self.dpi_bypass.bypass_dpi(config)
+                successful_method = None
+                for method in bypass_methods:
+                    config = BypassConfig(
+                        method=method,
+                        target_host=test_target,
+                        target_port=test_port,
+                        fragment_size=512,
+                        delay_ms=50
+                    )
+                    
+                    # Execute bypass attempt
+                    success = self.dpi_bypass.bypass_dpi(config)
+                    
+                    # Test YouTube accessibility after this method
+                    accessible_after = self._test_youtube_accessibility()
+                    
+                    # Check if this method worked
+                    if success and (not accessible_before and accessible_after):
+                        successful_method = method.value
+                        self.logger.info(f"✅ Метод {method.value} РЕАЛЬНО разблокировал YouTube!")
+                        break
+                    elif success:
+                        self.logger.info(f"🔄 Метод {method.value} сработал но не разблокировал YouTube")
+                    else:
+                        self.logger.info(f"❌ Метод {method.value} не сработал")
                 
-                # Test YouTube accessibility after bypass
+                # Final test after all methods
                 accessible_after = self._test_youtube_accessibility()
+                bypass_effective = (not accessible_before) and accessible_after
                 
                 # Update stats
                 if not hasattr(self.dpi_bypass, 'bypass_count'):
@@ -1484,12 +1514,13 @@ class OptimizedTurboDashboard:
                 
                 return jsonify({
                     'success': success,
-                    'method': config.method.value,
+                    'method': successful_method or 'none',
                     'target': f"{test_target}:{test_port}",
                     'youtube_accessible_before': accessible_before,
                     'youtube_accessible_after': accessible_after,
                     'bypass_effective': bypass_effective,
-                    'message': f'DPI bypass {"successful" if success else "failed"} with {config.method.value}. YouTube {"accessible" if accessible_after else "blocked"}'
+                    'successful_method': successful_method,
+                    'message': f'DPI bypass {"successful" if success else "failed"}. YouTube {"unblocked" if bypass_effective else "still blocked"}' + (f' with {successful_method}' if successful_method else '')
                 })
             except Exception as e:
                 self.logger.error(f"Ошибка реального DPI bypass: {e}")
@@ -1534,6 +1565,71 @@ class OptimizedTurboDashboard:
                 
         except Exception as e:
             self.logger.error(f"📺 YouTube accessibility test failed: {e}")
+            return False
+    
+    def _test_youtube_at_startup(self) -> None:
+        """Test YouTube accessibility at startup and log results"""
+        try:
+            self.logger.info("🔍 Проверка доступности YouTube при старте...")
+            
+            # Test multiple YouTube endpoints
+            youtube_urls = [
+                "https://www.youtube.com",
+                "https://m.youtube.com", 
+                "https://youtube.com",
+                "https://music.youtube.com"
+            ]
+            
+            results = {}
+            for url in youtube_urls:
+                try:
+                    accessible = self._test_specific_url(url)
+                    results[url] = accessible
+                    status = "✅ Доступен" if accessible else "❌ Заблокирован"
+                    self.logger.info(f"   {status}: {url}")
+                except Exception as e:
+                    results[url] = False
+                    self.logger.error(f"   ❌ Ошибка проверки {url}: {e}")
+            
+            # Summary
+            accessible_count = sum(results.values())
+            total_count = len(results)
+            
+            if accessible_count == 0:
+                self.logger.critical("🚨 YouTube полностью заблокирован! DPI bypass требуется.")
+                self.youtube_blocked = True
+            elif accessible_count < total_count:
+                self.logger.warning(f"⚠️ YouTube частично заблокирован: {accessible_count}/{total_count} сервисов доступны")
+                self.youtube_blocked = True
+            else:
+                self.logger.info("✅ YouTube полностью доступен. DPI bypass не требуется.")
+                self.youtube_blocked = False
+                
+        except Exception as e:
+            self.logger.error(f"❌ Ошибка тестирования YouTube при старте: {e}")
+            self.youtube_blocked = True
+    
+    def _test_specific_url(self, url: str) -> bool:
+        """Test specific URL accessibility"""
+        try:
+            import urllib.request
+            import ssl
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+            }
+            
+            request = urllib.request.Request(url, headers=headers)
+            
+            with urllib.request.urlopen(request, timeout=10, context=context) as response:
+                status_code = response.getcode()
+                return status_code in [200, 301, 302]
+                
+        except Exception:
             return False
         
         @self.app.route('/api/toggle_dpi_bypass', methods=['POST'])
