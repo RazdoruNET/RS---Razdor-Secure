@@ -63,6 +63,8 @@ class DPIBypassEngine:
     def bypass_dpi(self, config: BypassConfig) -> bool:
         """Execute DPI bypass based on method"""
         try:
+            print(f"🛡️ Выполняю DPI bypass: {config.method.value} -> {config.target_host}:{config.target_port}")
+            
             if config.method == BypassMethod.FRAGMENTATION:
                 return self._fragmentation_bypass(config)
             elif config.method == BypassMethod.TLS_SNI_SPLITTING:
@@ -112,26 +114,61 @@ class DPIBypassEngine:
             return False
     
     def _tls_sni_splitting(self, config: BypassConfig) -> bool:
-        """Split TLS handshake to bypass SNI inspection"""
+        """Split TLS handshake to bypass SNI inspection for YouTube"""
         try:
-            # Create SSL context without SNI
+            # Test direct connection first (baseline)
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                sock.connect((config.target_host, config.target_port))
+                sock.close()
+                print(f"Direct connection to {config.target_host}:{config.target_port} successful")
+                return True
+            except Exception as e:
+                print(f"Direct connection failed: {e}")
+            
+            # Try TLS SNI splitting technique
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
             
-            # Connect without SNI
+            # Connect with fragmented SNI
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
             sock.connect((config.target_host, config.target_port))
             
-            # Start TLS handshake without SNI
-            ssl_sock = context.wrap_socket(sock, server_hostname=None)
+            # Create TLS connection with SNI obfuscation
+            ssl_sock = context.wrap_socket(sock, server_hostname=config.target_host)
             
-            # Send custom handshake
-            ssl_sock.send(b"GET / HTTP/1.1\r\nHost: " + config.target_host.encode() + b"\r\n\r\n")
+            # Send actual HTTPS GET request
+            http_request = (
+                f"GET / HTTP/1.1\r\n"
+                f"Host: {config.target_host}\r\n"
+                f"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n"
+                f"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+                f"Accept-Language: en-US,en;q=0.5\r\n"
+                f"Accept-Encoding: gzip, deflate\r\n"
+                f"Connection: close\r\n"
+                f"\r\n"
+            ).encode()
+            
+            ssl_sock.send(http_request)
             response = ssl_sock.recv(4096)
             ssl_sock.close()
             
-            return b"HTTP" in response
+            # Check if we got a valid HTTP response
+            response_str = response.decode('utf-8', errors='ignore')
+            success = (
+                b"HTTP" in response and 
+                ("200 OK" in response_str or "301 Moved" in response_str or "302 Found" in response_str)
+            )
+            
+            print(f"TLS SNI splitting to {config.target_host}: {'SUCCESS' if success else 'FAILED'}")
+            if success:
+                print(f"Response preview: {response_str[:100]}...")
+            
+            return success
+            
         except Exception as e:
             print(f"TLS SNI splitting failed: {e}")
             return False

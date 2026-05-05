@@ -29,6 +29,11 @@ class OllamaRSecure:
         self.ollama_url = "http://127.0.0.1:11434"
         self.available_models = []
         self.current_model = "rsecure-security:latest"
+        self.fallback_models = [
+            "qwen2.5-coder:1.5b",
+            "gemma2:2b",
+            "rsecure-scanner:latest"
+        ]
         self.server_type = "local"
         
         # Security events
@@ -78,134 +83,172 @@ class OllamaRSecure:
             return False
     
     def analyze_with_ollama(self, event_data, analysis_type="security"):
-        """Analyze security event with Ollama"""
-        max_retries = 3
-        retry_delay = 5  # seconds
+        """Analyze security event with Ollama with fallback models"""
+        max_retries = 1  # Single retry per model with 10-minute timeout
+        retry_delay = 30  # 30 seconds delay between retries
         
-        for attempt in range(max_retries):
-            try:
-                self.metrics['ollama_requests'] += 1
-                self.logger.info(f"🤖 Запрос к Ollama #{self.metrics['ollama_requests']}: {analysis_type} (попытка {attempt + 1}/{max_retries})")
+        # Try current model first, then fallback models
+        models_to_try = [self.current_model] + self.fallback_models
+        
+        for model_idx, model_name in enumerate(models_to_try):
+            if model_name not in self.available_models:
+                self.logger.warning(f"⚠️ Модель {model_name} недоступна, пропуск")
+                continue
                 
-                # Prepare prompt based on analysis type
-                if analysis_type == "security":
-                    prompt = f"""
-                    Analyze this security event and provide threat assessment:
+            self.logger.info(f"🔄 Попытка использования модели {model_idx + 1}/{len(models_to_try)}: {model_name}")
+            
+            for attempt in range(max_retries):
+                try:
+                    self.metrics['ollama_requests'] += 1
+                    self.logger.info(f"🤖 Запрос к Ollama #{self.metrics['ollama_requests']}: {analysis_type} (модель: {model_name}, попытка {attempt + 1}/{max_retries})")
                     
-                    Event Data: {json.dumps(event_data, indent=2)}
+                    # Prepare prompt based on analysis type
+                    if analysis_type == "security":
+                        prompt = f"""
+                        Analyze this security event and provide threat assessment:
+                        
+                        Event Data: {json.dumps(event_data, indent=2)}
+                        
+                        Please analyze:
+                        1. Threat level (low/medium/high/critical)
+                        2. Attack type if applicable
+                        3. Recommended actions
+                        4. Risk factors
+                        
+                        Respond in JSON format:
+                        {{
+                            "threat_level": "string",
+                            "attack_type": "string",
+                            "confidence": 0.0-1.0,
+                            "recommended_actions": ["string"],
+                            "risk_factors": ["string"],
+                            "analysis": "string"
+                        }}
+                        """
+                    elif analysis_type == "system":
+                        prompt = f"""
+                        Analyze this system activity for security concerns:
+                        
+                        System Data: {json.dumps(event_data, indent=2)}
+                        
+                        Focus on:
+                        1. Unusual processes or connections
+                        2. Resource usage anomalies
+                        3. Security vulnerabilities
+                        4. Potential malware indicators
+                        
+                        Respond in JSON format:
+                        {{
+                            "security_concerns": ["string"],
+                            "risk_level": "low/medium/high/critical",
+                            "anomalies": ["string"],
+                            "recommendations": ["string"]
+                        }}
+                        """
                     
-                    Please analyze:
-                    1. Threat level (low/medium/high/critical)
-                    2. Attack type if applicable
-                    3. Recommended actions
-                    4. Risk factors
-                    
-                    Respond in JSON format:
-                    {{
-                        "threat_level": "string",
-                        "attack_type": "string",
-                        "confidence": 0.0-1.0,
-                        "recommended_actions": ["string"],
-                        "risk_factors": ["string"],
-                        "analysis": "string"
-                    }}
-                    """
-                elif analysis_type == "system":
-                    prompt = f"""
-                    Analyze this system activity for security concerns:
-                    
-                    System Data: {json.dumps(event_data, indent=2)}
-                    
-                    Focus on:
-                    1. Unusual processes or connections
-                    2. Resource usage anomalies
-                    3. Security vulnerabilities
-                    4. Potential malware indicators
-                    
-                    Respond in JSON format:
-                    {{
-                        "security_concerns": ["string"],
-                        "risk_level": "low/medium/high/critical",
-                        "anomalies": ["string"],
-                        "recommendations": ["string"]
-                    }}
-                    """
-                
-                # Make request to Ollama
-                payload = {
-                    "model": self.current_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.3,
-                        "top_p": 0.9
+                    # Make request to Ollama
+                    payload = {
+                        "model": model_name,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": 0.3,
+                            "top_p": 0.9
+                        }
                     }
-                }
-                
-                # Make API request to Ollama
-                self.logger.info(f"📤 Отправка запроса к {self.ollama_url}/api/generate с моделью {self.current_model}")
-                
-                response = requests.post(
-                    f"{self.ollama_url}/api/generate",
-                    json=payload,
-                    timeout=120
-                )
-                
-                self.logger.info(f"📥 Получен ответ HTTP {response.status_code}")
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    analysis_text = result.get('response', '')
                     
-                    self.logger.info(f"📝 Ответ от Ollama: {analysis_text[:200]}...")
+                    # Make API request to Ollama
+                    self.logger.info(f"📤 Отправка запроса к {self.ollama_url}/api/generate с моделью {model_name}")
                     
-                    # Try to parse JSON response
-                    try:
-                        # Extract JSON from response
-                        start_idx = analysis_text.find('{')
-                        end_idx = analysis_text.rfind('}') + 1
-                        if start_idx != -1 and end_idx != -1:
-                            json_str = analysis_text[start_idx:end_idx]
-                            analysis = json.loads(json_str)
-                            self.logger.info(f"✅ JSON успешно разобран: {list(analysis.keys())}")
-                        else:
-                            analysis = {"raw_analysis": analysis_text}
-                            self.logger.warning("⚠️ Не найден JSON в ответе, использован raw_analysis")
-                    except json.JSONDecodeError as e:
-                        analysis = {"raw_analysis": analysis_text, "json_error": str(e)}
-                        self.logger.warning(f"⚠️ Ошибка парсинга JSON: {e}")
+                    response = requests.post(
+                        f"{self.ollama_url}/api/generate",
+                        json=payload,
+                        timeout=600  # Increased to 10 minutes as requested
+                    )
                     
-                    self.metrics['llm_analyses'] += 1
-                    self.logger.info(f"🧠 LLM анализ #{self.metrics['llm_analyses']} завершен для {analysis_type}")
-                    return analysis
+                    self.logger.info(f"📥 Получен ответ HTTP {response.status_code}")
                     
-                else:
-                    error_text = response.text if response.text else "No error text"
-                    self.logger.error(f"❌ Запрос к Ollama провален: HTTP {response.status_code}")
-                    self.logger.error(f"📄 Текст ошибки: {error_text[:200]}")
-                    return None
-                    
-            except requests.exceptions.ReadTimeout as e:
-                self.logger.warning(f"⏰ Таймаут запроса к Ollama (попытка {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    self.logger.info(f"🔄 Повторная попытка через {retry_delay} секунд...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                    continue
-                else:
-                    self.logger.error(f"❌ Все попытки завершились таймаутом")
-                    return None
-            except Exception as e:
-                self.logger.error(f"❌ Критическая ошибка LLM анализа (попытка {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    self.logger.info(f"🔄 Повторная попытка через {retry_delay} секунд...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                    continue
-                else:
-                    import traceback
-                    self.logger.error(f"🔍 Traceback: {traceback.format_exc()}")
-                    return None
+                    if response.status_code == 200:
+                        result = response.json()
+                        analysis_text = result.get('response', '')
+                        
+                        self.logger.info(f"📝 Ответ от Ollama: {analysis_text[:200]}...")
+                        
+                        # Try to parse JSON response
+                        try:
+                            # Extract JSON from response
+                            start_idx = analysis_text.find('{')
+                            end_idx = analysis_text.rfind('}') + 1
+                            if start_idx != -1 and end_idx != -1:
+                                json_str = analysis_text[start_idx:end_idx]
+                                analysis = json.loads(json_str)
+                                self.logger.info(f"✅ JSON успешно разобран: {list(analysis.keys())}")
+                            else:
+                                analysis = {"raw_analysis": analysis_text}
+                                self.logger.warning("⚠️ Не найден JSON в ответе, использован raw_analysis")
+                        except json.JSONDecodeError as e:
+                            analysis = {"raw_analysis": analysis_text, "json_error": str(e)}
+                            self.logger.warning(f"⚠️ Ошибка парсинга JSON: {e}")
+                        
+                        self.metrics['llm_analyses'] += 1
+                        self.logger.info(f"🧠 LLM анализ #{self.metrics['llm_analyses']} завершен для {analysis_type} с моделью {model_name}")
+                        return analysis
+                        
+                    else:
+                        error_text = response.text if response.text else "No error text"
+                        self.logger.error(f"❌ Запрос к Ollama провален: HTTP {response.status_code}")
+                        self.logger.error(f"📄 Текст ошибки: {error_text[:200]}")
+                        break  # Try next model instead of returning None
+                        
+                except requests.exceptions.ReadTimeout as e:
+                    self.logger.warning(f"⏰ Таймаут запроса к Ollama (попытка {attempt + 1}/{max_retries}): {e}")
+                    if attempt < max_retries - 1:
+                        self.logger.info(f"🔄 Повторная попытка через {retry_delay} секунд...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                        continue
+                    else:
+                        self.logger.error(f"❌ Все попытки для модели {model_name} завершились таймаутом")
+                        break  # Try next model
+                        
+                except Exception as e:
+                    self.logger.error(f"❌ Критическая ошибка LLM анализа (попытка {attempt + 1}/{max_retries}): {e}")
+                    if attempt < max_retries - 1:
+                        self.logger.info(f"🔄 Повторная попытка через {retry_delay} секунд...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                        continue
+                    else:
+                        import traceback
+                        self.logger.error(f"🔍 Traceback: {traceback.format_exc()}")
+                        break  # Try next model
+        
+        # If we get here, all models failed
+        self.logger.error("❌ Все модели завершились с ошибкой, используем базовый анализ")
+        return self._fallback_analysis(event_data, analysis_type)
+    
+    def _fallback_analysis(self, event_data, analysis_type="security"):
+        """Fallback analysis when all LLM models fail"""
+        self.logger.warning("🔄 Использование базового анализа без LLM")
+        
+        if analysis_type == "security":
+            return {
+                "threat_level": "medium",
+                "attack_type": "unknown",
+                "confidence": 0.5,
+                "recommended_actions": ["Monitor the situation", "Check system logs"],
+                "risk_factors": ["LLM analysis unavailable"],
+                "analysis": "Basic rule-based analysis - LLM services temporarily unavailable"
+            }
+        elif analysis_type == "system":
+            return {
+                "security_concerns": ["System monitoring degraded"],
+                "risk_level": "medium",
+                "anomalies": ["LLM analysis timeout"],
+                "recommendations": ["Monitor system manually", "Check LLM service status"]
+            }
+        
+        return {"raw_analysis": "Fallback analysis - LLM unavailable"}
     
     def collect_system_events(self):
         """Collect system security events"""
