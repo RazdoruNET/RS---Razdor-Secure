@@ -17,10 +17,14 @@ import os
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from enum import Enum
-import stem
-from stem import Circumstance
-from stem.control import Controller
-from stem.process import launch_tor_with_config
+try:
+    import stem
+    from stem import Circumstance
+    from stem.control import Controller
+    from stem.process import launch_tor_with_config
+    STEM_AVAILABLE = True
+except ImportError:
+    STEM_AVAILABLE = False
 
 
 class TorNodeType(Enum):
