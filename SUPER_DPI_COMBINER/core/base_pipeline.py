@@ -27,6 +27,10 @@ class BypassTechnique(Enum):
     TOR_INTEGRATION = "tor_integration"
     OMEGA_TRANSPORT = "omega_transport"
     ADAPTIVE = "adaptive"
+    DARKNET = "darknet"
+    SECRET_DATABASES = "secret_databases"
+    ADVANCED_OBFUSCATION = "advanced_obfuscation"
+    BLOCKCHAIN_INTEGRATION = "blockchain_integration"
 
 @dataclass
 class PipelineMetrics:

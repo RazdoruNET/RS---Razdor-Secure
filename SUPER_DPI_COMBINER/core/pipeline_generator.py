@@ -76,6 +76,32 @@ class PipelineGenerator:
                 'encryption_methods': ['aes256', 'chacha20', 'blowfish'],
                 'compression': ['gzip', 'lz4', 'none'],
                 'hopping_interval': [30, 60, 120, 300]
+            },
+            BypassTechnique.DARKNET: {
+                'darknet_types': ['i2p', 'freenet', 'yggdrasil', 'zeronet', 'lokinet'],
+                'garlic_layers': [3, 5, 7],
+                'mesh_hops': [2, 3, 4, 5],
+                'p2p_peers': [5, 10, 15, 20],
+                'onion_addresses': ['scihub22266oqcxt.onion', 'libgen.i2p', 'zeronet.bit']
+            },
+            BypassTechnique.SECRET_DATABASES: {
+                'database_types': ['scihub', 'libgen', 'academic_torrents', 'research_data'],
+                'mirror_protocols': ['http', 'https', 'tor', 'i2p', 'ipfs'],
+                'p2p_networks': ['bittorrent', 'ipfs', 'freenet'],
+                'blockchain_verification': [True, False]
+            },
+            BypassTechnique.ADVANCED_OBFUSCATION: {
+                'tunnel_protocols': ['icmp', 'dns', 'timing'],
+                'steganography_methods': ['lsb', 'dct', 'frequency'],
+                'pluggable_transports': ['obfs4', 'obfs5', 'meiko', 'snowflake', 'fte'],
+                'mesh_protocols': ['olsr', 'batman', 'bmx6'],
+                'blockchain_networks': ['ipfs', 'filecoin', 'arweave']
+            },
+            BypassTechnique.BLOCKCHAIN_INTEGRATION: {
+                'ipfs_nodes': ['ipfs.io', 'cloudflare-ipfs.com'],
+                'blockchain_networks': ['ethereum', 'polygon', 'bsc', 'arbitrum'],
+                'decentralized_storage': ['filecoin', 'storj', 'arweave'],
+                'verification_methods': ['smart_contract', 'ipns', 'dnslink']
             }
         }
         

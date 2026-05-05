@@ -1,6 +1,39 @@
 # 🚀 Super DPI Combiner
 
-Универсальный адаптивный комбайн для обхода DPI с LLM интеграцией и многопоточной автогенерацией пайплайнов.
+**Универсальный адаптивный комбайн для обхода ANY цензуры** с LLM интеграцией и многопоточной автогенерацией пайплайнов.
+
+## 🎯 **Что это?**
+
+**Super DPI Combiner** - это самый мощный инструмент обхода DPI, который:
+- 🧠 **Автоматически генерирует** сотни техник обхода
+- 🌑 **Объединяет ВСЕ даркнет сети** (I2P, Freenet, Yggdrasil и др.)
+- 🗄️ **Предоставляет доступ** к секретным научным базам (SciHub, LibGen)
+- 🔐 **Использует продвинутую обфускацию** (ICMP/DNS туннели, стеганография)
+- 🎯 **Адаптируется к любым блокировкам** через LLM оптимизацию
+- ⚡ **Работает в многопоточном режиме** с десятками потоков
+
+## 🌐 **Где найти?**
+
+**GitHub Repository:**  
+`/Users/razdor/Documents/GitHub/RS---Razdor-Secure/SUPER_DPI_COMBINER/`
+
+**Быстрый запуск:**
+```bash
+cd SUPER_DPI_COMBINER
+python3 main.py --mode adaptive --workers 30
+```
+
+## 🎉 **Зачем это нужно?**
+
+Этот комбайн решает **ЛЮБУЮ** проблему с цензурой:
+- 🚫 Обход блокировок сайтов
+- 📚 Доступ к научной литературе
+- 🔓 Полная анонимность в сети
+- 🌑 Работа через даркнет сети
+- 🛡️ Защита от DPI инспекции
+- ⚡ Максимальная скорость обхода
+
+**Это финальное решение для свободного интернета!** 🔓🚀
 
 ## 🎯 Возможности
 
@@ -12,6 +45,32 @@
 - **Эволюция пайплайнов** - улучшение на основе результатов
 
 ### 🔧 Техники обхода:
+
+#### **🌑 Даркнет техники (НОВЫЕ):**
+- **I2P Garlic Routing** - Многослойное шифрование + Garlic routing
+- **Freenet P2P** - Децентрализованная P2P сеть с Web of Trust
+- **Yggdrasil Mesh** - Mesh сеть с криптографической маршрутизацией
+- **ZeroNet Bitcoin** - P2P сеть с Bitcoin адресацией
+- **Lokinet LLARP** - Современный onion routing через LLARP
+- **Hyphanet WoT** - Улучшенный Freenet с Web of Trust
+
+#### **🗄️ Секретные базы данных (НОВЫЕ):**
+- **SciHub Mirrors** - Доступ к научным статьям через зеркала
+- **LibGen P2P** - P2P доступ к книгам и литературе
+- **Academic Torrents** - Образовательные ресурсы через торренты
+- **Research Data Vault** - Научные данные и исследования
+- **Open Access Journals** - Открытые научные журналы
+
+#### **🔐 Продвинутые техники обфускации (НОВЫЕ):**
+- **ICMP Tunneling** - Передача данных через ICMP пакеты
+- **DNS Tunneling** - Передача данных через DNS запросы
+- **Steganography** - Скрытие данных в медиа файлах
+- **Timing Channels** - Временные каналы передачи данных
+- **Pluggable Transports** - Obfs4/5, Meiko, Snowflake, FTE
+- **Mesh Networks** - OLSR, BATMAN, BMX6 протоколы
+- **Blockchain IPFS** - IPFS + блокчейн верификация
+
+#### **🧠 Классические техники:**
 - **SpoofDPI** - TCP сегментация, фейковые пакеты
 - **Domain Fronting** - CDN маскировка, SNI спуфинг
 - **Protocol Obfuscation** - HTTP фрагментация, TLS обфускация
@@ -96,25 +155,74 @@ curl -X POST http://localhost:8080/control \
 
 ```
 SUPER_DPI_COMBINER/
-├── main.py                     # Главный комбайн
+├── main.py                           # Главный комбайн
 ├── config/
-│   └── settings.py              # Конфигурация
+│   ├── __init__.py                  # Инициализация конфигурации
+│   └── settings.py                  # Конфигурация системы
 ├── core/
-│   ├── base_pipeline.py         # Базовый класс пайплайна
-│   ├── pipeline_manager.py       # Менеджер пайплайнов
-│   ├── pipeline_generator.py    # Автогенерация пайплайнов
-│   ├── multi_thread_engine.py   # Многопоточный движок
-│   └── llm_integration.py      # LLM интеграция
+│   ├── __init__.py                  # Экспорт всех core модулей
+│   ├── base_pipeline.py             # Базовый класс пайплайна
+│   ├── pipeline_manager.py           # Менеджер пайплайнов
+│   ├── pipeline_generator.py        # Автогенерация пайплайнов
+│   ├── multi_thread_engine.py        # Многопоточный движок
+│   └── llm_integration.py           # LLM интеграция
 ├── pipelines/
-│   ├── spoof_dpi/             # SpoofDPI техники
-│   ├── domain_fronting/         # Domain Fronting
-│   ├── protocol_obfuscation/     # Обфускация протоколов
-│   ├── tor_integration/         # Tor интеграция
-│   ├── omega_transport/         # Omega транспорт
-│   └── adaptive/              # Адаптивные техники
+│   ├── __init__.py                  # Экспорт всех пайплайнов
+│   ├── spoof_dpi/                    # Классические SpoofDPI техники
+│   │   ├── __init__.py
+│   │   ├── packet_shaper.py          # TCP сегментация
+│   │   ├── tls_fingerprint.py        # TLS fingerprint подмена
+│   │   └── http_fragmentation.py     # HTTP фрагментация
+│   ├── domain_fronting/                # Domain Fronting техники
+│   │   ├── __init__.py
+│   │   ├── cdn_bypass.py            # CDN обход
+│   │   └── host_header.py            # Host header подмена
+│   ├── protocol_obfuscation/          # Обфускация протоколов
+│   │   ├── __init__.py
+│   │   ├── http_fragmentation.py     # HTTP фрагментация
+│   │   └── custom_headers.py         # Кастомные заголовки
+│   ├── tor_integration/              # Tor интеграция
+│   │   ├── __init__.py
+│   │   ├── tor_bridges.py           # Tor мосты
+│   │   └── darknet_access.py        # Darknet доступ
+│   ├── omega_transport/              # Omega транспорт
+│   │   ├── __init__.py
+│   │   ├── bridge_manager.py         # Управление мостами
+│   │   └── proxy_chains.py          # Прокси цепочки
+│   ├── adaptive/                     # Адаптивные техники
+│   │   ├── __init__.py
+│   │   ├── auto_switch.py            # Автопереключение
+│   │   └── ml_detection.py          # ML детекция DPI
+│   ├── darknet/                      # 🌑 НОВЫЕ: Даркнет техники
+│   │   ├── __init__.py
+│   │   ├── i2p_garlic.py            # I2P Garlic Routing
+│   │   ├── freenet_p2p.py            # Freenet P2P
+│   │   ├── yggdrasil_mesh.py         # Yggdrasil Mesh
+│   │   ├── zeronet_bitcoin.py         # ZeroNet Bitcoin
+│   │   ├── lokinet_llarp.py           # Lokinet LLARP
+│   │   └── hyphanet_wot.py           # Hyphanet Web of Trust
+│   ├── secret_databases/              # 🗄️ НОВЫЕ: Секретные базы
+│   │   ├── __init__.py
+│   │   ├── scihub_mirrors.py         # SciHub зеркала
+│   │   ├── libgen_p2p.py             # LibGen P2P
+│   │   ├── academic_torrents.py       # Academic торренты
+│   │   ├── research_data_vault.py     # Research Data
+│   │   └── open_access_journals.py    # Open Access журналы
+│   └── advanced_obfuscation/         # 🔐 НОВЫЕ: Продвинутая обфускация
+│       ├── __init__.py
+│       ├── icmp_tunnel.py             # ICMP туннелирование
+│       ├── dns_tunnel.py              # DNS туннелирование
+│       ├── steganography.py           # Стеганография
+│       ├── timing_channels.py          # Временные каналы
+│       ├── pluggable_transports.py    # Pluggable transports
+│       ├── mesh_networks.py           # Mesh сети
+│       └── blockchain_ipfs.py        # Blockchain + IPFS
 ├── utils/
-│   └── logger.py              # Логирование
-└── logs/                      # Логи работы
+│   └── logger.py                      # Логирование
+├── docs/                               # Документация
+│   ├── DARKNET_TECHNIQUES_RESEARCH.md  # Исследование даркнет техник
+│   └── ULTIMATE_DPI_GUIDE.md           # Полное руководство
+└── logs/                                # Логи работы
 ```
 
 ## ⚙️ Конфигурация
