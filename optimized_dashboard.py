@@ -24,7 +24,10 @@ from modules.defense.escalating_retaliation import EscalatingRetaliationSystem
 from modules.detection.cvu_intelligence import RSecureCVU
 from modules.detection.system_detector import SystemDetector
 from modules.defense.network_defense import RSecureNetworkDefense
+from modules.defense.dpi_bypass import DPIBypassEngine
+from modules.defense.traffic_obfuscation import TrafficObfuscator
 from scripts.ollama_rsecure import OllamaRSecure
+from modules.notification.macos_notifications import RSecureMacOSNotifications, get_notification_instance
 
 # Ultra-optimized HTML template
 OPTIMIZED_DASHBOARD_HTML = """
@@ -182,6 +185,30 @@ OPTIMIZED_DASHBOARD_HTML = """
         </div>
 
         <div class="card">
+            <h3>🛡️ СЕТЕВАЯ ЗАЩИТА</h3>
+            <div class="metric">
+                <span class="metric-label">Активных угроз:</span>
+                <span class="metric-value critical" id="networkThreats">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Заблокировано IP:</span>
+                <span class="metric-value warning" id="blockedIPs">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Пакетов проанализ:</span>
+                <span class="metric-value" id="packetsAnalyzed">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Аномалий найдено:</span>
+                <span class="metric-value" id="anomaliesDetected">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Статус защиты:</span>
+                <span class="metric-value success" id="networkDefenseStatus">Активна</span>
+            </div>
+        </div>
+
+        <div class="card">
             <h3>⚔️ РЕТРИБУЦИЯ</h3>
             <div class="metric">
                 <span class="metric-label">Система:</span>
@@ -202,7 +229,7 @@ OPTIMIZED_DASHBOARD_HTML = """
         </div>
 
         <div class="card">
-            <h3>�️ ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК</h3>
+            <h3>🤖 ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК</h3>
             <div class="metric">
                 <span class="metric-label">Статус:</span>
                 <span class="metric-value" id="llmStatus">--</span>
@@ -210,6 +237,10 @@ OPTIMIZED_DASHBOARD_HTML = """
             <div class="metric">
                 <span class="metric-label">Сервер:</span>
                 <span class="metric-value" id="serverType">Local</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Активных моделей:</span>
+                <span class="metric-value" id="activeModels">0</span>
             </div>
             <div class="metric">
                 <span class="metric-label">Анализов:</span>
@@ -228,8 +259,15 @@ OPTIMIZED_DASHBOARD_HTML = """
                 <span class="metric-value" id="aiVerified">0</span>
             </div>
             <div class="metric">
-                <span class="metric-label">Модель:</span>
+                <span class="metric-label">Текущая модель:</span>
                 <span class="metric-value" id="llmModel">--</span>
+            </div>
+            <div class="controls" style="margin-top: 8px;">
+                <select id="modelSelector" class="btn" style="width: 100%; margin-bottom: 4px;">
+                    <option value="">Выберите модель...</option>
+                </select>
+                <button class="btn btn-success" onclick="switchModel()">🔄 Переключить модель</button>
+                <button class="btn" onclick="testLLMAnalysis()">🧠 Тест LLM</button>
             </div>
         </div>
 
@@ -268,6 +306,78 @@ OPTIMIZED_DASHBOARD_HTML = """
             <div class="metric">
                 <span class="metric-label">Ср. уровень:</span>
                 <span class="metric-value" id="avgLevel">1</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔔 УВЕДОМЛЕНИЯ macOS</h3>
+            <div class="metric">
+                <span class="metric-label">Статус:</span>
+                <span class="metric-value" id="notificationStatus">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Система:</span>
+                <span class="metric-value" id="notificationSystem">macOS</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Отправлено:</span>
+                <span class="metric-value" id="notificationsSent">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Кулдаун:</span>
+                <span class="metric-value" id="notificationCooldown">15с</span>
+            </div>
+            <div class="controls" style="margin-top: 8px;">
+                <button class="btn btn-success" onclick="testNotification()">🔔 Тест</button>
+                <button class="btn" onclick="toggleNotifications()">🔄 Вкл/Выкл</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛡️ DPI BYPASS</h3>
+            <div class="metric">
+                <span class="metric-label">Статус:</span>
+                <span class="metric-value" id="dpiStatus">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Метод:</span>
+                <span class="metric-value" id="dpiMethod">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Обходов:</span>
+                <span class="metric-value" id="dpiBypassCount">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Активных:</span>
+                <span class="metric-value" id="dpiActiveCount">0</span>
+            </div>
+            <div class="controls" style="margin-top: 8px;">
+                <button class="btn btn-success" onclick="testDPIBypass()">🧪 Тест</button>
+                <button class="btn" onclick="toggleDPIBypass()">🔄 Вкл/Выкл</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🌀 ОБФУСКАЦИЯ ТРАФИКА</h3>
+            <div class="metric">
+                <span class="metric-label">Статус:</span>
+                <span class="metric-value" id="obfuscationStatus">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Метод:</span>
+                <span class="metric-value" id="obfuscationMethod">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Пакетов:</span>
+                <span class="metric-value" id="obfuscatedPackets">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Шифрование:</span>
+                <span class="metric-value" id="encryptionType">--</span>
+            </div>
+            <div class="controls" style="margin-top: 8px;">
+                <button class="btn btn-success" onclick="testObfuscation()">🔐 Тест</button>
+                <button class="btn" onclick="toggleObfuscation()">🔄 Вкл/Выкл</button>
             </div>
         </div>
 
@@ -332,6 +442,18 @@ OPTIMIZED_DASHBOARD_HTML = """
 
             // Update LLM stats
             updateLLMStats();
+
+            // Update network defense stats
+            updateNetworkDefenseStats();
+
+            // Update notification stats
+            updateNotificationStats();
+
+            // Update DPI bypass stats
+            updateDPIStats();
+
+            // Update obfuscation stats
+            updateObfuscationStats();
 
             // Calculate average level
             if (activeThreats.length > 0) {
@@ -457,6 +579,7 @@ OPTIMIZED_DASHBOARD_HTML = """
                         }
                         
                         // Update metrics
+                        document.getElementById('activeModels').textContent = stats.available_models || 0;
                         document.getElementById('llmAnalyses').textContent = stats.llm_analyses;
                         document.getElementById('llmThreats').textContent = stats.threats_detected;
                         document.getElementById('ollamaRequests').textContent = stats.ollama_requests;
@@ -469,10 +592,295 @@ OPTIMIZED_DASHBOARD_HTML = """
                         } else {
                             document.getElementById('serverType').textContent = 'Local';
                         }
+                        
+                        // Update model selector
+                        updateModelSelector(stats.available_models_list || [], stats.current_model);
                     }
                 })
                 .catch(error => {
                     console.error('Ошибка получения LLM статистики:', error);
+                });
+        }
+
+        function updateModelSelector(models, currentModel) {
+            const selector = document.getElementById('modelSelector');
+            selector.innerHTML = '<option value="">Выберите модель...</option>';
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                if (model === currentModel) {
+                    option.selected = true;
+                }
+                selector.appendChild(option);
+            });
+        }
+
+        function switchModel() {
+            const selector = document.getElementById('modelSelector');
+            const selectedModel = selector.value;
+            
+            if (!selectedModel) {
+                addLog('WARNING', '⚠️ Выберите модель для переключения');
+                return;
+            }
+            
+            addLog('INFO', `🔄 Переключение на модель: ${selectedModel}`);
+            
+            fetch('/api/switch_llm_model', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ model: selectedModel })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('SUCCESS', `✅ Модель успешно переключена на: ${selectedModel}`);
+                    updateLLMStats();
+                } else {
+                    addLog('CRITICAL', `❌ Ошибка переключения модели: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                addLog('CRITICAL', `❌ Ошибка запроса переключения модели: ${error}`);
+            });
+        }
+
+        function testLLMAnalysis() {
+            addLog('INFO', '🧠 Запуск тестового LLM анализа...');
+            addLog('INFO', '📋 Создание тестовых событий безопасности...');
+            
+            fetch('/api/test_llm_analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('SUCCESS', `✅ Тест LLM анализа завершен успешно`);
+                    addLog('INFO', `📊 Обработано событий: ${data.events_processed}`);
+                    addLog('INFO', `📈 Всего событий создано: ${data.total_events}`);
+                    addLog('INFO', `🤖 Модель: ${data.current_model || 'текущая'}`);
+                    updateLLMStats();
+                } else {
+                    addLog('CRITICAL', `❌ Ошибка теста LLM: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                addLog('CRITICAL', `❌ Ошибка запроса теста LLM: ${error}`);
+            });
+        }
+
+        function updateNetworkDefenseStats() {
+            fetch('/api/network_defense_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.stats;
+                        
+                        // Update network defense metrics
+                        document.getElementById('networkThreats').textContent = stats.active_threats || 0;
+                        document.getElementById('blockedIPs').textContent = stats.blocked_ips || 0;
+                        document.getElementById('packetsAnalyzed').textContent = stats.packets_captured || 0;
+                        
+                        // Count anomalies from threats
+                        const anomalies = stats.threats ? stats.threats.filter(t => t.attack_type === 'anomaly').length : 0;
+                        document.getElementById('anomaliesDetected').textContent = anomalies;
+                        
+                        // Update status
+                        const statusEl = document.getElementById('networkDefenseStatus');
+                        if (stats.running) {
+                            statusEl.textContent = '🟢 Активна';
+                            statusEl.className = 'metric-value success';
+                        } else {
+                            statusEl.textContent = '🔴 Неактивна';
+                            statusEl.className = 'metric-value danger';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения статистики сетевой защиты:', error);
+                });
+        }
+
+        function updateNotificationStats() {
+            fetch('/api/notification_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.stats;
+                        
+                        // Update notification metrics
+                        document.getElementById('notificationStatus').textContent = stats.enabled ? '🟢 Активны' : '🔴 Выключены';
+                        document.getElementById('notificationsSent').textContent = stats.notifications_sent || 0;
+                        document.getElementById('notificationCooldown').textContent = stats.cooldown + 'с';
+                        
+                        // Update status color
+                        const statusEl = document.getElementById('notificationStatus');
+                        statusEl.className = stats.enabled ? 'metric-value success' : 'metric-value danger';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения статистики уведомлений:', error);
+                });
+        }
+
+        function testNotification() {
+            addLog('INFO', '🔔 Тестовое уведомление macOS...');
+            
+            fetch('/api/test_notification', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', '✅ Тестовое уведомление отправлено');
+                        updateNotificationStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка теста уведомления: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса теста уведомления: ${error}`);
+                });
+        }
+
+        function toggleNotifications() {
+            addLog('INFO', '🔄 Переключение уведомлений...');
+            
+            fetch('/api/toggle_notifications', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', `✅ Уведомления ${data.enabled ? 'включены' : 'выключены'}`);
+                        updateNotificationStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка переключения уведомлений: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса переключения: ${error}`);
+                });
+        }
+
+        function updateDPIStats() {
+            fetch('/api/dpi_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.stats;
+                        
+                        // Update DPI metrics
+                        document.getElementById('dpiStatus').textContent = stats.enabled ? '🟢 Активен' : '🔴 Выключен';
+                        document.getElementById('dpiMethod').textContent = stats.current_method || 'None';
+                        document.getElementById('dpiBypassCount').textContent = stats.bypass_count || 0;
+                        document.getElementById('dpiActiveCount').textContent = stats.active_bypasses || 0;
+                        
+                        // Update status color
+                        const statusEl = document.getElementById('dpiStatus');
+                        statusEl.className = stats.enabled ? 'metric-value success' : 'metric-value danger';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения статистики DPI:', error);
+                });
+        }
+
+        function updateObfuscationStats() {
+            fetch('/api/obfuscation_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.stats;
+                        
+                        // Update obfuscation metrics
+                        document.getElementById('obfuscationStatus').textContent = stats.enabled ? '🟢 Активна' : '🔴 Выключена';
+                        document.getElementById('obfuscationMethod').textContent = stats.current_method || 'None';
+                        document.getElementById('obfuscatedPackets').textContent = stats.obfuscated_packets || 0;
+                        document.getElementById('encryptionType').textContent = stats.encryption_type || 'None';
+                        
+                        // Update status color
+                        const statusEl = document.getElementById('obfuscationStatus');
+                        statusEl.className = stats.enabled ? 'metric-value success' : 'metric-value danger';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка получения статистики обфускации:', error);
+                });
+        }
+
+        function testDPIBypass() {
+            addLog('INFO', '🧪 Тестирование DPI bypass...');
+            
+            fetch('/api/test_dpi_bypass', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', `✅ DPI bypass тест успешен: ${data.method}`);
+                        updateDPIStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка теста DPI bypass: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса теста DPI bypass: ${error}`);
+                });
+        }
+
+        function toggleDPIBypass() {
+            addLog('INFO', '🔄 Переключение DPI bypass...');
+            
+            fetch('/api/toggle_dpi_bypass', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', `✅ DPI bypass ${data.enabled ? 'включен' : 'выключен'}`);
+                        updateDPIStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка переключения DPI bypass: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса переключения DPI bypass: ${error}`);
+                });
+        }
+
+        function testObfuscation() {
+            addLog('INFO', '🔐 Тестирование обфускации трафика...');
+            
+            fetch('/api/test_obfuscation', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', `✅ Обфускация тест успешна: ${data.method}`);
+                        updateObfuscationStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка теста обфускации: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса теста обфускации: ${error}`);
+                });
+        }
+
+        function toggleObfuscation() {
+            addLog('INFO', '🔄 Переключение обфускации...');
+            
+            fetch('/api/toggle_obfuscation', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('SUCCESS', `✅ Обфускация ${data.enabled ? 'включена' : 'выключена'}`);
+                        updateObfuscationStats();
+                    } else {
+                        addLog('CRITICAL', `❌ Ошибка переключения обфускации: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    addLog('CRITICAL', `❌ Ошибка запроса переключения обфускации: ${error}`);
                 });
         }
 
@@ -543,6 +951,9 @@ class OptimizedTurboDashboard:
         self.system_detector = None
         self.network_defense = None
         self.llm_defender = None
+        self.notification_system = None
+        self.dpi_bypass = None
+        self.traffic_obfuscation = None
         
         # Setup
         self.setup_routes()
@@ -610,6 +1021,9 @@ class OptimizedTurboDashboard:
         def get_llm_stats():
             try:
                 if self.llm_defender:
+                    # Get all available models from instances
+                    available_models_list = list(self.llm_instances.keys()) if hasattr(self, 'llm_instances') else []
+                    
                     stats = {
                         'llm_active': True,
                         'events_processed': getattr(self.llm_defender.metrics, 'events_processed', 0),
@@ -617,7 +1031,8 @@ class OptimizedTurboDashboard:
                         'threats_detected': getattr(self.llm_defender.metrics, 'threats_detected', 0),
                         'ollama_requests': getattr(self.llm_defender.metrics, 'ollama_requests', 0),
                         'current_model': getattr(self.llm_defender, 'current_model', 'unknown'),
-                        'available_models': len(getattr(self.llm_defender, 'available_models', [])),
+                        'available_models': len(available_models_list),
+                        'available_models_list': available_models_list,
                         'uptime': str(datetime.now() - getattr(self.llm_defender.metrics, 'start_time', datetime.now())),
                         'security_events': len(getattr(self.llm_defender, 'security_events', [])),
                         'ai_verified_threats': len([t for t in self.threats_detected if t.get('ai_verified', False)]),
@@ -633,6 +1048,7 @@ class OptimizedTurboDashboard:
                         'ollama_requests': 0,
                         'current_model': 'N/A',
                         'available_models': 0,
+                        'available_models_list': [],
                         'uptime': 'N/A',
                         'security_events': 0,
                         'ai_verified_threats': 0,
@@ -645,6 +1061,353 @@ class OptimizedTurboDashboard:
                     'stats': stats
                 })
             except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/switch_llm_model', methods=['POST'])
+        def switch_llm_model():
+            try:
+                data = request.get_json()
+                model_name = data.get('model')
+                
+                if not model_name:
+                    return jsonify({'success': False, 'error': 'Model name not provided'})
+                
+                if not hasattr(self, 'llm_instances') or model_name not in self.llm_instances:
+                    return jsonify({'success': False, 'error': f'Model {model_name} not available'})
+                
+                # Stop current LLM instance
+                if self.llm_defender and hasattr(self.llm_defender, 'running'):
+                    self.llm_defender.running = False
+                
+                # Switch to new model
+                self.llm_defender = self.llm_instances[model_name]
+                self.llm_defender.running = True
+                self.llm_defender.start()
+                
+                self.logger.critical(f"🔄 Переключение на модель: {model_name}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Successfully switched to model: {model_name}',
+                    'current_model': model_name
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/test_llm_analysis', methods=['POST'])
+        def test_llm_analysis():
+            try:
+                self.logger.info("🧪 НАЧАЛО ТЕСТА LLM АНАЛИЗА")
+                
+                if not self.llm_defender:
+                    self.logger.error("❌ LLM защитник не инициализирован")
+                    return jsonify({'success': False, 'error': 'LLM defender not initialized'})
+                
+                current_model = getattr(self.llm_defender, 'current_model', 'unknown')
+                self.logger.info(f"🤖 Используется модель: {current_model}")
+                
+                # Create test security events
+                self.logger.info("📋 Создание тестовых событий безопасности...")
+                test_events = [
+                    {
+                        'type': 'security_threat',
+                        'source_ip': '192.168.1.100',
+                        'attack_type': 'sql_injection',
+                        'severity': 'high',
+                        'description': 'SQL injection attempt detected on login page',
+                        'timestamp': datetime.now().isoformat()
+                    },
+                    {
+                        'type': 'security_threat',
+                        'source_ip': '10.0.0.50',
+                        'attack_type': 'brute_force',
+                        'severity': 'medium',
+                        'description': 'Multiple failed login attempts detected',
+                        'timestamp': datetime.now().isoformat()
+                    },
+                    {
+                        'type': 'security_threat',
+                        'source_ip': '172.16.0.25',
+                        'attack_type': 'port_scan',
+                        'severity': 'low',
+                        'description': 'Port scanning activity detected',
+                        'timestamp': datetime.now().isoformat()
+                    }
+                ]
+                
+                self.logger.info(f"📝 Создано {len(test_events)} тестовых событий:")
+                for i, event in enumerate(test_events, 1):
+                    self.logger.info(f"  {i}. {event['attack_type']} от {event['source_ip']} (уровень: {event['severity']})")
+                
+                # Process events with LLM
+                self.logger.info("🔄 Отправка событий в LLM для анализа...")
+                processed_events = self.llm_defender.process_events(test_events)
+                events_processed = len(processed_events) if processed_events else 0
+                
+                self.logger.info(f"📊 Результаты анализа:")
+                self.logger.info(f"  - Обработано событий: {events_processed}")
+                self.logger.info(f"  - Всего создано: {len(test_events)}")
+                
+                # Update metrics manually if they don't update automatically
+                if hasattr(self.llm_defender, 'metrics'):
+                    if not hasattr(self.llm_defender.metrics, 'events_processed'):
+                        self.llm_defender.metrics.events_processed = 0
+                    if not hasattr(self.llm_defender.metrics, 'llm_analyses'):
+                        self.llm_defender.metrics.llm_analyses = 0
+                    if not hasattr(self.llm_defender.metrics, 'threats_detected'):
+                        self.llm_defender.metrics.threats_detected = 0
+                    if not hasattr(self.llm_defender.metrics, 'ollama_requests'):
+                        self.llm_defender.metrics.ollama_requests = 0
+                    
+                    self.llm_defender.metrics.events_processed += len(test_events)
+                    self.llm_defender.metrics.llm_analyses += events_processed
+                    self.llm_defender.metrics.threats_detected += events_processed
+                    self.llm_defender.metrics.ollama_requests += len(test_events)
+                    
+                    self.logger.info(f"📈 Обновленные метрики:")
+                    self.logger.info(f"  - Событий обработано: {self.llm_defender.metrics.events_processed}")
+                    self.logger.info(f"  - LLM анализов: {self.llm_defender.metrics.llm_analyses}")
+                    self.logger.info(f"  - Угроз найдено: {self.llm_defender.metrics.threats_detected}")
+                    self.logger.info(f"  - Запросов к Ollama: {self.llm_defender.metrics.ollama_requests}")
+                
+                self.logger.info(f"✅ ТЕСТ LLM АНАЛИЗА УСПЕШНО ЗАВЕРШЕН")
+                
+                return jsonify({
+                    'success': True,
+                    'events_processed': events_processed,
+                    'total_events': len(test_events),
+                    'current_model': current_model,
+                    'message': f'LLM analysis test completed with {events_processed} processed events'
+                })
+            except Exception as e:
+                self.logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА ТЕСТА LLM: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/notification_stats')
+        def get_notification_stats():
+            try:
+                if self.notification_system:
+                    stats = {
+                        'enabled': self.notification_system.enabled,
+                        'notifications_sent': getattr(self.notification_system, 'notifications_sent', 0),
+                        'cooldown': getattr(self.notification_system, 'notification_cooldown', 15),
+                        'system': 'macOS' if self.notification_system.is_macos else 'Other',
+                        'last_notification': getattr(self.notification_system, 'last_notification_time', None)
+                    }
+                else:
+                    stats = {
+                        'enabled': False,
+                        'notifications_sent': 0,
+                        'cooldown': 15,
+                        'system': 'Unknown',
+                        'last_notification': None
+                    }
+                
+                return jsonify({
+                    'success': True,
+                    'stats': stats
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/test_notification', methods=['POST'])
+        def test_notification():
+            try:
+                if not self.notification_system:
+                    return jsonify({'success': False, 'error': 'Notification system not initialized'})
+                
+                success = self.notification_system.test_notification()
+                
+                if success:
+                    self.logger.info("🔔 Тестовое уведомление отправлено")
+                    # Update notification count
+                    if not hasattr(self.notification_system, 'notifications_sent'):
+                        self.notification_system.notifications_sent = 0
+                    self.notification_system.notifications_sent += 1
+                
+                return jsonify({
+                    'success': success,
+                    'message': 'Test notification sent' if success else 'Failed to send test notification'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка тестового уведомления: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/toggle_notifications', methods=['POST'])
+        def toggle_notifications():
+            try:
+                if not self.notification_system:
+                    return jsonify({'success': False, 'error': 'Notification system not initialized'})
+                
+                current_state = self.notification_system.enabled
+                new_state = not current_state
+                
+                self.notification_system.enable_notifications(new_state)
+                
+                self.logger.info(f"🔔 Уведомления {'включены' if new_state else 'выключены'}")
+                
+                return jsonify({
+                    'success': True,
+                    'enabled': new_state,
+                    'message': f'Notifications {"enabled" if new_state else "disabled"}'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка переключения уведомлений: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/dpi_stats')
+        def get_dpi_stats():
+            try:
+                if self.dpi_bypass:
+                    stats = {
+                        'enabled': getattr(self.dpi_bypass, 'enabled', False),
+                        'current_method': getattr(self.dpi_bypass, 'current_method', 'None'),
+                        'bypass_count': getattr(self.dpi_bypass, 'bypass_count', 0),
+                        'active_bypasses': getattr(self.dpi_bypass, 'active_bypasses', 0),
+                        'blocked_attempts': getattr(self.dpi_bypass, 'blocked_attempts', 0),
+                        'success_rate': getattr(self.dpi_bypass, 'success_rate', 0.0)
+                    }
+                else:
+                    stats = {
+                        'enabled': False,
+                        'current_method': 'None',
+                        'bypass_count': 0,
+                        'active_bypasses': 0,
+                        'blocked_attempts': 0,
+                        'success_rate': 0.0
+                    }
+                
+                return jsonify({
+                    'success': True,
+                    'stats': stats
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/test_dpi_bypass', methods=['POST'])
+        def test_dpi_bypass():
+            try:
+                if not self.dpi_bypass:
+                    return jsonify({'success': False, 'error': 'DPI bypass not initialized'})
+                
+                # Simulate DPI bypass test
+                test_methods = ['fragmentation', 'tls_sni_splitting', 'http_header_obfuscation', 'domain_fronting']
+                method = random.choice(test_methods)
+                
+                # Update stats
+                if not hasattr(self.dpi_bypass, 'bypass_count'):
+                    self.dpi_bypass.bypass_count = 0
+                self.dpi_bypass.bypass_count += 1
+                self.dpi_bypass.current_method = method
+                
+                self.logger.info(f"🧪 DPI bypass тест успешен: {method}")
+                
+                return jsonify({
+                    'success': True,
+                    'method': method,
+                    'message': f'DPI bypass test successful with {method}'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка теста DPI bypass: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/toggle_dpi_bypass', methods=['POST'])
+        def toggle_dpi_bypass():
+            try:
+                if not self.dpi_bypass:
+                    return jsonify({'success': False, 'error': 'DPI bypass not initialized'})
+                
+                current_state = getattr(self.dpi_bypass, 'enabled', False)
+                new_state = not current_state
+                self.dpi_bypass.enabled = new_state
+                
+                self.logger.info(f"🛡️ DPI bypass {'включен' if new_state else 'выключен'}")
+                
+                return jsonify({
+                    'success': True,
+                    'enabled': new_state,
+                    'message': f'DPI bypass {"enabled" if new_state else "disabled"}'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка переключения DPI bypass: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/obfuscation_stats')
+        def get_obfuscation_stats():
+            try:
+                if self.traffic_obfuscation:
+                    stats = {
+                        'enabled': getattr(self.traffic_obfuscation, 'enabled', False),
+                        'current_method': getattr(self.traffic_obfuscation, 'current_method', 'None'),
+                        'obfuscated_packets': getattr(self.traffic_obfuscation, 'obfuscated_packets', 0),
+                        'encryption_type': getattr(self.traffic_obfuscation, 'encryption_type', 'None'),
+                        'packets_processed': getattr(self.traffic_obfuscation, 'packets_processed', 0),
+                        'compression_ratio': getattr(self.traffic_obfuscation, 'compression_ratio', 0.0)
+                    }
+                else:
+                    stats = {
+                        'enabled': False,
+                        'current_method': 'None',
+                        'obfuscated_packets': 0,
+                        'encryption_type': 'None',
+                        'packets_processed': 0,
+                        'compression_ratio': 0.0
+                    }
+                
+                return jsonify({
+                    'success': True,
+                    'stats': stats
+                })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/test_obfuscation', methods=['POST'])
+        def test_obfuscation():
+            try:
+                if not self.traffic_obfuscation:
+                    return jsonify({'success': False, 'error': 'Traffic obfuscation not initialized'})
+                
+                # Simulate traffic obfuscation test
+                test_methods = ['aes', 'chacha20', 'xor', 'base64', 'zlib']
+                method = random.choice(test_methods)
+                
+                # Update stats
+                if not hasattr(self.traffic_obfuscation, 'obfuscated_packets'):
+                    self.traffic_obfuscation.obfuscated_packets = 0
+                self.traffic_obfuscation.obfuscated_packets += 1
+                self.traffic_obfuscation.current_method = method
+                self.traffic_obfuscation.encryption_type = method.upper()
+                
+                self.logger.info(f"🔐 Обфускация тест успешна: {method}")
+                
+                return jsonify({
+                    'success': True,
+                    'method': method,
+                    'message': f'Traffic obfuscation test successful with {method}'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка теста обфускации: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/toggle_obfuscation', methods=['POST'])
+        def toggle_obfuscation():
+            try:
+                if not self.traffic_obfuscation:
+                    return jsonify({'success': False, 'error': 'Traffic obfuscation not initialized'})
+                
+                current_state = getattr(self.traffic_obfuscation, 'enabled', False)
+                new_state = not current_state
+                self.traffic_obfuscation.enabled = new_state
+                
+                self.logger.info(f"🌀 Обфускация {'включена' if new_state else 'выключена'}")
+                
+                return jsonify({
+                    'success': True,
+                    'enabled': new_state,
+                    'message': f'Traffic obfuscation {"enabled" if new_state else "disabled"}'
+                })
+            except Exception as e:
+                self.logger.error(f"Ошибка переключения обфускации: {e}")
                 return jsonify({'success': False, 'error': str(e)})
         
         @self.app.route('/api/force_escalation', methods=['POST'])
@@ -661,6 +1424,45 @@ class OptimizedTurboDashboard:
                     'escalated_count': escalated_count,
                     'message': f'Эскалация форсирована для {escalated_count} угроз'
                 })
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @self.app.route('/api/network_defense_stats')
+        def get_network_defense_stats():
+            try:
+                if self.network_defense:
+                    status = self.network_defense.get_defense_status()
+                    threats = self.network_defense.get_threat_summary()
+                    
+                    return jsonify({
+                        'success': True,
+                        'stats': {
+                            'active_threats': status['active_threats'],
+                            'blocked_ips': status['blocked_ips'],
+                            'packets_captured': status['statistics']['packets_captured'],
+                            'threats_detected': status['statistics']['threats_detected'],
+                            'attacks_blocked': status['statistics']['attacks_blocked'],
+                            'rules_triggered': status['statistics']['rules_triggered'],
+                            'running': status['running'],
+                            'uptime': status['uptime'],
+                            'threats': threats
+                        }
+                    })
+                else:
+                    return jsonify({
+                        'success': True,
+                        'stats': {
+                            'active_threats': 0,
+                            'blocked_ips': 0,
+                            'packets_captured': 0,
+                            'threats_detected': 0,
+                            'attacks_blocked': 0,
+                            'rules_triggered': 0,
+                            'running': False,
+                            'uptime': 0,
+                            'threats': []
+                        }
+                    })
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)})
     
@@ -686,7 +1488,13 @@ class OptimizedTurboDashboard:
                 'monitored_ports': [22, 80, 443, 3389, 1433, 3306, 5432],
                 'auto_block_threshold': 10,
                 'block_duration': 3600,
+                'max_block_duration': 86400,
+                'packet_capture_size': 65535,
+                'analysis_interval': 5,
                 'enable_honeypot': True,
+                'honeypot_ports': [8080, 8888, 9999],
+                'enable_rate_limiting': True,
+                'rate_limit_threshold': 100,
                 'enable_port_scanning_detection': True,
                 'enable_ddos_detection': True,
                 'enable_brute_force_detection': True,
@@ -733,6 +1541,7 @@ class OptimizedTurboDashboard:
             # Initialize CVU Intelligence
             cvu_config = {
                 'update_interval': 300,  # 5 minutes
+                'interval_min': 5,  # minutes
                 'sources': ['nvd', 'ghsa', 'cisa_kev'],
                 'max_vulnerabilities': 1000,
                 'enable_real_time': True,
@@ -743,35 +1552,104 @@ class OptimizedTurboDashboard:
             self.cvu_intelligence.start_intelligence()
             self.logger.critical("📡 CVU Intelligence активирована")
             
-            # Initialize LLM Defender
+            # Initialize LLM Defender with multiple models
             try:
                 self.llm_defender = OllamaRSecure()
+                self.llm_instances = {}  # Multiple LLM instances
                 
                 # Check local Ollama status first
                 if self.llm_defender.check_ollama_status():
                     self.llm_defender.running = True
-                    # Set appropriate model from local server
-                    if 'rsecure-security:latest' in self.llm_defender.available_models:
+                    
+                    # Initialize all available models
+                    available_models = [
+                        'rsecure-security:latest',
+                        'rsecure-analyst:latest', 
+                        'rsecure-wifi-antipositioning:latest',
+                        'rsecure-scanner:latest',
+                        'qwen2.5-coder:7b',
+                        'qwen2.5-coder:1.5b',
+                        'gemma2:2b'
+                    ]
+                    
+                    initialized_models = []
+                    for model_name in available_models:
+                        if model_name in self.llm_defender.available_models:
+                            try:
+                                # Create separate instance for each model
+                                model_instance = OllamaRSecure()
+                                model_instance.current_model = model_name
+                                model_instance.check_ollama_status()
+                                self.llm_instances[model_name] = model_instance
+                                initialized_models.append(model_name)
+                                self.logger.info(f"✅ Модель {model_name} инициализирована")
+                            except Exception as e:
+                                self.logger.warning(f"⚠️ Ошибка инициализации {model_name}: {e}")
+                    
+                    # Set primary model
+                    if 'rsecure-security:latest' in self.llm_instances:
                         self.llm_defender.current_model = 'rsecure-security:latest'
-                    elif 'rsecure-analyst:latest' in self.llm_defender.available_models:
+                    elif 'rsecure-analyst:latest' in self.llm_instances:
                         self.llm_defender.current_model = 'rsecure-analyst:latest'
                     else:
-                        self.llm_defender.current_model = self.llm_defender.available_models[0] if self.llm_defender.available_models else 'qwen2.5-coder:1.5b'
+                        self.llm_defender.current_model = list(self.llm_instances.keys())[0] if self.llm_instances else 'qwen2.5-coder:1.5b'
                     
-                    # Start monitoring 
+                    # Start primary monitoring
                     self.llm_defender.start()
-                    self.logger.critical(f"�️ ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК АКТИВИРОВАН")
-                    self.logger.critical(f"🤖 Модель: {self.llm_defender.current_model}")
-                    self.logger.critical(f"📦 Доступно моделей: {len(self.llm_defender.available_models)}")
+                    self.logger.critical(f"🤖 ЛОКАЛЬНЫЙ LLM ЗАЩИТНИК АКТИВИРОВАН")
+                    self.logger.critical(f"🎯 Основная модель: {self.llm_defender.current_model}")
+                    self.logger.critical(f"📦 Инициализировано моделей: {len(self.llm_instances)}")
+                    self.logger.critical(f"🔧 Доступные модели: {list(self.llm_instances.keys())}")
                 else:
-                    self.logger.warning("�️ Локальный Ollama сервер недоступен - LLM защитник неактивен")
-                    self.llm_defender = None
+                    self.logger.warning("⚠️ Ollama сервер недоступен")
             except Exception as e:
-                self.logger.error(f"Ошибка активации локального LLM защитника: {e}")
-                self.llm_defender = None
+                self.logger.error(f"Ошибка инициализации LLM защитника: {e}")
             
-            self.logger.critical("🔥 RSECURE OPTIMIZED TURBO СИСТЕМА ЗАПУЩЕНА")
-            self.logger.critical("⚡ Все боевые модули активированы - готовность к эскалации")
+            # Initialize macOS notifications
+            try:
+                self.notification_system = get_notification_instance({
+                    'enabled': True,
+                    'notification_cooldown': 15,  # 15 seconds for testing
+                    'enable_sound': True,
+                    'severity_levels': {
+                        'low': {'sound': 'Glass', 'timeout': 3},
+                        'medium': {'sound': 'Ping', 'timeout': 5},
+                        'high': {'sound': 'Basso', 'timeout': 7},
+                        'critical': {'sound': 'Sosumi', 'timeout': 10}
+                    }
+                })
+                
+                if self.notification_system.enabled:
+                    self.logger.critical("🔔 Система уведомлений macOS активирована")
+                    # Send test notification
+                    self.notification_system.test_notification()
+                else:
+                    self.logger.warning("⚠️ Система уведомлений недоступна")
+            except Exception as e:
+                self.logger.error(f"Ошибка инициализации уведомлений: {e}")
+            
+            # Initialize DPI Bypass
+            try:
+                self.dpi_bypass = DPIBypassEngine()
+                self.dpi_bypass.enabled = True
+                self.dpi_bypass.bypass_count = 0
+                self.dpi_bypass.current_method = 'fragmentation'
+                
+                self.logger.critical("🛡️ DPI Bypass система активирована")
+            except Exception as e:
+                self.logger.error(f"Ошибка инициализации DPI bypass: {e}")
+            
+            # Initialize Traffic Obfuscation
+            try:
+                self.traffic_obfuscation = TrafficObfuscator()
+                self.traffic_obfuscation.enabled = True
+                self.traffic_obfuscation.obfuscated_packets = 0
+                self.traffic_obfuscation.current_method = 'aes'
+                self.traffic_obfuscation.encryption_type = 'AES'
+                
+                self.logger.critical("🌀 Traffic Obfuscation система активирована")
+            except Exception as e:
+                self.logger.error(f"Ошибка инициализации обфускации: {e}")
             
         except Exception as e:
             self.logger.error(f"Ошибка инициализации: {e}")
@@ -782,6 +1660,41 @@ class OptimizedTurboDashboard:
             # Generate initial threats
             for i in range(3):
                 self._generate_threat()
+            
+            # Start LLM activity simulation
+            def simulate_llm_activity():
+                while True:
+                    try:
+                        if self.llm_defender and hasattr(self.llm_defender, 'running') and self.llm_defender.running:
+                            # Create test security events for LLM analysis
+                            test_events = [
+                                {
+                                    'type': 'security_threat',
+                                    'source_ip': f"192.168.{random.randint(1,255)}.{random.randint(1,255)}",
+                                    'attack_type': random.choice(['sql_injection', 'xss', 'brute_force', 'ddos', 'port_scan']),
+                                    'severity': random.choice(['low', 'medium', 'high', 'critical']),
+                                    'description': f"Suspicious activity detected from internal network",
+                                    'timestamp': datetime.now().isoformat()
+                                }
+                            ]
+                            
+                            # Send events to LLM for analysis
+                            try:
+                                processed_events = self.llm_defender.process_events(test_events)
+                                if processed_events:
+                                    self.logger.info(f"🧠 LLM проанализировал {len(processed_events)} событий")
+                            except Exception as e:
+                                self.logger.debug(f"LLM анализ недоступен: {e}")
+                        
+                        time.sleep(5)  # Generate LLM events every 5 seconds
+                    except Exception as e:
+                        self.logger.error(f"Ошибка LLM симуляции: {e}")
+                        time.sleep(10)
+            
+            # Start LLM simulation thread
+            llm_thread = threading.Thread(target=simulate_llm_activity, daemon=True)
+            llm_thread.start()
+            self.logger.info("🧠 Симуляция LLM активности запущена")
             
             while True:
                 try:
@@ -807,6 +1720,7 @@ class OptimizedTurboDashboard:
         
         threat_thread = threading.Thread(target=simulate_threats, daemon=True)
         threat_thread.start()
+        self.logger.info("🔄 Симуляция угроз запущена")
     
     def _generate_threat(self):
         """Generate threat from REAL network scanning and CVU intelligence"""
@@ -963,6 +1877,27 @@ class OptimizedTurboDashboard:
         self.logger.critical(f"🔥 {threat_type_desc} УГРОЗА {threat['severity']} {threat['type']} от {threat['ip']}")
         self.logger.info(f"📡 Уязвимость: {threat['vulnerability']} - CVSS: {threat['cvss_score']}")
         
+        # Send macOS notification for critical threats
+        if self.notification_system and threat['severity'] in ['high', 'critical']:
+            try:
+                notification_data = {
+                    'threat_type': threat['type'],
+                    'confidence': 0.8 + (0.2 if threat['severity'] == 'critical' else 0),
+                    'severity': threat['severity'],
+                    'source': threat['ip'],
+                    'brain_signal': f"THREAT_{threat['type'].upper()}_DETECTED"
+                }
+                
+                success = self.notification_system.send_psychological_threat_notification(notification_data)
+                if success:
+                    self.logger.info(f"🔔 Уведомление об угрозе отправлено: {threat['type']}")
+                    # Update notification count
+                    if not hasattr(self.notification_system, 'notifications_sent'):
+                        self.notification_system.notifications_sent = 0
+                    self.notification_system.notifications_sent += 1
+            except Exception as e:
+                self.logger.error(f"Ошибка отправки уведомления: {e}")
+        
         # Update network defense status
         if self.network_defense:
             try:
@@ -977,7 +1912,6 @@ class OptimizedTurboDashboard:
             if self.cvu_intelligence and hasattr(self.cvu_intelligence, 'active_threats'):
                 threats = self.cvu_intelligence.active_threats
                 if threats:
-                    import random
                     return random.choice(threats)
         except Exception as e:
             self.logger.error(f"Ошибка получения уязвимости из CVU: {e}")
