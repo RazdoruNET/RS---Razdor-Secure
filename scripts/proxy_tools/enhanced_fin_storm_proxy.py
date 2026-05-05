@@ -18,24 +18,39 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse
 
 # Импортируем пайплайны из оригинального модуля
-sys.path.append('/Users/razdor/Documents/GitHub/RS---Razdor-Secure')
-from rsecure.modules.defense.dpi_bypass_combiner import (
-    GoswebTunnelPipeline,
-    MediaParasitePipeline, 
-    FinStormPipeline
-)
+# Динамическое определение пути к проекту
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+sys.path.insert(0, project_root)
+
+try:
+    from rsecure.modules.defense.dpi_bypass_combiner import (
+        GoswebTunnelPipeline,
+        MediaParasitePipeline, 
+        FinStormPipeline
+    )
+    DPI_MODULES_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ DPI модули недоступны: {e}")
+    print("🔄 Работа в режиме прокси без DPI обхода")
+    DPI_MODULES_AVAILABLE = False
 
 class EnhancedProxyHandler(BaseHTTPRequestHandler):
     """Обработчик прокси запросов с всеми пайплайнами"""
     
     def __init__(self, request, client_address, server):
         self.server_class = server
-        # Инициализируем пайплайны
-        self.pipelines = [
-            GoswebTunnelPipeline(),    # Приоритет 1: Госвеб-Туннель
-            MediaParasitePipeline(),   # Приоритет 2: Медиа-Паразит
-            FinStormPipeline()         # Приоритет 3: Фин-Шторм
-        ]
+        # Инициализируем пайплайны только если доступны
+        self.pipelines = []
+        if DPI_MODULES_AVAILABLE:
+            self.pipelines = [
+                GoswebTunnelPipeline(),    # Приоритет 1: Госвеб-Туннель
+                MediaParasitePipeline(),   # Приоритет 2: Медиа-Паразит
+                FinStormPipeline()         # Приоритет 3: Фин-Шторм
+            ]
+            print("✅ DPI пайплайны загружены")
+        else:
+            print("⚠️ Работа в режиме обычного прокси")
         super().__init__(request, client_address, server)
     
     def do_GET(self):
@@ -347,25 +362,36 @@ def main():
     port = 8080
     
     print(f"🚀 Запускаю улучшенную прокси со всеми пайплайнами...")
-    print(f"📍 Адрес: {host}:{port}")
-    print(f"🌐 Для браузера: http://{host}:{port}")
-    print(f"⛓️ Пайплайны:")
-    print(f"   🥇 Госвеб-Туннель (SNI=gosuslugi.ru)")
-    print(f"   🥈 Медиа-Паразит (SNI=vk.com)")
-    print(f"   🥉 Фин-Шторм (SNI=sbp.nspk.ru)")
-    print(f"🔄 Автоматическое переключение при неудаче")
-    print(f"⚡ Нажмите Ctrl+C для остановки")
-    print("-" * 50)
-    
     try:
         server = ThreadedHTTPServer((host, port), EnhancedProxyHandler)
+        print(f"� Enhanced Fin Storm Proxy запущен на {host}:{port}")
+        print("🌐 Используйте в браузере: http://127.0.0.1:8080")
+        print("📊 Статистика: http://127.0.0.1:8080/stats")
         server.serve_forever()
+        return True
+    except PermissionError:
+        print(f"❌ Ошибка прав доступа для порта {port}")
+        print(f"💡 Решение: sudo или другой порт (>1024)")
+        return False
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"❌ Порт {port} уже занят")
+            print(f"💡 Решение: lsof -ti:{port} | xargs kill")
+            return False
+        else:
+            print(f"❌ Ошибка сети: {e}")
+            return False
     except KeyboardInterrupt:
-        print(f"\n🛑 Остановка сервера...")
-        server.shutdown()
-        print(f"✅ Сервер остановлен")
+        print("\n🛑 Остановка прокси по запросу")
+        return True
     except Exception as e:
-        print(f"❌ Ошибка сервера: {e}")
+        print(f"❌ Неизвестная ошибка: {e}")
+        return False
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Enhanced Fin Storm Proxy')
+    parser.add_argument('--port', type=int, default=8080, help='Proxy port')
+    parser.add_argument('--host', default='127.0.0.1', help='Proxy host')
+    args = parser.parse_args()
+
+    safe_start_proxy(args.host, args.port)

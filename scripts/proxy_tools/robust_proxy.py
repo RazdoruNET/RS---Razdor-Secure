@@ -18,24 +18,39 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse
 
 # Импортируем пайплайны
-sys.path.append('/Users/razdor/Documents/GitHub/RS---Razdor-Secure')
-from rsecure.modules.defense.dpi_bypass_combiner import (
-    GoswebTunnelPipeline,
-    MediaParasitePipeline, 
-    FinStormPipeline
-)
+# Динамическое определение пути к проекту
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+sys.path.insert(0, project_root)
+
+try:
+    from rsecure.modules.defense.dpi_bypass_combiner import (
+        GoswebTunnelPipeline,
+        MediaParasitePipeline, 
+        FinStormPipeline
+    )
+    DPI_MODULES_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ DPI модули недоступны: {e}")
+    print("🔄 Работа в режиме обычного прокси")
+    DPI_MODULES_AVAILABLE = False
 
 class RobustProxyHandler(BaseHTTPRequestHandler):
     """Улучшенный обработчик с исправленными проблемами"""
     
     def __init__(self, request, client_address, server):
         self.server_class = server
-        # Только рабочие пайплайны
-        self.pipelines = [
-            FinStormPipeline(),            # Приоритет 1: Фин-Шторм (самый стабильный)
-            MediaParasitePipeline(),       # Приоритет 2: Медиа-Паразит
-            GoswebTunnelPipeline(),        # Приоритет 3: Госвеб-Туннель
-        ]
+        # Только рабочие пайплайны если доступны
+        self.pipelines = []
+        if DPI_MODULES_AVAILABLE:
+            self.pipelines = [
+                FinStormPipeline(),            # Приоритет 1: Фин-Шторм (самый стабильный)
+                MediaParasitePipeline(),       # Приоритет 2: Медиа-Паразит
+                GoswebTunnelPipeline(),        # Приоритет 3: Госвеб-Туннель
+            ]
+            print("✅ DPI пайплайны загружены")
+        else:
+            print("⚠️ Работа в режиме обычного прокси")
         super().__init__(request, client_address, server)
     
     def do_GET(self):

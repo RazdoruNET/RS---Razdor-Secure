@@ -1,0 +1,12 @@
+=== Сводный отчет тестирования модулей DPI ===
+Дата: Tue May  5 21:56:43 MSK 2026
+Тестовый URL: https://www.youtube.com
+Успешных модулей: 0/7
+
+Подробные логи в файлах:
+-rw-r--r--@ 1 razdor  staff  106 May  5 21:32 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Enhanced Fin Storm Proxy_20260505_213255.log
+-rw-r--r--@ 1 razdor  staff   86 May  5 21:33 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Fin Storm Proxy_20260505_213305.log
+-rw-r--r--@ 1 razdor  staff   89 May  5 21:56 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Fin Storm Proxy_20260505_215607.log
+-rw-r--r--@ 1 razdor  staff   83 May  5 21:33 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Robust Proxy_20260505_213313.log
+-rw-r--r--@ 1 razdor  staff   91 May  5 21:33 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Simple Working Proxy_20260505_213329.log
+-rw-r--r--@ 1 razdor  staff   94 May  5 21:56 /Users/razdor/Documents/GitHub/RS---Razdor-Secure/dpi_test_results/Simple Working Proxy_20260505_215632.log
