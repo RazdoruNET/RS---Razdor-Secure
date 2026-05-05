@@ -40,29 +40,69 @@ SUPER_DPI_COMBINER/
 │   │   ├── __init__.py
 │   │   ├── packet_shaper.py
 │   │   ├── tls_fingerprint.py
-│   │   └── http_fragmentation.py
+│   │   ├── udp_fragmentation.py
+│   │   ├── icmp_tunneling.py
+│   │   └── dns_over_https.py
 │   ├── domain_fronting/         # Domain Fronting
 │   │   ├── __init__.py
 │   │   ├── cdn_bypass.py
 │   │   ├── host_header.py
-│   │   └── sni_spoof.py
+│   │   ├── sni_spoof.py
+│   │   ├── domain_rotation.py
+│   │   └── subdomain_masking.py
 │   ├── protocol_obfuscation/     # Обфускация протоколов
 │   │   ├── __init__.py
 │   │   ├── http_over_https.py
 │   │   ├── custom_headers.py
-│   │   └── tls_modification.py
+│   │   ├── tls_modification.py
+│   │   ├── http2_upgrade.py
+│   │   └── websocket_tunnel.py
 │   ├── tor_integration/         # Tor интеграция
 │   │   ├── __init__.py
 │   │   ├── tor_bridges.py
-│   │   └── darknet_access.py
+│   │   ├── darknet_access.py
+│   │   ├── onion_routing.py
+│   │   ├── hidden_services.py
+│   │   └── exit_node_rotation.py
 │   ├── omega_transport/         # Omega транспорт
 │   │   ├── __init__.py
 │   │   ├── bridge_manager.py
-│   │   └── proxy_chains.py
-│   └── adaptive/              # Адаптивные техники
+│   │   ├── proxy_chains.py
+│   │   ├── pluggable_transports.py
+│   │   ├── obfs4_protocol.py
+│   │   └── meek_protocol.py
+│   ├── adaptive/              # Адаптивные техники
+│   │   ├── __init__.py
+│   │   ├── auto_switch.py
+│   │   ├── ml_detection.py
+│   │   ├── traffic_analysis.py
+│   │   ├── pattern_learning.py
+│   │   └── behavior_modeling.py
+│   ├── quantum/                # Квантовые техники
+│   │   ├── __init__.py
+│   │   ├── quantum_tunneling.py
+│   │   ├── entanglement_routing.py
+│   │   ├── superposition_coding.py
+│   │   └── quantum_key_distribution.py
+│   ├── satellite/              # Спутниковые техники
+│   │   ├── __init__.py
+│   │   ├── satellite_communication.py
+│   │   ├── orbital_routing.py
+│   │   ├── space_based_tunnels.py
+│   │   └── gps_spoofing.py
+│   ├── neural/                 # Нейросетевые техники
+│   │   ├── __init__.py
+│   │   ├── neural_obfuscation.py
+│   │   ├── traffic_prediction.py
+│   │   ├── dpi_pattern_recognition.py
+│   │   └── adaptive_encoding.py
+│   └── darknet/               # Darknet техники
 │       ├── __init__.py
-│       ├── auto_switch.py
-│       └── ml_detection.py
+│       ├── i2p_routing.py
+│       ├── hidden_services.py
+│       ├── market_access.py
+│       ├── anonymous_communication.py
+│       └── crypto_market_integration.py
 ├── utils/
 │   ├── __init__.py
 │   ├── logger.py              # Логирование
