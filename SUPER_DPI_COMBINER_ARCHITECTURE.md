@@ -44,11 +44,13 @@ SUPER_DPI_COMBINER/
 │   ├── domain_fronting/         # Domain Fronting
 │   │   ├── __init__.py
 │   │   ├── cdn_bypass.py
-│   │   └── host_header.py
+│   │   ├── host_header.py
+│   │   └── sni_spoof.py
 │   ├── protocol_obfuscation/     # Обфускация протоколов
 │   │   ├── __init__.py
 │   │   ├── http_over_https.py
-│   │   └── custom_headers.py
+│   │   ├── custom_headers.py
+│   │   └── tls_modification.py
 │   ├── tor_integration/         # Tor интеграция
 │   │   ├── __init__.py
 │   │   ├── tor_bridges.py
@@ -71,10 +73,19 @@ SUPER_DPI_COMBINER/
 │   ├── __init__.py
 │   ├── test_pipelines.py      # Тесты пайплайнов
 │   └── test_integration.py    # Интеграционные тесты
-└── docs/
-    ├── API.md                # API документация
-    ├── PIPELINES.md          # Описание пайплайнов
-    └── LLM_INTEGRATION.md    # Интеграция LLM
+├── docs/
+│   ├── API.md                # API документация
+│   ├── PIPELINES.md          # Описание пайплайнов
+│   └── LLM_INTEGRATION.md    # Интеграция LLM
+├── logs/                      # Логи работы комбайна (gitignored)
+│   ├── combiner.log          # Основной лог
+│   ├── performance.log        # Лог производительности
+│   ├── llm_optimization.log   # Лог LLM оптимизации
+│   └── errors.log            # Лог ошибок
+└── stats/                     # Статистика и метрики (gitignored)
+    ├── performance.json       # Метрики производительности
+    ├── success_rates.txt      # Успешность пайплайнов
+    └── dpi_signatures.json   # База данных DPI сигнатур
 ```
 
 ---
@@ -82,35 +93,211 @@ SUPER_DPI_COMBINER/
 ## 🔧 Технологии из существующих модулей
 
 ### 📦 DPI Bypass Techniques:
-1. **SpoofDPI Logic**
-   - TCP сегментация
-   - Фейковые пакеты
-   - TTL манипуляция
 
-2. **Domain Fronting**
-   - CDN маскировка
-   - Host header подмена
-   - SNI спуфинг
+#### 1. **SpoofDPI Logic**
+**Принцип работы:**
+- Обман DPI системы через манипуляцию TCP пакетов
+- Создание фейковых сетевых пакетов
+- Изменение параметров TTL (Time To Live)
 
-3. **Protocol Obfuscation**
-   - HTTP фрагментация
-   - TLS fingerprint подмена
-   - Custom headers
+**Техники реализации:**
+```python
+# TCP сегментация
+def tcp_segmentation(data, mtu=1500):
+    """Разделение данных на сегменты меньше MTU"""
+    segments = []
+    for i in range(0, len(data), mtu):
+        segment = data[i:i+mtu]
+        segments.append(segment)
+    return segments
 
-4. **Tor Integration**
-   - Tor мосты
-   - Darknet доступ
-   - Автоматический fallback
+# TTL манипуляция
+def ttl_manipulation(packet, ttl_range=(64, 128)):
+    """Изменение TTL для обхода инспекции"""
+    packet.ttl = random.choice(ttl_range)
+    return packet
+```
 
-5. **Omega Transport**
-   - Транспортные мосты
-   - Proxy chains
-   - Динамическая маршрутизация
+**Преимущества:**
+- Высокая скорость обработки
+- Минимальная нагрузка на систему
+- Эффективность против простых DPI
 
-6. **Adaptive Techniques**
-   - ML детекция DPI
-   - Автопереключение
-   - Статистический анализ
+#### 2. **Domain Fronting**
+**Принцип работы:**
+- Маскировка трафика под легитимные CDN сервисы
+- Подмена Host заголовков
+- SNI (Server Name Indication) спуфинг
+
+**Техники реализации:**
+```python
+# CDN маскировка
+def cdn_masking(target_domain, cdn_list):
+    """Маскировка домена под CDN"""
+    cdn = random.choice(cdn_list)
+    return f"{cdn}/{target_domain}"
+
+# Host header подмена
+def host_header_spoofing(original_host, fake_host):
+    """Подмена заголовка Host"""
+    headers = {
+        'Host': fake_host,
+        'X-Forwarded-Host': original_host
+    }
+    return headers
+```
+
+**Преимущества:**
+- Обход блокировок по доменам
+- Выглядит как легитимный трафик
+- Сложность обнаружения
+
+#### 3. **Protocol Obfuscation**
+**Принцип работы:**
+- Фрагментация HTTP запросов
+- Подмена TLS fingerprint
+- Использование кастомных заголовков
+
+**Техники реализации:**
+```python
+# HTTP фрагментация
+def http_fragmentation(url, headers):
+    """Разделение HTTP запроса на фрагменты"""
+    fragments = []
+    for i in range(0, len(url), 100):
+        fragment = url[i:i+100]
+        fragments.append(fragment)
+    return fragments
+
+# TLS fingerprint подмена
+def tls_fingerprint_spoofing():
+    """Подмена TLS fingerprint для обхода инспекции"""
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context.set_ciphers('HIGH:!aNULL:!eNULL:!3DES')
+    return context
+```
+
+**Преимущества:**
+- Обход DPI инспекции протоколов
+- Сложность анализа трафика
+- Гибкость настроек
+
+#### 4. **Tor Integration**
+**Принцип работы:**
+- Маршрутизация через Tor сеть
+- Использование Tor мостов
+- Доступ к Darknet ресурсам
+
+**Техники реализации:**
+```python
+# Tor мосты
+def tor_bridges(bridge_list):
+    """Использование Tor мостов для обхода блокировок"""
+    bridge = random.choice(bridge_list)
+    return f"obfs4://{bridge}"
+
+# Автоматический fallback
+def tor_fallback(primary_proxy, tor_proxy):
+    """Автоматическое переключение на Tor при сбоях"""
+    try:
+        return primary_proxy.connect()
+    except:
+        return tor_proxy.connect()
+```
+
+**Преимущества:**
+- Максимальная анонимность
+- Обход глубоких инспекций
+- Глобальная доступность
+
+#### 5. **Omega Transport**
+**Принцип работы:**
+- Транспортные мосты
+- Цепочки прокси
+- Динамическая маршрутизация
+
+**Техники реализации:**
+```python
+# Транспортные мосты
+def omega_transport_bridges(config):
+    """Создание мостовых соединений"""
+    bridges = []
+    for bridge_config in config['bridges']:
+        bridge = create_bridge(bridge_config)
+        bridges.append(bridge)
+    return bridges
+
+# Цепочки прокси
+def proxy_chain(proxy_list):
+    """Создание цепочки прокси серверов"""
+    chain = ProxyChain(proxy_list)
+    return chain
+```
+
+**Преимущества:**
+- Высокая отказоустойчивость
+- Распределение нагрузки
+- Сложность обнаружения
+
+#### 6. **Adaptive Techniques**
+**Принцип работы:**
+- ML детекция DPI сигнатур
+- Автоматическое переключение техник
+- Статистический анализ эффективности
+
+**Техники реализации:**
+```python
+# ML детекция DPI
+def ml_dpi_detection(traffic_data):
+    """Машинное обучение для обнаружения DPI"""
+    model = train_dpi_model(traffic_data)
+    dpi_type = model.predict(traffic_data)
+    return dpi_type
+
+# Автоматическое переключение
+def auto_switch_techniques(current_tech, success_rate):
+    """Автопереключение на основе успешности"""
+    if success_rate < 0.5:
+        return select_best_technique()
+    return current_tech
+```
+
+**Преимущества:**
+- Адаптация под новые типы DPI
+- Самооптимизация
+- Предсказательное переключение
+
+---
+
+### 🎯 Комбинированный подход:
+
+**Многоуровневый обход:**
+```python
+class CombinedDPIBypass:
+    def __init__(self):
+        self.techniques = [
+            SpoofDPI(),
+            DomainFronting(),
+            ProtocolObfuscation(),
+            TorIntegration(),
+            OmegaTransport(),
+            AdaptiveTechniques()
+        ]
+        self.active_techniques = []
+    
+    def select_optimal_combination(self, target, dpi_signature):
+        """Выбор оптимальной комбинации техник"""
+        analysis = self.analyze_dpi_signature(dpi_signature)
+        combination = self.optimize_combination(analysis)
+        return combination
+```
+
+**Преимущества комбайнера:**
+- ✅ Синергия техник
+- ✅ Максимальная эффективность
+- ✅ Адаптивность под любые DPI
+- ✅ Отказоустойчивость
+- ✅ Интеллектуальная оптимизация
 
 ---
 
