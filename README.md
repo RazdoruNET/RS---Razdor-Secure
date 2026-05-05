@@ -235,21 +235,141 @@ python run_rsecure_with_dashboard.py
 ## 📊 СТРУКТУРА ПРОЕКТА
 
 ```
-RSecure/
-├── rsecure/                 # Основной код системы
-│   ├── core/               # Ядро системы
-│   ├── modules/            # Модули защиты
-│   │   ├── detection/      # Модули детекции
-│   │   ├── analysis/       # Аналитические модули
-│   │   └── defense/        # Модули защиты
-│   └── config/             # Конфигурация
-├── docs/                   # Документация
-│   ├── classified/         # Секретные материалы
-│   ├── diy/               # DIY инструкции
-│   └── research/          # Исследования
-├── tests/                  # Тесты
-├── assets/                 # Ресурсы
-└── templates/              # Шаблоны
+RS---Razdor-Secure/
+├── README.md                           # Основная документация проекта
+├── USER_GUIDE.md                       # Руководство пользователя
+├── requirements.txt                     # Зависимости Python
+├── assets/                            # Статические ресурсы
+│   └── we_razdor_logo.png
+├── bin/                               # Исполняемые файлы
+│   ├── README.md
+│   ├── rsecure
+│   └── start_rsecure.sh
+├── config/                            # Файлы конфигурации
+│   ├── README.md
+│   └── templates/
+│       └── rsecure_config.template.json
+├── docs/                              # Документация
+│   ├── README.md
+│   ├── setup/                         # Инструкции по установке
+│   │   ├── BROWSER_SETUP.md
+│   │   ├── FULL_SYSTEM_PROXY.md
+│   │   ├── INSTALLATION.md
+│   │   └── README_DPI_BYPASS.md
+│   ├── organization/                  # Документация по организации
+│   │   ├── PROJECT_STRUCTURE.md
+│   │   ├── ARCHITECTURE_REORGANIZATION.md
+│   │   ├── LOGS_STRUCTURE.md
+│   │   ├── TEST_RESULTS_STRUCTURE.md
+│   │   └── LOG_PATH_UPDATES_SUMMARY.md
+│   └── [другие папки документации...]
+├── examples/                          # Примеры кода
+│   └── README.md
+├── models/                            # AI/ML модели (gitignored)
+│   └── ai_models/
+│       ├── rsecure-analyst.modelfile
+│       ├── rsecure-scanner.modelfile
+│       ├── rsecure-security.modelfile
+│       └── rsecure-wifi-antipositioning.modelfile
+├── rsecure/                           # Основной код приложения
+│   ├── __init__.py
+│   ├── rsecure_main.py
+│   ├── config/
+│   ├── core/
+│   ├── modules/
+│   └── tests/
+├── scripts/                           # Все утилиты и скрипты запуска
+│   ├── README.md
+│   ├── startup/                       # Скрипты запуска и настройки
+│   │   ├── README.md
+│   │   ├── run_rsecure.py
+│   │   ├── run_rsecure_with_dashboard.py
+│   │   ├── run_dpi_bypass_daemon.py
+│   │   ├── start_fixed_proxy.py
+│   │   ├── start_full_system_proxy.py
+│   │   ├── start_white_ghost.py
+│   │   ├── launch_dpi_bypass_proxy.py
+│   │   ├── setup_http_proxy.py
+│   │   ├── setup_system_proxy.py
+│   │   ├── start_dpi_bypass.sh
+│   │   ├── start_rsecure.sh
+│   │   ├── status_dpi_bypass.sh
+│   │   └── stop_dpi_bypass.sh
+│   ├── proxy_tools/                   # Скрипты прокси
+│   │   ├── README.md
+│   │   ├── proxy_setup_instructions.md
+│   │   ├── fin_storm_proxy.py
+│   │   ├── enhanced_fin_storm_proxy.py
+│   │   ├── final_proxy.py
+│   │   ├── robust_proxy.py
+│   │   ├── simple_proxy.py
+│   │   ├── simple_working_proxy.py
+│   │   ├── ultimate_proxy.py
+│   │   ├── http_tunnel_proxy.py
+│   │   ├── ngrok_proxy.py
+│   │   ├── system_proxy.py
+│   │   ├── system_proxy_manager.py
+│   │   ├── white_ghost_proxy.py
+│   │   ├── white_ghost_proxy_fixed.py
+│   │   └── working_ngrok_proxy.py
+│   ├── dashboard_tools/               # Панели управления
+│   │   ├── README.md
+│   │   ├── advanced_dashboard.py
+│   │   ├── optimized_dashboard.py
+│   │   ├── russian_dashboard.py
+│   │   ├── simple_dashboard.py
+│   │   ├── simple_rsecure_dashboard.py
+│   │   ├── turbo_escalation_dashboard.py
+│   │   └── turbo_russian_dashboard.py
+│   ├── install_rsecure.py            # Скрипт установки
+│   ├── advanced_pipelines.py           # Утилиты продвинутых конвейеров
+│   ├── uninstall_rsecure.sh          # Скрипт удаления
+│   └── [другие утилиты...]
+├── tests/                             # Все тесты организованы по типам
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── integration/                     # Интеграционные тесты
+│   │   ├── README.md
+│   │   ├── test_dpi_bypass_complete.py
+│   │   ├── test_dpi_bypass_combiner_standalone.py
+│   │   ├── test_dpi_bypass_combiner_v2.py
+│   │   ├── test_dpi_bypass_simple.py
+│   │   ├── test_dpi_bypass_standalone.py
+│   │   ├── test_10min_timeout.py
+│   │   ├── test_dns_fix.py
+│   │   ├── test_ollama_fix.py
+│   │   ├── test_omega_complete.py
+│   │   ├── test_real_accessibility.py
+│   │   ├── test_retaliation.py
+│   │   ├── test_timeout_fix.py
+│   │   ├── test_tor_core_integration.py
+│   │   ├── test_tor_simple.py
+│   │   └── test_white_ghost_pipelines.py
+│   ├── unit/                        # Модульные тесты
+│   │   ├── README.md
+│   │   ├── test_neural_encryptor.py
+│   │   ├── test_rsecure.py
+│   │   ├── test_runner.py
+│   │   └── test_wifi_antipositioning.py
+│   ├── performance/                 # Тесты производительности
+│   │   └── README.md
+│   └── [существующие тесты...]
+├── tools/                             # Инструменты разработки
+│   └── README.md
+├── templates/                         # Файлы шаблонов
+│   └── dashboard.html
+├── logs/                              # Логи системы организованы по категориям (gitignored)
+│   ├── application/                  # Логи уровня приложений
+│   ├── security/                    # Логи безопасности
+│   ├── dpi_bypass/                  # Логи обхода DPI
+│   ├── system/                      # Системные логи
+│   └── monitoring/                  # Логи мониторинга
+├── test_results/                      # Результаты тестов и отчеты (gitignored)
+│   ├── dpi_bypass/                  # Результаты тестов обхода DPI
+│   └── summaries/                   # Краткие сводки
+├── rsecure_env/                       # Виртуальное окружение Python
+├── tf_env/                           # Виртуальное окружение TensorFlow
+└── mock_libs/                        # Библиотеки-заглушки для совместимости
 ```
 
 ---
