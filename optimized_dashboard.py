@@ -44,7 +44,7 @@ OPTIMIZED_DASHBOARD_HTML = """
         .dashboard { 
             display: grid; 
             grid-template-columns: 1fr 1fr 1fr 1fr;
-            grid-template-rows: auto auto 1fr;
+            grid-template-rows: auto auto auto 1fr;
             gap: 4px; 
             height: 100vh; 
             padding: 4px;
@@ -65,6 +65,9 @@ OPTIMIZED_DASHBOARD_HTML = """
             padding: 8px; 
             overflow: hidden;
             height: 200px;
+        }
+        .card:last-child { 
+            height: 100%;
         }
         .card h3 { font-size: 11px; margin-bottom: 6px; color: #ff6b6b; }
         .metric { display: flex; justify: space-between; margin: 2px 0; font-size: 10px; }
@@ -92,7 +95,7 @@ OPTIMIZED_DASHBOARD_HTML = """
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #1e7e34; }
         .logs { 
-            grid-column: 1 / -1; 
+            grid-column: 1 / 4; 
             background: rgba(0,0,0,0.5); 
             border: 1px solid rgba(255,255,255,0.1); 
             border-radius: 4px; 
@@ -155,10 +158,6 @@ OPTIMIZED_DASHBOARD_HTML = """
             <div class="metric">
                 <span class="metric-label">Обновлено:</span>
                 <span class="metric-value" id="lastVulnUpdate">--:--</span>
-            </div>
-            <div class="controls">
-                <button class="btn btn-success" onclick="updateVulns()">🔄</button>
-                <button class="btn" onclick="forceUpdate()">🔥</button>
             </div>
         </div>
 
@@ -272,20 +271,22 @@ OPTIMIZED_DASHBOARD_HTML = """
             </div>
         </div>
 
-        <div class="card">
-            <h3>🎮 УПРАВЛЕНИЕ</h3>
-            <div class="controls" style="flex-direction: column; gap: 8px;">
-                <button class="btn btn-success" onclick="forceEscalation()">🔥 ФОРСИРОВАТЬ ЭСКАЛАЦИЮ</button>
-                <button class="btn" onclick="clearThreats()">🧹 ОЧИСТИТЬ УГРОЗЫ</button>
-                <button class="btn" onclick="emergencyStop()">🛑 ЭКСТРЕННЫЙ СТОП</button>
-                <button class="btn btn-success" onclick="showStats()">📊 СТАТИСТИКА</button>
-            </div>
-        </div>
-
         <div class="logs" id="logs">
             <div class="log-entry">
                 <span class="log-time">00:00:00</span>
                 <span class="success">[INFO]</span> 🔥 RSECURE Turbo Escalation запущена
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🎮 УПРАВЛЕНИЕ</h3>
+            <div class="controls" style="flex-direction: column; gap: 8px;">
+                <button class="btn btn-success" onclick="updateVulns()">🔄 Обновить базу уязвимостей</button>
+                <button class="btn" onclick="forceUpdate()">🔥 Форсировать CVE</button>
+                <button class="btn btn-success" onclick="forceEscalation()">🔥 ФОРСИРОВАТЬ ЭСКАЛАЦИЮ</button>
+                <button class="btn" onclick="clearThreats()">🧹 ОЧИСТИТЬ УГРОЗЫ</button>
+                <button class="btn" onclick="emergencyStop()">🛑 ЭКСТРЕННЫЙ СТОП</button>
+                <button class="btn btn-success" onclick="showStats()">📊 СТАТИСТИКА</button>
             </div>
         </div>
     </div>
