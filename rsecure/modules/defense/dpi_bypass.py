@@ -22,6 +22,13 @@ import urllib.parse
 import subprocess
 import os
 
+# Tor-Core интеграция
+try:
+    from .tor_core_integration import tor_core, activate_darknet_bridge, get_youtube_through_tor, automatic_tor_fallback
+    TOR_CORE_AVAILABLE = True
+except ImportError:
+    TOR_CORE_AVAILABLE = False
+    print(" Tor-Core интеграция недоступна")
 
 class BypassMethod(Enum):
     """Available DPI bypass methods"""
@@ -392,6 +399,7 @@ class DPIBypassEngine:
             
             # Try different protocol mimics for YouTube (most effective first)
             mimics = [
+                self._tor_core_integration,  # Tor-Core полноценный Darknet-стек
                 self._tor_wrapper_bypass,  # Tor network wrapper
                 self._darknet_solutions,  # Darknet onion services
                 self._libredirect_alternatives,  # LibRedirect frontends
@@ -1317,6 +1325,39 @@ class DPIBypassEngine:
         except Exception as e:
             print(f"Hostfakesplit failed: {e}")
             return False
+    
+    def _tor_core_integration(self, config: BypassConfig) -> bool:
+        """Tor-Core интеграция - полноценный Darknet-стек"""
+        try:
+            print(f"🧬 Tor-Core интеграция: полноценный Darknet-стек")
+            
+            if not TOR_CORE_AVAILABLE:
+                print("❌ Tor-Core недоступен, пробую обычный Tor")
+                return self._tor_wrapper_bypass(config)
+            
+            # Активируем Darknet мост
+            activate_result = activate_darknet_bridge()
+            print(f"   {activate_result}")
+            
+            if "❌" in activate_result:
+                print("   Darknet мост не активирован, пробую обычный Tor")
+                return self._tor_wrapper_bypass(config)
+            
+            # Получаем YouTube через Tor-Core
+            youtube_result = get_youtube_through_tor()
+            
+            if youtube_result.get("success", False):
+                frontend = youtube_result.get("frontend", "unknown")
+                print(f"✅ YouTube доступен через Tor-Core ({frontend})")
+                return True
+            else:
+                print(f"❌ Tor-Core не смог получить YouTube: {youtube_result.get('error', 'unknown error')}")
+                return False
+                
+        except Exception as e:
+            print(f"Tor-Core интеграция не сработала: {e}")
+            # Fallback на обычный Tor wrapper
+            return self._tor_wrapper_bypass(config)
     
     def _tor_wrapper_bypass(self, config: BypassConfig) -> bool:
         """Tor wrapper bypass for YouTube - routes through Tor network"""

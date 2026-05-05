@@ -315,8 +315,7 @@ class RSecureMain:
                 'network_attacks_enabled': True,
                 'system_attacks_enabled': True,
                 'require_confirmation': False,
-                'log_all_actions': True
-            }
+                'log_all_actions': True,
                 'protection_level': 'medium',
                 'signal_obfuscation': True,
                 'multipath_noise': True,
