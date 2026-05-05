@@ -428,89 +428,124 @@ class WhitelistCore:
     """База данных разрешенной инфраструктуры РФ для адаптивной мимикрии"""
     
     def __init__(self):
-        self.WHITELIST_MAP = {
-            "STREAM": {
+        self.WHITE_LIST_MASKS = {
+            "GOVERNMENT_IMMUNITY": {
                 "domains": [
-                    "rutube.ru", "kion.ru", "kinopoisk.ru", "vk.video", 
-                    "smotrim.ru", "okko.tv", "premier.ru", "tvigle.ru"
+                    "gosuslugi.ru", "nalog.gov.ru", "zakupki.gov.ru", 
+                    "pfr.gov.ru", "lk.rnrc.ru"
                 ],
-                "patterns": {
-                    "video_stream": True,
-                    "chunked_encoding": True,
-                    "large_payloads": True,
-                    "cdn_distribution": True
-                },
-                "typical_sizes": {
-                    "request": 1024,
-                    "response": 8192,
-                    "chunk": 4096
-                }
-            },
-            "CRITICAL": {
-                "domains": [
-                    "gosuslugi.ru", "sbp.nspk.ru", "nalog.gov.ru", 
-                    "aoglonass.ru", "lk.mts.ru", "sberbank.ru", "vtb.ru"
-                ],
+                "priority": 1,  # Наивысший приоритет доверия
                 "patterns": {
                     "government_traffic": True,
                     "secure_transactions": True,
                     "api_calls": True,
-                    "json_heavy": True
+                    "json_heavy": True,
+                    "handshake_critical": True  # Блокировка вызовет сбой гос систем
                 },
                 "typical_sizes": {
                     "request": 2048,
                     "response": 4096,
                     "chunk": 1024
-                }
-            },
-            "HEALTH": {
-                "domains": [
-                    "librelink.com", "medtrum.com", "istok.io", 
-                    "anytime.cgms.ru", "docdoc.ru", "invitro.ru"
+                },
+                "user_agents": [
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 [GosuslugiApp]",
+                    "Mozilla/5.0 (Android 13; Mobile) [NalogApp/2.1.0]",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) [PFRClient]"
                 ],
+                "content_types": ["application/json", "text/xml"]
+            },
+            "MEDIA_NOISE": {
+                "domains": [
+                    "rutube.ru", "smotrim.ru", "1tv.ru", "vgtrk.ru", 
+                    "kion.ru", "vk.video", "ok.ru", "dzen.ru",
+                    "kinopoisk.ru", "okko.tv", "ivi.ru"
+                ],
+                "priority": 2,
+                "patterns": {
+                    "video_stream": True,
+                    "chunked_encoding": True,
+                    "large_payloads": True,
+                    "cdn_distribution": True,
+                    "hls_dash": True  # HLS/DASH стриминг
+                },
+                "typical_sizes": {
+                    "request": 1024,
+                    "response": 8192,
+                    "chunk": 4096
+                },
+                "user_agents": [
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 [RutubeApp]",
+                    "Mozilla/5.0 (Android 13; Mobile) [KionApp/3.2.1]",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) [KinopoiskApp]"
+                ],
+                "content_types": ["video/mp2t", "application/x-mpegURL", "video/mp4"]
+            },
+            "FINANCIAL_TUNNEL": {
+                "domains": [
+                    "sbp.nspk.ru", "vtb.ru", "alfabank.ru", "tbank.ru",
+                    "moex.com", "sberbank.ru", "raiffeisen.ru"
+                ],
+                "priority": 3,
+                "patterns": {
+                    "financial_traffic": True,
+                    "banking_api": True,
+                    "secure_transactions": True,
+                    "encrypted_communication": True,
+                    "tls_inspection_bypass": True  # DPI боится разбирать банковский трафик
+                },
+                "typical_sizes": {
+                    "request": 1536,
+                    "response": 2048,
+                    "chunk": 512
+                },
+                "user_agents": [
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 [VTBApp]",
+                    "Mozilla/5.0 (Android 13; Mobile) [SBPApp/1.5.0]",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) [MOEXTrader]"
+                ],
+                "content_types": ["application/json", "text/plain"]
+            },
+            "LIFE_SUPPORT": {
+                "domains": [
+                    "librelink.com", "aoglonass.ru", "cesar-satellite.ru",
+                    "lizaalert.org", "medtrum.com", "istok.io", "anytime.cgms.ru"
+                ],
+                "priority": 4,  # Последний рубеж
                 "patterns": {
                     "medical_data": True,
-                    "encrypted_communication": True,
-                    "real_time_monitoring": True
+                    "emergency_systems": True,
+                    "real_time_monitoring": True,
+                    "critical_infrastructure": True,
+                    "life_support": True  # Критически важные системы
                 },
                 "typical_sizes": {
                     "request": 512,
                     "response": 1024,
                     "chunk": 256
-                }
-            },
-            "RETAIL_API": {
-                "domains": [
-                    "yandex.ru", "ozon.ru", "wildberries.ru", 
-                    "magnit.ru", "samoqat.ru", "beru.ru", "aliexpress.ru"
-                ],
-                "patterns": {
-                    "e_commerce": True,
-                    "heavy_json": True,
-                    "image_uploads": True,
-                    "recommendation_engine": True
                 },
-                "typical_sizes": {
-                    "request": 1536,
-                    "response": 16384,
-                    "chunk": 8192
-                }
+                "user_agents": [
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 [LibreLinkApp]",
+                    "Mozilla/5.0 (Android 13; Mobile) [GLONASSMonitor/2.0]",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) [CesarSecurity]"
+                ],
+                "content_types": ["application/json", "text/plain", "binary/octet-stream"]
+            }
+        }
+        
+        # Сохраняем старую структуру для совместимости
+        self.WHITELIST_MAP = {
+            "STREAM": self.WHITE_LIST_MASKS["MEDIA_NOISE"],
+            "CRITICAL": self.WHITE_LIST_MASKS["GOVERNMENT_IMMUNITY"],
+            "HEALTH": self.WHITE_LIST_MASKS["LIFE_SUPPORT"],
+            "RETAIL_API": {
+                "domains": ["yandex.ru", "ozon.ru", "wildberries.ru", "magnit.ru", "samoqat.ru"],
+                "patterns": {"e_commerce": True},
+                "typical_sizes": {"request": 1536, "response": 16384, "chunk": 8192}
             },
             "SOCIAL": {
-                "domains": [
-                    "vk.com", "ok.ru", "telegram.org", "mail.ru",
-                    "yandex.ru", "rambler.ru"
-                ],
-                "patterns": {
-                    "social_networking": True,
-                    "media_sharing": True,
-                    "real_time_messaging": True
-                },
-                "typical_sizes": {
-                    "request": 1024,
-                    "response": 4096,
-                    "chunk": 2048
-                }
+                "domains": ["vk.com", "ok.ru", "telegram.org", "mail.ru", "yandex.ru"],
+                "patterns": {"social_networking": True},
+                "typical_sizes": {"request": 1024, "response": 4096, "chunk": 2048}
             }
         }
     
@@ -539,13 +574,57 @@ class WhitelistCore:
         """Выбрать лучший домен-прикрытие для целевого хоста"""
         # Анализируем целевой хост и выбираем подходящую категорию
         if "youtube" in target_host or "video" in target_host:
-            return self.get_domain_by_category("STREAM")
+            return self.get_domain_by_category("MEDIA_NOISE")
         elif "api" in target_host or "service" in target_host:
-            return self.get_domain_by_category("CRITICAL")
+            return self.get_domain_by_category("GOVERNMENT_IMMUNITY")
         elif "shop" in target_host or "store" in target_host:
-            return self.get_domain_by_category("RETAIL_API")
+            return self.get_domain_by_category("FINANCIAL_TUNNEL")
         else:
-            return self.get_domain_by_category("RETAIL_API")  # Universal fallback
+            return self.get_domain_by_category("GOVERNMENT_IMMUNITY")  # Universal fallback
+    
+    def get_mask_by_content_type(self, content_type: str) -> str:
+        """Выбрать маску по Content-Type пакета"""
+        content_type_lower = content_type.lower()
+        
+        # HLS/DASH видео сегменты
+        if "video/mp2t" in content_type_lower or "application/x-mpegurl" in content_type_lower or "video/mp4" in content_type_lower:
+            return "MEDIA_NOISE"
+        
+        # API запросы (JSON/XML)
+        elif "application/json" in content_type_lower or "text/xml" in content_type_lower:
+            # Выбираем между Гос-Иммунитет и Финансы
+            return random.choice(["GOVERNMENT_IMMUNITY", "FINANCIAL_TUNNEL"])
+        
+        # Медицинские/критические данные
+        elif "binary/octet-stream" in content_type_lower or "medical" in content_type_lower:
+            return "LIFE_SUPPORT"
+        
+        # По умолчанию - Гос-Иммунитет (наивысший приоритет)
+        else:
+            return "GOVERNMENT_IMMUNITY"
+    
+    def get_user_agent_by_mask(self, mask_category: str) -> str:
+        """Получить User-Agent для маски"""
+        if mask_category in self.WHITE_LIST_MASKS:
+            user_agents = self.WHITE_LIST_MASKS[mask_category]["user_agents"]
+            return random.choice(user_agents)
+        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"  # Fallback
+    
+    def get_domain_by_mask(self, mask_category: str) -> str:
+        """Получить домен по категории маски"""
+        if mask_category in self.WHITE_LIST_MASKS:
+            domains = self.WHITE_LIST_MASKS[mask_category]["domains"]
+            return random.choice(domains)
+        return "gosuslugi.ru"  # Fallback
+    
+    def get_priority_mask(self) -> str:
+        """Получить маску с наивысшим приоритетом"""
+        # Сортируем по приоритету и выбираем самую важную
+        sorted_masks = sorted(
+            self.WHITE_LIST_MASKS.items(),
+            key=lambda x: x[1]["priority"]
+        )
+        return sorted_masks[0][0]  # Возвращаем категорию с наивысшим приоритетом
 
 class DoubleBlindSNI:
     """Double-Blind SNI - фрагментация TLS с обманом DPI"""
@@ -891,6 +970,93 @@ class GhostConnect:
         """Остановка Ghost Connect"""
         self.packet_shaper.safe_kill_process("ghost_proxy")
 
+class HeaderSpoofing:
+    """Header Spoofing - подмена заголовков для мимикрии под whitelist приложения"""
+    
+    def __init__(self):
+        self.whitelist_core = WhitelistCore()
+        
+    def create_spoofed_request(self, target_host: str, mask_category: str = None) -> bytes:
+        """Создать HTTP запрос с подменными заголовками"""
+        try:
+            # Автоматически выбираем маску если не указана
+            if mask_category is None:
+                mask_category = self.whitelist_core.get_priority_mask()
+            
+            # Получаем User-Agent для маски
+            user_agent = self.whitelist_core.get_user_agent_by_mask(mask_category)
+            
+            # Создаем запрос с подменными заголовками
+            request = (
+                f"GET / HTTP/1.1\r\n"
+                f"Host: {target_host}\r\n"
+                f"User-Agent: {user_agent}\r\n"
+                f"Accept: */*\r\n"
+                f"Accept-Language: ru-RU,ru;q=0.9,en;q=0.8\r\n"
+                f"Accept-Encoding: gzip, deflate, br\r\n"
+                f"Connection: keep-alive\r\n"
+                f"X-Forwarded-For: 95.173.{random.randint(100, 255)}.{random.randint(1, 255)}\r\n"  # Подменяем IP под РФ
+            )
+            
+            # Добавляем специфичные заголовки для разных категорий
+            if mask_category == "GOVERNMENT_IMMUNITY":
+                request += "X-Government-Request: true\r\n"
+                request += "X-Service-Code: GOSUSLUGI\r\n"
+            elif mask_category == "MEDIA_NOISE":
+                request += "X-Stream-Type: HLS\r\n"
+                request += "X-Video-Quality: 1080p\r\n"
+            elif mask_category == "FINANCIAL_TUNNEL":
+                request += "X-Banking-Request: true\r\n"
+                request += "X-Transaction-ID: {}\r\n".format(random.randint(100000, 999999))
+            elif mask_category == "LIFE_SUPPORT":
+                request += "X-Medical-Device: LibreLink\r\n"
+                request += "X-Emergency-Data: true\r\n"
+            
+            request += "\r\n"
+            
+            return request.encode()
+            
+        except Exception as e:
+            print(f"   ❌ Ошибка создания spoofed запроса: {e}")
+            return f"GET / HTTP/1.1\r\nHost: {target_host}\r\n\r\n".encode()
+    
+    def create_spoofed_headers(self, mask_category: str) -> Dict[str, str]:
+        """Создать словарь подменных заголовков"""
+        user_agent = self.whitelist_core.get_user_agent_by_mask(mask_category)
+        
+        headers = {
+            "User-Agent": user_agent,
+            "Accept": "*/*",
+            "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "X-Forwarded-For": f"95.173.{random.randint(100, 255)}.{random.randint(1, 255)}"
+        }
+        
+        # Добавляем специфичные заголовки
+        if mask_category == "GOVERNMENT_IMMUNITY":
+            headers.update({
+                "X-Government-Request": "true",
+                "X-Service-Code": "GOSUSLUGI"
+            })
+        elif mask_category == "MEDIA_NOISE":
+            headers.update({
+                "X-Stream-Type": "HLS",
+                "X-Video-Quality": "1080p"
+            })
+        elif mask_category == "FINANCIAL_TUNNEL":
+            headers.update({
+                "X-Banking-Request": "true",
+                "X-Transaction-ID": str(random.randint(100000, 999999))
+            })
+        elif mask_category == "LIFE_SUPPORT":
+            headers.update({
+                "X-Medical-Device": "LibreLink",
+                "X-Emergency-Data": "true"
+            })
+        
+        return headers
+
 class DomainFrontingClient:
     """Domain Fronting & SNI Spoofing - обход SNI-фильтрации"""
     
@@ -898,6 +1064,7 @@ class DomainFrontingClient:
         self.whitelist_core = WhitelistCore()
         self.packet_shaper = PacketShaper()
         self.double_blind_sni = DoubleBlindSNI()
+        self.header_spoofing = HeaderSpoofing()
         self.whitelist_domains = [
             "apple.com", "microsoft.com", "google.com", "facebook.com",
             "cloudflare.com", "amazon.com", "netflix.com", "spotify.com"
@@ -1079,6 +1246,7 @@ class DPIBypassCombiner:
         self.whitelist_core = WhitelistCore()
         self.double_blind_sni = DoubleBlindSNI()
         self.ghost_connect = GhostConnect()
+        self.header_spoofing = HeaderSpoofing()
         
         self.techniques = {
             BypassTechnique.SPOOFDPI_FRAGMENTATION: {
