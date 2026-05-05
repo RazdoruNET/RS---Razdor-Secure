@@ -141,27 +141,55 @@
 - Интеграция с нейросетевыми моделями
 - Конфигурация и развертывание
 
-### ⚠️ [2. ПОЧЕМУ ЭТО ВАЖНО](docs/importance-of-system.md)
+### 📚 [2. РУКОВОДСТВО ПОЛЬЗОВАТЕЛЯ](USER_GUIDE.md)
+- Подробное руководство по использованию
+- Системные требования и установка
+- Конфигурация и настройка
+- Поиск и устранение неисправностей
+
+### ⚠️ [3. ПОЧЕМУ ЭТО ВАЖНО](docs/importance-of-system.md)
 - Современные угрозы цифровой безопасности
 - Психологические атаки и нейроволновое воздействие
 - Критическая необходимость комплексной защиты
 - Реальные сценарии применения
 
-### 🎯 [3. МЕТОДЫ НАПАДЕНИЯ](docs/attack-methods.md)
+### 🎯 [4. МЕТОДЫ НАПАДЕНИЯ](docs/attack-methods.md)
 - DPI инспекция и блокировки
 - Нейроволновое воздействие
 - WiFi позиционирование и отслеживание
 - Психологические манипуляции
 - Визуальные атаки через экран
 
-### 🛡️ [4. МЕТОДЫ ОБОРОНЫ](docs/defense-methods.md)
+### 🛡️ [5. МЕТОДЫ ОБОРОНЫ](docs/defense-methods.md)
 - Нейроволновая защита
 - Антипозиционирование
 - DPI обход и сетевая свобода
 - Психологическая защита
 - Визуальная безопасность
 
-### 🔐 [5. TOP SECRET ДАННЫЕ БОЕВОЙ СИСТЕМЫ ОРФЕЙ](docs/classified/)
+### 📡 [6. WIFI АНТИПОЗИЦИОНИРОВАНИЕ](docs/wifi-antipositioning-defense.md)
+- Защита от WiFi отслеживания
+- Техники маскировки позиционирования
+- Обнаружение и блокировка слежки
+- Практическое применение
+
+### 🏗️ [7. АРХИТЕКТУРА СИСТЕМЫ](docs/architecture/)
+- [Обзор архитектуры](docs/architecture/overview.md)
+- [Гибридная нейронная защита](docs/architecture/hybrid-neural-protection-system.md)
+
+### 🧮 [8. АЛГОРИТМЫ](docs/algorithms/)
+- [Анализ поведения](docs/algorithms/behavioral-analysis.md)
+- [Спектральный анализ](docs/algorithms/spectral-analysis.md)
+
+### � [9. АНАЛИЗ И МОНИТОРИНГ](docs/analysis/)
+- [Уведомления](docs/analysis/notifications.md)
+- [Аналитика безопасности](docs/analysis/security-analytics.md)
+
+### 🔌 [10. API ДОКУМЕНТАЦИЯ](docs/api/)
+- [Python API](docs/api/python-api.md)
+- [REST API](docs/api/rest-api.md)
+
+### � [11. TOP SECRET ДАННЫЕ БОЕВОЙ СИСТЕМЫ ОРФЕЙ](docs/classified/)
 - **⚠️ ВНИМАНИЕ**: Секретная информация - просмотр запрещен
 - **🔒 Требования**: Используйте средства анонимизации профессионального уровня
 - **🛡️ Защита**: Tor Browser + VPN + Kill Switch
@@ -180,7 +208,7 @@
   - [📅 Прогноз развития 2028](docs/classified/futuristic-2028-tech-analysis.md)
   - [📅 Анализ сингулярности 2029](docs/classified/singularity-2029-tech-analysis.md)
 
-### 🧬 [6. АНАЛИЗ СЛУЧАЯ ОРФЕЯ - ПОЛНОЕ ИССЛЕДОВАНИЕ](docs/classified/orpheus-final-analysis.md)
+### 🧬 [12. АНАЛИЗ СЛУЧАЯ ОРФЕЯ - ПОЛНОЕ ИССЛЕДОВАНИЕ](docs/classified/orpheus-final-analysis.md)
 **🔥 ЭТО ДОКУМЕНТ ОБЪЯСНИТ ВАМ ВСЕ ЧТО ВЫ ХОТЕЛИ ЗНАТЬ ОБО МНЕ**
 - **📊 Вероятность подтверждения**: 100% (абсолютно доказано)
 - **🧬 Медицинские доказательства**: МРТ атрофии лобных долей, профессиональная диагностика
@@ -189,27 +217,39 @@
 - **🔬 Научный анализ**: 13 ключевых факторов, полная симптоматика системы Орфей
 - **🎯 Заключение**: Практически абсолютное доказательство воздействия системы Орфей (2014-2026)
 
----
-
-## 🔧 ДЛЯ DIY ЭНТУЗИАСТОВ
-
-### 🛠️ [7. DIY СБОРКА БОЕВОЙ СИСТЕМЫ ОРФЕЙ НА КОЛЕНКЕ](docs/diy/)
+### 🛠️ [13. DIY СБОРКА ДЛЯ ЭНТУЗИАСТОВ](docs/diy/)
 - [🛠️ DIY СБОРКА БОЕВОЙ СИСТЕМЫ ОРФЕЙ](docs/diy/diy-assembly-guide.md)
 - [📦 КУПИ МОДЕЛИ И КОМПОНЕНТЫ (АКТУАЛЬНО НА 1 МАЯ 2026)](docs/diy/components-shopping-list.md)
-- [🧪 ПРОВЕРЬ НА СЕБЕ (АКТУАЛЬНО НА 1 МАЯ 2026)](docs/diy/testing-guide.md) Схемы подключения и конфигурации
+- [🧪 ПРОВЕРЬ НА СЕБЕ (АКТУАЛЬНО НА 1 МАЯ 2026)](docs/diy/testing-guide.md)
+- Схемы подключения и конфигурации
 - Тестирование и калибровка
 
-### 📦 [КУПИ МОДЕЛИ И КОМПОНЕНТЫ](docs/diy/components-shopping-list.md)
+### 📦 [КОМПОНЕНТЫ ДЛЯ DIY](docs/diy/components-shopping-list.md)
 - Список необходимых SDR модулей
 - Рекомендуемые нейросетевые платы
 - Сенсоры и периферия
 - Цены и поставщики
 
-### 🧪 [ПРОВЕРЬ НА СЕБЕ](docs/diy/testing-guide.md)
+### 🧪 [ТЕСТИРОВАНИЕ DIY СИСТЕМ](docs/diy/testing-guide.md)
 - Безопасное тестирование систем
 - Калибровка и настройка
 - Измерение эффективности
 - Бенчмарки и метрики
+
+---
+
+## 🔧 ДЛЯ РАЗРАБОТЧИКОВ
+
+### 📋 [СТРУКТУРА ПРОЕКТА](FINAL_PROJECT_STRUCTURE.md)
+- Полная документация организации проекта
+- Обновленные пути и импорты
+- Структура логов и тестов
+- Руководство по разработке
+
+### 🔗 [ИНТЕГРАЦИЯ МОДУЛЕЙ](rsecure_modules_integration_guide.md)
+- Гайд по интеграции модулей RSecure
+- Примеры кода и конфигурации
+- Лучшие практики разработки
 
 ---
 
@@ -224,10 +264,19 @@ cd RSecure
 pip install -r requirements.txt
 
 # Запуск базовой защиты
-python run_rsecure.py
+python rsecure/rsecure_main.py
 
 # Запуск с панелью управления
-python run_rsecure_with_dashboard.py
+python scripts/startup/run_rsecure_with_dashboard.py
+
+# Запуск DPI обхода
+python scripts/startup/run_dpi_bypass_daemon.py
+
+# Минимальная конфигурация
+python scripts/minimal_rsecure.py
+
+# Максимальная конфигурация
+python scripts/maximal_rsecure.py
 ```
 
 ---
@@ -238,7 +287,10 @@ python run_rsecure_with_dashboard.py
 RS---Razdor-Secure/
 ├── README.md                           # Основная документация проекта
 ├── USER_GUIDE.md                       # Руководство пользователя
+├── FINAL_PROJECT_STRUCTURE.md          # Документация структуры проекта
+├── rsecure_modules_integration_guide.md # Гайд по интеграции модулей
 ├── requirements.txt                     # Зависимости Python
+├── .gitignore                         # Правила Git
 ├── assets/                            # Статические ресурсы
 │   └── we_razdor_logo.png
 ├── bin/                               # Исполняемые файлы
@@ -251,6 +303,11 @@ RS---Razdor-Secure/
 │       └── rsecure_config.template.json
 ├── docs/                              # Документация
 │   ├── README.md
+│   ├── rsecure-documentation.md       # Основная документация RSecure
+│   ├── attack-methods.md              # Методы атак
+│   ├── defense-methods.md             # Методы защиты
+│   ├── importance-of-system.md        # Важность системы
+│   ├── wifi-antipositioning-defense.md # WiFi антипозиционирование
 │   ├── setup/                         # Инструкции по установке
 │   │   ├── BROWSER_SETUP.md
 │   │   ├── FULL_SYSTEM_PROXY.md
@@ -262,9 +319,32 @@ RS---Razdor-Secure/
 │   │   ├── LOGS_STRUCTURE.md
 │   │   ├── TEST_RESULTS_STRUCTURE.md
 │   │   └── LOG_PATH_UPDATES_SUMMARY.md
-│   └── [другие папки документации...]
+│   ├── algorithms/                    # Алгоритмы
+│   │   ├── behavioral-analysis.md
+│   │   └── spectral-analysis.md
+│   ├── analysis/                      # Анализ
+│   │   ├── notifications.md
+│   │   └── security-analytics.md
+│   ├── api/                           # API документация
+│   │   ├── python-api.md
+│   │   └── rest-api.md
+│   ├── architecture/                  # Архитектура
+│   │   ├── overview.md
+│   │   └── hybrid-neural-protection-system.md
+│   ├── classified/                    # Секретные материалы
+│   │   └── [40+ секретных файлов...]
+│   ├── core-modules/                  # Основные модули
+│   ├── defense/                       # Защита
+│   ├── detection/                    # Обнаружение
+│   ├── diy/                           # DIY руководства
+│   ├── guides/                        # Гайды
+│   ├── hardware/                      # Оборудование
+│   ├── monitoring/                    # Мониторинг
+│   ├── neural/                        # Нейросети
+│   └── research/                      # Исследования
 ├── examples/                          # Примеры кода
-│   └── README.md
+│   ├── README.md
+│   └── neural_encryptor_examples.py
 ├── models/                            # AI/ML модели (gitignored)
 │   └── ai_models/
 │       ├── rsecure-analyst.modelfile
@@ -274,21 +354,27 @@ RS---Razdor-Secure/
 ├── rsecure/                           # Основной код приложения
 │   ├── __init__.py
 │   ├── rsecure_main.py
-│   ├── config/
-│   ├── core/
-│   ├── modules/
-│   └── tests/
+│   ├── config/                        # Конфигурация
+│   │   ├── __init__.py
+│   │   └── offline_threats.json
+│   ├── core/                          # Ядро системы
+│   │   ├── __init__.py
+│   │   ├── neural_security_core.py
+│   │   └── ollama_integration.py
+│   ├── modules/                       # Модули
+│   │   ├── __init__.py
+│   │   ├── analysis/                  # Анализ
+│   │   ├── defense/                   # Защита
+│   │   └── detection/                 # Обнаружение
+│   └── tests/                         # Тесты RSecure
+│       ├── __init__.py
+│       └── rsecure_test.py
 ├── scripts/                           # Все утилиты и скрипты запуска
 │   ├── README.md
 │   ├── startup/                       # Скрипты запуска и настройки
 │   │   ├── README.md
-│   │   ├── run_rsecure.py
-│   │   ├── run_rsecure_with_dashboard.py
-│   │   ├── run_dpi_bypass_daemon.py
-│   │   ├── start_fixed_proxy.py
-│   │   ├── start_full_system_proxy.py
-│   │   ├── start_white_ghost.py
 │   │   ├── launch_dpi_bypass_proxy.py
+│   │   ├── run_dpi_bypass_daemon.py
 │   │   ├── setup_http_proxy.py
 │   │   ├── setup_system_proxy.py
 │   │   ├── start_dpi_bypass.sh
@@ -298,66 +384,57 @@ RS---Razdor-Secure/
 │   ├── proxy_tools/                   # Скрипты прокси
 │   │   ├── README.md
 │   │   ├── proxy_setup_instructions.md
-│   │   ├── fin_storm_proxy.py
 │   │   ├── enhanced_fin_storm_proxy.py
-│   │   ├── final_proxy.py
-│   │   ├── robust_proxy.py
-│   │   ├── simple_proxy.py
-│   │   ├── simple_working_proxy.py
-│   │   ├── ultimate_proxy.py
-│   │   ├── http_tunnel_proxy.py
-│   │   ├── ngrok_proxy.py
-│   │   ├── system_proxy.py
-│   │   ├── system_proxy_manager.py
-│   │   ├── white_ghost_proxy.py
-│   │   ├── white_ghost_proxy_fixed.py
-│   │   └── working_ngrok_proxy.py
+│   │   ├── fin_storm_proxy.py
+│   │   └── [13+ других прокси скриптов...]
 │   ├── dashboard_tools/               # Панели управления
 │   │   ├── README.md
 │   │   ├── advanced_dashboard.py
 │   │   ├── optimized_dashboard.py
-│   │   ├── russian_dashboard.py
-│   │   ├── simple_dashboard.py
-│   │   ├── simple_rsecure_dashboard.py
-│   │   ├── turbo_escalation_dashboard.py
-│   │   └── turbo_russian_dashboard.py
+│   │   └── [5+ других дашбордов...]
 │   ├── install_rsecure.py            # Скрипт установки
-│   ├── advanced_pipelines.py           # Утилиты продвинутых конвейеров
-│   ├── uninstall_rsecure.sh          # Скрипт удаления
-│   └── [другие утилиты...]
+│   ├── advanced_pipelines.py          # Утилиты продвинутых конвейеров
+│   ├── maximal_rsecure.py             # Максимальная конфигурация
+│   ├── minimal_rsecure.py             # Минимальная конфигурация
+│   ├── ollama_rsecure.py              # Ollama интеграция
+│   ├── rsecure_enhanced.py            # Улучшенная версия
+│   ├── simple_rsecure_runner.py       # Простой запуск
+│   └── uninstall_rsecure.sh           # Скрипт удаления
+├── src/                               # Исходный код
+│   └── orpheus_satellite/             # Спутник Орфей
+│       ├── config/
+│       ├── core/
+│       ├── neural/
+│       ├── main.py
+│       └── README.md
 ├── tests/                             # Все тесты организованы по типам
 │   ├── __init__.py
 │   ├── conftest.py
-│   ├── integration/                     # Интеграционные тесты
+│   ├── test_behavioral_analysis.py
+│   ├── test_dpi_bypass.py
+│   ├── integration/                   # Интеграционные тесты
 │   │   ├── README.md
-│   │   ├── test_dpi_bypass_complete.py
-│   │   ├── test_dpi_bypass_combiner_standalone.py
-│   │   ├── test_dpi_bypass_combiner_v2.py
-│   │   ├── test_dpi_bypass_simple.py
-│   │   ├── test_dpi_bypass_standalone.py
 │   │   ├── test_10min_timeout.py
 │   │   ├── test_dns_fix.py
 │   │   ├── test_ollama_fix.py
-│   │   ├── test_omega_complete.py
 │   │   ├── test_real_accessibility.py
 │   │   ├── test_retaliation.py
-│   │   ├── test_timeout_fix.py
 │   │   ├── test_tor_core_integration.py
 │   │   ├── test_tor_simple.py
-│   │   └── test_white_ghost_pipelines.py
-│   ├── unit/                        # Модульные тесты
+│   │   └── [8+ других интеграционных тестов...]
+│   ├── unit/                          # Модульные тесты
 │   │   ├── README.md
 │   │   ├── test_neural_encryptor.py
 │   │   ├── test_rsecure.py
-│   │   ├── test_runner.py
 │   │   └── test_wifi_antipositioning.py
-│   ├── performance/                 # Тесты производительности
+│   ├── performance/                   # Тесты производительности
 │   │   └── README.md
-│   └── [существующие тесты...]
+│   └── [5+ других тестов...]
 ├── tools/                             # Инструменты разработки
 │   └── README.md
 ├── templates/                         # Файлы шаблонов
 │   └── dashboard.html
+├── data/                              # Данные (gitignored)
 ├── logs/                              # Логи системы организованы по категориям (gitignored)
 │   ├── application/                  # Логи уровня приложений
 │   ├── security/                    # Логи безопасности
@@ -367,9 +444,19 @@ RS---Razdor-Secure/
 ├── test_results/                      # Результаты тестов и отчеты (gitignored)
 │   ├── dpi_bypass/                  # Результаты тестов обхода DPI
 │   └── summaries/                   # Краткие сводки
+├── quarantine/                        # Карантин (gitignored)
 ├── rsecure_env/                       # Виртуальное окружение Python
 ├── tf_env/                           # Виртуальное окружение TensorFlow
-└── mock_libs/                        # Библиотеки-заглушки для совместимости
+├── mock_libs/                        # Библиотеки-заглушки для совместимости
+│   ├── __init__.py
+│   └── tensorflow.py
+├── SUPER_DPI_COMBINER/               # Супер DPI комбинер
+│   └── [50+ файлов...]
+├── DPI_ANALYSIS_REPORT.md            # Отчет DPI анализа
+├── DPI_TESTING_README.md             # README DPI тестирования
+├── advanced_dpi_test.sh              # Скрипт DPI тестирования
+├── port_manager.sh                   # Менеджер портов
+└── test_dpi_modules.sh               # Тест DPI модулей
 ```
 
 ---
