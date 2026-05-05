@@ -898,6 +898,10 @@ class DomainFrontingClient:
         self.whitelist_core = WhitelistCore()
         self.packet_shaper = PacketShaper()
         self.double_blind_sni = DoubleBlindSNI()
+        self.whitelist_domains = [
+            "apple.com", "microsoft.com", "google.com", "facebook.com",
+            "cloudflare.com", "amazon.com", "netflix.com", "spotify.com"
+        ]
         
     def create_sni_fragmentation(self, target_host: str) -> bytes:
         """TLS SNI Fragmentation - разрезание SNI на две части"""
@@ -2248,7 +2252,7 @@ class DPIBypassCombiner:
             "total_duration": sum(r.get('duration', 0) for r in self.results.values()),
             "timeout_triggered": timeout_triggered,
             "auto_fallback_enabled": self.auto_fallback_enabled,
-            "results": {k.value: v for k, v in self.results.items()},
+            "results": self.results,
             "bypass_successful": accessibility_after['accessible'] and not accessibility_before['accessible']
         }
         
