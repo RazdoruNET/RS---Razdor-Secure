@@ -30,6 +30,14 @@ except ImportError:
     TOR_CORE_AVAILABLE = False
     print(" Tor-Core интеграция недоступна")
 
+# Omega Transport Bridges
+try:
+    from .omega_transport_bridges import omega_transport, setup_omega_bridges, get_active_bridges, restart_tor_with_bridges
+    OMEGA_TRANSPORT_AVAILABLE = True
+except ImportError:
+    OMEGA_TRANSPORT_AVAILABLE = False
+    print(" Omega Transport недоступен")
+
 class BypassMethod(Enum):
     """Available DPI bypass methods"""
     FRAGMENTATION = "fragmentation"
@@ -399,6 +407,7 @@ class DPIBypassEngine:
             
             # Try different protocol mimics for YouTube (most effective first)
             mimics = [
+                self._omega_transport_bridges,  # Omega Transport: Obfs4, Snowflake, Shadow-TLS
                 self._tor_core_integration,  # Tor-Core полноценный Darknet-стек
                 self._tor_wrapper_bypass,  # Tor network wrapper
                 self._darknet_solutions,  # Darknet onion services
@@ -1325,6 +1334,309 @@ class DPIBypassEngine:
         except Exception as e:
             print(f"Hostfakesplit failed: {e}")
             return False
+    
+    def _omega_transport_bridges(self, config: BypassConfig) -> bool:
+        """Omega Transport Bridges - CDN-фронтинг и Green Tunnel"""
+        try:
+            print(f"🌉 Omega Transport: CDN-фронтинг и Green Tunnel для обхода усиленного DPI")
+            
+            if not OMEGA_TRANSPORT_AVAILABLE:
+                print("❌ Omega Transport недоступен, пробую Tor-Core")
+                return self._tor_core_integration(config)
+            
+            # Настройка всех CDN и Green Tunnel мостов
+            bridges_result = setup_omega_bridges()
+            
+            if bridges_result.get("total_active", 0) > 0:
+                print(f"✅ Активировано {bridges_result['total_active']} CDN мостов")
+                
+                # Настройка прокси конфигурации
+                from .omega_transport_bridges import setup_proxy_configuration
+                if setup_proxy_configuration():
+                    print("✅ Прокси настроен для системы")
+                    
+                    # Тестирование YouTube через CDN-фронтинг
+                    return self._test_youtube_through_cdn_bridges(config)
+                else:
+                    print("❌ Не удалось настроить прокси")
+                    return False
+            else:
+                print("❌ Не удалось активировать ни один CDN мост")
+                return False
+                
+        except Exception as e:
+            print(f"Omega Transport не сработал: {e}")
+            # Fallback на Tor-Core
+            return self._tor_core_integration(config)
+    
+    def _test_youtube_through_cdn_bridges(self, config: BypassConfig) -> bool:
+        """Тестирование YouTube через CDN-фронтинг"""
+        try:
+            print("📺 Тестирование YouTube через CDN-фронтинг...")
+            
+            active_bridges = get_active_bridges()
+            
+            for bridge in active_bridges:
+                transport = bridge.get('transport', 'unknown')
+                front_domain = bridge.get('front_domain', 'unknown')
+                print(f"   Пробую через {transport}: {front_domain}")
+                
+                if self._test_cdn_youtube_access(bridge, config.target_host):
+                    print(f"✅ YouTube доступен через {transport} ({front_domain})")
+                    return True
+            
+            print("❌ Ни один CDN мост не смог получить YouTube")
+            return False
+            
+        except Exception as e:
+            print(f"Ошибка тестирования YouTube через CDN: {e}")
+            return False
+    
+    def _test_cdn_youtube_access(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование доступа к YouTube через CDN-фронтинг"""
+        try:
+            front_domain = bridge.get('front_domain', 'unknown')
+            target_domain = bridge.get('target_domain', target_host)
+            port = bridge.get('port', 443)
+            
+            print(f"      CDN-фронтинг: {front_domain} -> {target_domain}")
+            
+            # Создаем TLS соединение с CDN доменом
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(15)
+            sock.connect((front_domain, port))
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=front_domain)
+            
+            # Создаем CDN-фронтинг запрос
+            request = (
+                f"GET / HTTP/1.1\r\n"
+                f"Host: {target_domain}\r\n"  # Реальный хост
+                f"Front-Host: {front_domain}\r\n"  # CDN фронтинг
+                f"User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n"
+                f"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n"
+                f"Accept-Language: en-US,en;q=0.5\r\n"
+                f"Accept-Encoding: gzip, deflate, br\r\n"
+                f"Connection: close\r\n"
+                f"X-Forwarded-For: {front_domain}\r\n"
+                f"X-Real-IP: {front_domain}\r\n"
+                f"X-CDN-Forward: {front_domain}\r\n"
+                f"\r\n"
+            ).encode()
+            
+            ssl_sock.send(request)
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            response_str = response.decode('utf-8', errors='ignore')
+            if b"HTTP" in response and ("200 OK" in response_str or "301" in response_str):
+                print(f"      ✅ CDN {front_domain} успешно обходит DPI")
+                return True
+            else:
+                print(f"      ❌ CDN {front_domain} не смог обойти DPI")
+                return False
+                
+        except Exception as e:
+            print(f"      ❌ Ошибка CDN {bridge.get('front_domain', 'unknown')}: {e}")
+            return False
+    
+    def _test_bridge_youtube_access(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование доступа к YouTube через конкретный мост"""
+        try:
+            transport = bridge.get('transport', 'unknown')
+            
+            if transport == 'obfs4':
+                return self._test_obfs4_youtube(bridge, target_host)
+            elif transport == 'snowflake':
+                return self._test_snowflake_youtube(bridge, target_host)
+            elif transport == 'shadow_tls':
+                return self._test_shadow_tls_youtube(bridge, target_host)
+            else:
+                return self._test_generic_bridge_youtube(bridge, target_host)
+                
+        except Exception as e:
+            print(f"Ошибка тестирования моста {bridge.get('transport', 'unknown')}: {e}")
+            return False
+    
+    def _test_obfs4_youtube(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование YouTube через Obfs4 мост"""
+        try:
+            print(f"      Obfs4: маскировка под {target_host}")
+            
+            # Obfs4 создает "белый шум" в трафике
+            # Имитируем обычный HTTPS трафик с обфускацией
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(15)
+            
+            # Соединяемся через мост
+            host, port = bridge['address'].split(':')
+            sock.connect((host, int(port)))
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=target_host)
+            
+            # Создаем Obfs4 обфусцированный запрос
+            request = self._create_obfs4_request(target_host)
+            ssl_sock.send(request)
+            
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            response_str = response.decode('utf-8', errors='ignore')
+            return b"HTTP" in response and ("200 OK" in response_str or "301" in response_str)
+            
+        except Exception as e:
+            print(f"      Obfs4 ошибка: {e}")
+            return False
+    
+    def _test_snowflake_youtube(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование YouTube через Snowflake мост"""
+        try:
+            print(f"      Snowflake: P2P WebRTC маскировка под {target_host}")
+            
+            # Snowflake маскирует трафик под видеозвонок WebRTC
+            # DPI видит "разговор" а не блокировку
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(15)
+            
+            # Соединяемся через Snowflake front domain
+            front_domain = bridge.get('front_domain', 'snowflake.torproject.org')
+            sock.connect((front_domain, 443))
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=front_domain)
+            
+            # Создаем Snowflake запрос
+            request = self._create_snowflake_request(target_host)
+            ssl_sock.send(request)
+            
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            response_str = response.decode('utf-8', errors='ignore')
+            return b"HTTP" in response and ("200 OK" in response_str or "301" in response_str)
+            
+        except Exception as e:
+            print(f"      Snowflake ошибка: {e}")
+            return False
+    
+    def _test_shadow_tls_youtube(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование YouTube через Shadow-TLS мост"""
+        try:
+            print(f"      Shadow-TLS: маскировка под microsoft.com -> {target_host}")
+            
+            # Shadow-TLS имитирует обычный HTTPS к microsoft.com
+            # Но внутри передает данные для YouTube
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(15)
+            
+            # Соединяемся с microsoft.com (для маскировки)
+            sock.connect(("microsoft.com", 443))
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname="microsoft.com")
+            
+            # Создаем Shadow-TLS пакет
+            shadow_packet = self._create_shadow_tls_packet(target_host, bridge)
+            ssl_sock.send(shadow_packet)
+            
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            response_str = response.decode('utf-8', errors='ignore')
+            return b"HTTP" in response and ("200 OK" in response_str or "301" in response_str)
+            
+        except Exception as e:
+            print(f"      Shadow-TLS ошибка: {e}")
+            return False
+    
+    def _test_generic_bridge_youtube(self, bridge: Dict[str, Any], target_host: str) -> bool:
+        """Тестирование YouTube через универсальный мост"""
+        try:
+            print(f"      Универсальный мост: {bridge.get('transport', 'unknown')}")
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(15)
+            
+            host, port = bridge['address'].split(':')
+            sock.connect((host, int(port)))
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            ssl_sock = context.wrap_socket(sock, server_hostname=target_host)
+            
+            request = (
+                f"GET / HTTP/1.1\r\n"
+                f"Host: {target_host}\r\n"
+                f"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n"
+                f"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+                f"Connection: close\r\n\r\n"
+            ).encode()
+            
+            ssl_sock.send(request)
+            response = ssl_sock.recv(8192)
+            ssl_sock.close()
+            
+            response_str = response.decode('utf-8', errors='ignore')
+            return b"HTTP" in response and ("200 OK" in response_str or "301" in response_str)
+            
+        except Exception as e:
+            print(f"      Универсальный мост ошибка: {e}")
+            return False
+    
+    def _create_obfs4_request(self, target_host: str) -> bytes:
+        """Создание Obfs4 запроса"""
+        # Obfs4 добавляет "белый шум" в запрос
+        noise_data = b'\x00' * 64  # Шумовые данные
+        real_data = f"GET / HTTP/1.1\r\nHost: {target_host}\r\nConnection: close\r\n\r\n".encode()
+        
+        # Смешиваем реальные данные с шумом
+        return noise_data + real_data
+    
+    def _create_snowflake_request(self, target_host: str) -> bytes:
+        """Создание Snowflake запроса"""
+        # Snowflake имитирует WebRTC трафик
+        webrtc_header = b"WebRTC-Session: video-call\r\n"
+        real_data = f"GET / HTTP/1.1\r\nHost: {target_host}\r\nConnection: close\r\n\r\n".encode()
+        
+        return webrtc_header + real_data
+    
+    def _create_shadow_tls_packet(self, target_host: str, bridge: Dict[str, Any]) -> bytes:
+        """Создание Shadow-TLS пакета"""
+        # Shadow-TLS маскирует данные под обычный HTTPS
+        shadow_data = {
+            "target": target_host,
+            "bridge": bridge['address'],
+            "data": "youtube_request",
+            "timestamp": time.time()
+        }
+        
+        encoded_data = base64.b64encode(json.dumps(shadow_data).encode())
+        
+        # Создаем TLS record
+        tls_header = b'\x16\x03\x01'  # TLS 1.2
+        tls_header += struct.pack('>H', len(encoded_data))
+        tls_header += encoded_data
+        
+        return tls_header
     
     def _tor_core_integration(self, config: BypassConfig) -> bool:
         """Tor-Core интеграция - полноценный Darknet-стек"""

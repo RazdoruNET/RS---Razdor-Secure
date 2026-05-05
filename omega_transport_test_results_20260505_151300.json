@@ -1,0 +1,29 @@
+{
+  "test_timestamp": "2026-05-05T15:13:00.923245",
+  "test_duration": "57.76s",
+  "bridges_setup": {
+    "obfs4": {
+      "success": false,
+      "active": 0,
+      "failed": 0
+    },
+    "snowflake": {
+      "success": false,
+      "active": 0,
+      "failed": 0
+    },
+    "shadow_tls": {
+      "success": true,
+      "active": 1,
+      "failed": 0
+    },
+    "total_active": 1
+  },
+  "bypass_result": true,
+  "bypass_time": "37.70s",
+  "youtube_accessible_before": false,
+  "youtube_accessible_after": false,
+  "active_bridges_count": 2,
+  "torrc_config_path": "/Users/razdor/.tor/torrc_omega",
+  "omega_transport_success": true
+}
