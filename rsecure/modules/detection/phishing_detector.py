@@ -13,6 +13,7 @@ import requests
 import threading
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Tuple
+from pathlib import Path
 from urllib.parse import urlparse, urljoin
 from dataclasses import dataclass
 import numpy as np
@@ -68,9 +69,12 @@ class RSecurePhishingDetector:
         self.update_thread = None
         
         # Setup logging
+        log_dir = Path('./logs/security')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_phishing')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./phishing_detector.log')
+        handler = logging.FileHandler(log_dir / 'phishing_detector.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

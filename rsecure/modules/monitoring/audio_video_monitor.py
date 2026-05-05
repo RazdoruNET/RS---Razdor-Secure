@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import logging
+from pathlib import Path
 import threading
 import subprocess
 import json
@@ -58,9 +59,12 @@ class RSecureAudioVideoMonitor:
         self.monitoring_thread = None
         
         # Setup logging
+        log_dir = Path('./logs/monitoring')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_audio_video')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./audio_video_monitor.log')
+        handler = logging.FileHandler(log_dir / 'audio_video_monitor.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

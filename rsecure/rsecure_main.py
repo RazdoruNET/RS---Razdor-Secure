@@ -347,8 +347,8 @@ class RSecureMain:
     def _setup_logging(self):
         """Setup main logging system"""
         # Create logs directory
-        log_dir = Path('./logs')
-        log_dir.mkdir(exist_ok=True)
+        log_dir = Path('./logs/application')
+        log_dir.mkdir(parents=True, exist_ok=True)
         
         # Setup logger
         self.logger = logging.getLogger('rsecure_main')

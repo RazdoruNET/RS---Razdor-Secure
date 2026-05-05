@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Параметры
 PROXY_PORT=8080
-LOG_FILE="dpi_bypass_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="logs/dpi_bypass/dpi_bypass_$(date +%Y%m%d_%H%M%S).log"
 
 echo -e "${BLUE}🔥 DPI-Bypass Launcher${NC}"
 echo -e "${BLUE}🚀 Запуск системы обхода DPI${NC}"

@@ -12,6 +12,7 @@ import threading
 from datetime import datetime
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
+from pathlib import Path
 
 @dataclass
 class NotificationData:
@@ -35,9 +36,12 @@ class RSecureMacOSNotifications:
         self.notification_queue = []
         
         # Setup logging
+        log_dir = Path('./logs/monitoring')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_notifications')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./macos_notifications.log')
+        handler = logging.FileHandler(log_dir / 'macos_notifications.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

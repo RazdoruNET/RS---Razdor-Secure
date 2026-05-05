@@ -125,8 +125,8 @@ class RSecureRetaliationSystem:
     
     def setup_logging(self):
         """Setup comprehensive logging"""
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
+        log_dir = Path("logs/security")
+        log_dir.mkdir(parents=True, exist_ok=True)
         
         self.logger = logging.getLogger('rsecure_retaliation')
         self.logger.setLevel(logging.INFO)

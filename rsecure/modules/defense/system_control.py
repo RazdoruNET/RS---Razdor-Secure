@@ -13,6 +13,7 @@ import signal
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
+from pathlib import Path
 import psutil
 import json
 from pathlib import Path
@@ -42,9 +43,12 @@ class RSecureSystemControl:
         self.quarantined_files = {}
         
         # Setup logging
+        log_dir = Path('./logs/system')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_control')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./system_control.log')
+        handler = logging.FileHandler(log_dir / 'system_control.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

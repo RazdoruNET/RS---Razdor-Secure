@@ -13,6 +13,7 @@ import time
 import logging
 import subprocess
 import json
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional, Set, Any
 from collections import defaultdict, deque
@@ -80,9 +81,12 @@ class RSecureNetworkDefense:
         self.running = False
         
         # Setup logging
+        log_dir = Path('./logs/security')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_network_defense')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./network_defense.log')
+        handler = logging.FileHandler(log_dir / 'network_defense.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

@@ -54,9 +54,12 @@ class RSecureCVU:
         self.update_thread = None
         
         # Setup logging
+        log_dir = Path('./logs/security')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_cvu')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./cvu_intelligence.log')
+        handler = logging.FileHandler(log_dir / 'cvu_intelligence.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         

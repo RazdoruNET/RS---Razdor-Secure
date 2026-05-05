@@ -13,6 +13,7 @@ import subprocess
 import re
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
+from pathlib import Path
 from collections import deque
 import socket
 import struct
@@ -115,7 +116,9 @@ class WiFiAntiPositioningSystem:
         self.logger.setLevel(logging.INFO)
         
         # File handler
-        handler = logging.FileHandler('./logs/wifi_antipositioning.log')
+        log_dir = Path('./logs/security')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(log_dir / 'wifi_antipositioning.log')
         handler.setFormatter(logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         ))

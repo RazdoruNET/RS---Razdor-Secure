@@ -95,7 +95,7 @@
   
   "logging": {
     "level": "INFO",
-    "file": "logs/rsecure.log",
+    "file": "logs/application/rsecure.log",
     "max_size": "10MB",
     "backup_count": 5,
     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

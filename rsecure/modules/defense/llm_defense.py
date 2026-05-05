@@ -13,6 +13,7 @@ import threading
 import numpy as np
 import sys
 import os
+from pathlib import Path
 
 # Add mock libraries to path for Python 3.14 compatibility
 mock_path = os.path.join(os.path.dirname(__file__), '../../mock_libs')
@@ -67,9 +68,12 @@ class RSecureLLMDefense:
         self.analysis_thread = None
         
         # Setup logging
+        log_dir = Path('./logs/security')
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
         self.logger = logging.getLogger('rsecure_llm_defense')
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('./llm_defense.log')
+        handler = logging.FileHandler(log_dir / 'llm_defense.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         
