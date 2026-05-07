@@ -168,12 +168,6 @@ results = infiltrator.analyze_bundle("bundle.js")
 | 🟡 **MEDIUM** | Средний риск | Стандартные API вызовы |
 | 🟢 **LOW** | Низкий риск | Внутренние вызовы |
 
-## 🤝 Сообщество
-
-- 🐛 [Сообщить о проблеме](https://github.com/razdor/RS---Razdor-Secure/issues)
-- 💡 [Предложить функцию](https://github.com/razdor/RS---Razdor-Secure/discussions)
-- 📧 [Связаться с нами](mailto:security@razdor.net)
-
 ## 📄 Лицензия
 
 Этот проект распространяется под [MIT License](LICENSE).
