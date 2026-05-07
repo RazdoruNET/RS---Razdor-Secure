@@ -188,21 +188,6 @@ results = infiltrator.analyze_bundle("bundle.js")
 
 ---
 
-## 📞 Поддержка и помощь
-
-### 🆘 Нужна помощь?
-- **📖 Документация** - Начните с [руководства пользователя](user-guide.md)
-- **🔍 Поиск** - Используйте поиск по документации
-- **💬 GitHub** - [Создайте issue](https://github.com/razdor/RS---Razdor-Secure/issues)
-- **📧 Email** - [support@razdor.net](mailto:support@razdor.net)
-
-### 🤝 Сообщество
-- **💬 Дискуссии** - [GitHub Discussions](https://github.com/razdor/RS---Razdor-Secure/discussions)
-- **🐛 Баг-репорты** - [GitHub Issues](https://github.com/razdor/RS---Razdor-Secure/issues)
-- **💡 Идеи** - [Feature Requests](https://github.com/razdor/RS---Razdor-Secure/discussions/new?category=ideas)
-
----
-
 ## 📈 Статус документации
 
 | Раздел | Статус | Последнее обновление |
