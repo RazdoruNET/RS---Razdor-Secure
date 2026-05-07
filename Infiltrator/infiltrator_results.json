@@ -1,0 +1,70 @@
+{
+  "bundle_path": "test_bundle.js",
+  "bundle_size": 3566,
+  "endpoints": [
+    {
+      "call_target": "OBFUSCATED_API",
+      "tainted_source": "obfuscated_string_array",
+      "arguments": [
+        "https://api.example.com"
+      ],
+      "url": "https://api.example.com",
+      "location": null,
+      "instruction": "obfuscated_api_1_0@local = CALL(OBFUSCATED_API(https://api.example.com))",
+      "risk_level": "CRITICAL",
+      "obfuscated": true
+    },
+    {
+      "call_target": "OBFUSCATED_API",
+      "tainted_source": "obfuscated_string_array",
+      "arguments": [
+        "/api/v1/users"
+      ],
+      "url": "/api/v1/users",
+      "location": null,
+      "instruction": "obfuscated_api_2_0@local = CALL(OBFUSCATED_API(/api/v1/users))",
+      "risk_level": "CRITICAL",
+      "obfuscated": true
+    },
+    {
+      "call_target": "OBFUSCATED_API",
+      "tainted_source": "obfuscated_string_array",
+      "arguments": [
+        "/api/v1/data"
+      ],
+      "url": "/api/v1/data",
+      "location": null,
+      "instruction": "obfuscated_api_3_0@local = CALL(OBFUSCATED_API(/api/v1/data))",
+      "risk_level": "CRITICAL",
+      "obfuscated": true
+    },
+    {
+      "call_target": "OBFUSCATED_API",
+      "tainted_source": "obfuscated_string_array",
+      "arguments": [
+        "/api/v1/auth"
+      ],
+      "url": "/api/v1/auth",
+      "location": null,
+      "instruction": "obfuscated_api_4_0@local = CALL(OBFUSCATED_API(/api/v1/auth))",
+      "risk_level": "CRITICAL",
+      "obfuscated": true
+    }
+  ],
+  "process_env_vars": [
+    "API_TIMEOUT",
+    "API_BASE_URL",
+    "NODE_ENV",
+    "API_KEY"
+  ],
+  "analysis_timestamp": "2026-05-07T06:52:41.255625",
+  "infiltrator_version": "2.0",
+  "risk_assessment": {
+    "level": "LOW",
+    "score": 0,
+    "high_risk_endpoints": 0,
+    "medium_risk_endpoints": 0,
+    "total_endpoints": 4
+  },
+  "encrypted": "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"
+}
