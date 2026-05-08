@@ -1,0 +1,123 @@
+# EVENT_HORIZON Security Audit Configuration for dsmoto.ru
+# Official Authorization: OFFICIAL_AUDIT_2024
+# Target: dsmoto.ru
+# Purpose: Security resilience assessment
+
+target:
+  domain: dsmoto.ru
+  protocol: https
+  port: 443
+  timeout: 30
+  max_retries: 3
+
+audit_scope:
+  endpoints:
+    - path: /
+      method: GET
+      description: "Main page"
+    - path: /login
+      method: POST
+      description: "Authentication endpoint"
+    - path: /api
+      method: GET
+      description: "API endpoint"
+    - path: /admin
+      method: GET
+      description: "Admin panel"
+    - path: /user/profile
+      method: GET
+      description: "User profile"
+  
+  components:
+    - waf
+    - rate_limiter
+    - session_manager
+    - database
+    - authentication
+
+test_scenarios:
+  baseline:
+    name: "Baseline performance"
+    requests: 100
+    rate: 10
+    duration: 10
+  
+  stress:
+    name: "Stress testing"
+    requests: 1000
+    rate: 100
+    duration: 30
+    burst_pattern: true
+  
+  degradation:
+    name: "Degradation scenarios"
+    scenarios:
+      - name: "WAF bypass attempts"
+        anomaly_type: "waf_bypass"
+        intensity: 0.7
+      - name: "Rate limit pressure"
+        anomaly_type: "rate_limit_pressure"
+        intensity: 0.8
+      - name: "Session hijacking"
+        anomaly_type: "session_hijacking"
+        intensity: 0.6
+      - name: "Database overload"
+        anomaly_type: "db_overload"
+        intensity: 0.5
+  
+  recovery:
+    name: "Recovery testing"
+    duration: 60
+    cooldown: 30
+
+security_constraints:
+  max_requests_per_minute: 1000
+  respect_robots_txt: true
+  follow_redirects: true
+  user_agent: "EVENT_HORIZON-Security-Audit/1.0 (Authorized Security Testing)"
+  rate_limit_respect: true
+
+authorization:
+  id: "OFFICIAL_AUDIT_2024"
+  authorized: true
+  contact_email: "security@example.com"
+  audit_start_date: "2024-05-08"
+  audit_end_date: "2024-05-15"
+  scope_document: "https://docs.example.com/audit-scope"
+
+reporting:
+  output_format: "json"
+  include_raw_data: false
+  include_sensitive_data: false
+  anonymize_data: true
+  output_directory: "/app/results"
+
+monitoring:
+  enable_metrics: true
+  enable_tracing: false
+  log_level: "INFO"
+  log_format: "json"
+  
+trust_boundaries:
+  enabled: true
+  enforce_immutability: true
+  semantic_drift_threshold: 0.3
+  
+causal_topology:
+  enabled: true
+  temporal_window: 30
+  confidence_threshold: 0.6
+  
+oracle_validation:
+  enabled: true
+  validation_rules:
+    - semantic_consistency
+    - contract_integrity
+    - causal_validity
+    - performance_bounds
+    - security_invariants
+
+epistemic_layer:
+  enabled: true
+  fixed_semantics: true
+  frozen_interpretations: true

@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # EVENT_HORIZON Main Application (Isolated Lab Mode)
+  event-horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: event-horizon-isolated
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    environment:
+      - PYTHONPATH=/app
+      - EVENT_HORIZON_ENV=docker
+      - LOG_LEVEL=INFO
+      - TARGET_URL=http://mock-target:9000
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - isolated-lab-net
+    restart: unless-stopped
+    depends_on:
+      - mock-target
+      - redis
+    command: python -m src.main --target http://mock-target:9000
+
+  # Mock Target Service (Isolated Lab Only)
+  mock-target:
+    build:
+      context: ./docker/mock-target
+      dockerfile: Dockerfile
+    container_name: mock-target-isolated
+    ports:
+      - "9000:9000"
+    environment:
+      - MOCK_SERVICE_PORT=9000
+      - LOG_LEVEL=INFO
+    networks:
+      - isolated-lab-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (Isolated Lab Only)
+  redis:
+    image: redis:7-alpine
+    container_name: redis-isolated
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_isolated:/data
+    networks:
+      - isolated-lab-net
+    restart: unless-stopped
+
+  # Prometheus (Isolated Lab Only)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-isolated
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data_isolated:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - isolated-lab-net
+    restart: unless-stopped
+
+  # Grafana (Isolated Lab Only)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-isolated
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=eventhorizon123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data_isolated:/var/lib/grafana
+    networks:
+      - isolated-lab-net
+    restart: unless-stopped
+
+volumes:
+  redis_data_isolated:
+    driver: local
+  prometheus_data_isolated:
+    driver: local
+  grafana_data_isolated:
+    driver: local
+
+networks:
+  isolated-lab-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

@@ -1,0 +1,13 @@
+{
+  "allowed_targets": [],
+  "blocked_domains": [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "internal",
+    "intranet",
+    "corp"
+  ],
+  "max_security_level": "analysis",
+  "require_auth": true
+}

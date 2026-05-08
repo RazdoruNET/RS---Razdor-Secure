@@ -1,0 +1,62 @@
+{
+  "vk": {
+    "access_token": "",
+    "group_id": "dsmotopro",
+    "api_version": "5.199",
+    "report_cooldown": 300,
+    "account_rotation": true,
+    "max_reports_per_account": 50
+  },
+  "analysis": {
+    "max_posts_per_scan": 100,
+    "hash_threshold": 0.95,
+    "violence_threshold": 0.8,
+    "fraud_keywords": ["продам", "куплю", "цена", "договор", "официально"],
+    "violence_keywords": ["дтп", "авария", "наезд", "столкновение", "опасный", "нарушение"],
+    "brand_keywords": ["bmw", "mercedes", "audi", "porsche", "volkswagen", "toyota", "honda"]
+  },
+  "automation": {
+    "use_selenium": true,
+    "use_playwright": true,
+    "headless": true,
+    "activity_simulation": true,
+    "min_view_time": 5,
+    "max_view_time": 15,
+    "batch_size": 10,
+    "delay_between_claims": 300,
+    "max_daily_claims": 100
+  },
+  "proxy": {
+    "enabled": false,
+    "rotation": true,
+    "proxy_list": []
+  },
+  "legal": {
+    "default_copyright_holders": [
+      "BMW AG",
+      "Mercedes-Benz Group AG",
+      "Audi AG",
+      "Porsche Automobil Holding SE",
+      "Volkswagen AG",
+      "Toyota Motor Corporation",
+      "Honda Motor Co., Ltd."
+    ],
+    "template_dir": "./templates",
+    "signature_line": "Authorized Agent for Copyright Holder"
+  },
+  "storage": {
+    "accounts_file": "./config/vk_accounts.json",
+    "reports_log": "./data/reports_log.json",
+    "cookies_dir": "./data/cookies",
+    "cache_dir": "./data/cache",
+    "results_dir": "./data/results",
+    "claims_dir": "./data/dmca_claims",
+    "tickets_dir": "./data/support_tickets",
+    "templates_dir": "./templates"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "log_dir": "./data/logs"
+  }
+}

@@ -1,0 +1,88 @@
+# Basic Authentication Test Scenario
+# Tests authentication endpoints under moderate load
+
+name: "Basic Authentication Stress Test"
+description: "Tests authentication system resilience with various credential combinations"
+target_system: "http://mock-target:9000"
+
+test_scenarios:
+  - name: "Authentication Load Test"
+    test_type: "authentication_stress"
+    priority: "high"
+    description: "Stress test authentication endpoints with concurrent login attempts"
+    target_endpoint: "http://mock-target:9000/login"
+    request_count: 500
+    concurrency: 25
+    duration_seconds: 120
+    parameters:
+      auth_methods: ["basic", "session"]
+      credential_variations: 10
+      failure_injection: false
+      user_prefix: "test"
+      password_prefix: "pass"
+    expected_outcomes:
+      - "System maintains authentication availability under stress"
+      - "No authentication bypass vulnerabilities discovered"
+      - "Response times remain within acceptable limits"
+      - "Session management remains stable"
+    success_criteria:
+      min_success_rate: 0.95
+      max_response_time_p95: 2.0
+      error_rate_threshold: 0.05
+      session_creation_success: 0.98
+    safety_limits:
+      max_error_rate: 0.3
+      circuit_breaker_threshold: 0.2
+      max_response_time: 10.0
+      max_session_creation_time: 5.0
+
+  - name: "Session Management Test"
+    test_type: "session_management"
+    priority: "medium"
+    description: "Tests session creation, validation, and cleanup under concurrent load"
+    target_endpoint: "http://mock-target:9000/session/create"
+    request_count: 300
+    concurrency: 15
+    duration_seconds: 180
+    parameters:
+      session_types: ["cookie", "token"]
+      concurrent_sessions: 50
+      session_lifecycle: ["create", "validate", "expire", "renew"]
+      session_timeout: 3600
+    expected_outcomes:
+      - "Sessions are created and managed correctly"
+      - "Session cleanup prevents resource leaks"
+      - "Concurrent session handling works properly"
+      - "Session security is maintained"
+    success_criteria:
+      session_creation_success: 0.98
+      session_validation_accuracy: 0.99
+      session_cleanup_efficiency: 0.95
+      max_concurrent_sessions: 100
+    safety_limits:
+      max_session_creation_time: 5.0
+      max_memory_usage: "500MB"
+      session_leak_threshold: 0.05
+
+global_parameters:
+  environment: "docker"
+  log_level: "INFO"
+  metrics_enabled: true
+  monitoring_interval: 5.0
+  auto_recovery: true
+
+safety_config:
+  max_error_rate: 0.25
+  circuit_breaker_threshold: 0.15
+  recovery_timeout: 60.0
+  max_concurrent_requests: 50
+  adaptive_backoff_enabled: true
+  emergency_stop_enabled: true
+
+estimated_duration: 300
+resource_requirements:
+  estimated_requests: 800
+  max_concurrent_requests: 40
+  estimated_memory_usage: "1GB"
+  estimated_cpu_usage: "50%"
+  network_bandwidth: "50Mbps"

@@ -1,0 +1,30 @@
+{
+  "security_config": "security_config.json",
+  "auth_token": null,
+  "crawl_delay": 2.0,
+  "crawl_depth": 2,
+  "timeout": 30,
+  "user_agent": "SQLiAuditor/1.0 (Enterprise Security Audit Tool)",
+  "respect_robots": true,
+  "database_types": ["mysql", "postgresql"],
+  "verify_vulnerabilities": true,
+  "enable_waf_bypass": false,
+  "output_dir": "reports",
+  "report_formats": ["json"],
+  "generate_pdf": false,
+  "proxies": null,
+  "security": {
+    "allowed_targets": [],
+    "blocked_domains": [
+      "localhost", "127.0.0.1", "0.0.0.0", "::1",
+      "internal", "intranet", "corp", "admin", "management"
+    ],
+    "max_security_level": "analysis",
+    "require_auth": true,
+    "allowed_egress_ports": [80, 443],
+    "max_requests_per_minute": 30,
+    "blocked_response_patterns": [
+      "admin", "management", "internal", "restricted"
+    ]
+  }
+}

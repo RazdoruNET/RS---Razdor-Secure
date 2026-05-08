@@ -1,0 +1,83 @@
+{
+  "version": "2.0",
+  "phase": "phase_3_central_enforcement",
+  "global_rules": {
+    "default_deny": true,
+    "require_auth": true,
+    "audit_all": true
+  },
+  "scope_policies": {
+    "allow_patterns": [
+      {
+        "pattern": "https://.*\\.dsmoto\\.ru",
+        "risk": 3.0
+      },
+      {
+        "pattern": "https://dsmoto\\.ru",
+        "risk": 3.0
+      },
+      {
+        "pattern": "https://.*\\.example\\.com",
+        "risk": 2.0
+      },
+      {
+        "pattern": "https://.*\\.test\\.com",
+        "risk": 3.0
+      }
+    ],
+    "deny_patterns": [
+      {
+        "pattern": ".*\\.internal",
+        "reason": "internal_network"
+      },
+      {
+        "pattern": "localhost|127\\.0\\.0\\.1",
+        "reason": "loopback"
+      },
+      {
+        "pattern": ".*\\.corp",
+        "reason": "corporate_network"
+      }
+    ]
+  },
+  "capability_policies": {
+    "contextual_capabilities": true,
+    "risk_adaptive": true,
+    "time_bound": true,
+    "capabilities": {
+      "generate_payloads": {
+        "base_risk": 1.0,
+        "requires_auth": false,
+        "max_concurrent": 10
+      },
+      "execute_requests": {
+        "base_risk": 6.0,
+        "requires_auth": false,
+        "max_concurrent": 5,
+        "isolation_required": false
+      },
+      "bypass_waf": {
+        "base_risk": 8.0,
+        "requires_auth": true,
+        "max_concurrent": 1,
+        "approval_required": true
+      }
+    }
+  },
+  "execution_policies": {
+    "isolation_type": "container",
+    "network_egress": {
+      "allowed_ports": [80, 443],
+      "max_bandwidth": "1MB/s"
+    },
+    "resource_limits": {
+      "cpu": "50%",
+      "memory": "512MB",
+      "disk": "100MB"
+    },
+    "timeout": {
+      "default": 30,
+      "max": 300
+    }
+  }
+}

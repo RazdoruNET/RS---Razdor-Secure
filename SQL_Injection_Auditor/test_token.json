@@ -1,0 +1,7 @@
+{
+  "token_id": "test_token_12345",
+  "scope": ["https://dsmoto.ru"],
+  "security_level": "analysis",
+  "capabilities": ["generate_payloads", "analyze_responses", "execute_requests"],
+  "expires_at": "2026-05-08T03:29:00Z"
+}

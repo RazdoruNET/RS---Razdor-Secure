@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  event-horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: event_horizon_audit
+    volumes:
+      - ./results:/app/results
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - EVENT_HORIZON_TARGET=dsmoto.ru
+      - EVENT_HORIZON_MODE=security_audit
+      - EVENT_HORIZON_AUTHORIZED=true
+      - EVENT_HORIZON_AUTHORIZATION_ID=OFFICIAL_AUDIT_2024
+      - PYTHONUNBUFFERED=1
+    networks:
+      - event_horizon_network
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import event_horizon"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: event_horizon_monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - event_horizon_network
+    depends_on:
+      - event-horizon
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: event_horizon_grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=event_horizon_secure
+    networks:
+      - event_horizon_network
+    depends_on:
+      - monitoring
+
+networks:
+  event_horizon_network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

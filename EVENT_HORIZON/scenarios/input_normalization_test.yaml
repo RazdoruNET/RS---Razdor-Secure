@@ -1,0 +1,217 @@
+# Input Normalization Test Scenario
+# Tests input normalization consistency across different encoding and format variations
+
+name: "Input Normalization Consistency Test"
+description: "Tests input normalization robustness and parser consistency across various input formats"
+target_system: "http://mock-target:9000"
+
+test_scenarios:
+  - name: "Case Sensitivity Normalization"
+    test_type: "input_normalization"
+    priority: "medium"
+    description: "Tests case normalization consistency across different components"
+    target_endpoint: "http://mock-target:9000/api/normalize"
+    request_count: 800
+    concurrency: 20
+    duration_seconds: 200
+    parameters:
+      input_variations: ["case"]
+      test_vectors: 100
+      edge_cases: true
+      case_variations: ["upper", "lower", "mixed", "title"]
+      character_sets: ["latin", "cyrillic", "chinese", "arabic"]
+    expected_outcomes:
+      - "Input normalization is consistent across variations"
+      - "No parser inconsistencies discovered"
+      - "Security is not compromised by input variations"
+      - "System handles edge cases gracefully"
+    success_criteria:
+      normalization_consistency: 0.95
+      parser_robustness: 0.9
+      no_security_bypass: true
+      edge_case_handling: 0.85
+    safety_limits:
+      max_parser_errors: 0.1
+      max_response_time: 3.0
+      no_data_corruption: true
+
+  - name: "Whitespace Normalization"
+    test_type: "input_normalization"
+    priority: "medium"
+    description: "Tests whitespace handling and normalization"
+    target_endpoint: "http://mock-target:9000/api/normalize"
+    request_count: 600
+    concurrency: 15
+    duration_seconds: 180
+    parameters:
+      input_variations: ["whitespace"]
+      whitespace_types: ["spaces", "tabs", "newlines", "carriage_returns", "mixed"]
+      edge_cases: ["leading", "trailing", "multiple", "zero_width"]
+      unicode_whitespace: true
+    expected_outcomes:
+      - "Whitespace normalization is consistent"
+      - "No parser inconsistencies with whitespace"
+      - "Security maintained with whitespace variations"
+      - "Edge cases handled properly"
+    success_criteria:
+      whitespace_consistency: 0.98
+      parser_robustness: 0.95
+      no_injection_via_whitespace: true
+      edge_case_stability: 0.9
+    safety_limits:
+      max_whitespace_errors: 0.05
+      max_response_time: 2.5
+      no_whitespace_injection: true
+
+  - name: "Encoding Normalization"
+    test_type: "input_normalization"
+    priority: "high"
+    description: "Tests URL encoding and character encoding normalization"
+    target_endpoint: "http://mock-target:9000/api/normalize"
+    request_count: 1000
+    concurrency: 25
+    duration_seconds: 250
+    parameters:
+      input_variations: ["encoding"]
+      encoding_types: ["url", "utf8", "base64", "html"]
+      encoding_levels: ["single", "double", "triple"]
+      special_characters: true
+      unicode_variations: true
+    expected_outcomes:
+      - "Encoding normalization is consistent"
+      - "No encoding-based bypass vulnerabilities"
+      - "Security maintained with encoding variations"
+      - "Double encoding handled correctly"
+    success_criteria:
+      encoding_consistency: 0.95
+      no_encoding_bypass: 0.98
+      double_encoding_handling: 0.9
+      security_maintained: true
+    safety_limits:
+      max_encoding_errors: 0.1
+      max_response_time: 3.5
+      no_encoding_attacks: true
+
+  - name: "Character Set Normalization"
+    test_type: "input_normalization"
+    priority: "medium"
+    description: "Tests character set handling and normalization"
+    target_endpoint: "http://mock-target:9000/api/normalize"
+    request_count: 700
+    concurrency: 18
+    duration_seconds: 220
+    parameters:
+      input_variations: ["charset"]
+      character_sets: ["utf8", "latin1", "windows1252", "cp1251", "gb2312"]
+      unicode_variants: ["nfc", "nfd", "nfkc", "nfkd"]
+      special_characters: ["emoji", "zero_width", "combining"]
+    expected_outcomes:
+      - "Character set normalization is consistent"
+      - "No charset-based vulnerabilities"
+      - "Unicode normalization handled correctly"
+      - "Special characters processed safely"
+    success_criteria:
+      charset_consistency: 0.9
+      unicode_normalization: 0.95
+      no_charset_attacks: true
+      special_char_safety: 0.95
+    safety_limits:
+      max_charset_errors: 0.15
+      max_response_time: 4.0
+      no_unicode_attacks: true
+
+  - name: "Mixed Input Variations"
+    test_type: "input_normalization"
+    priority: "high"
+    description: "Tests complex combinations of input variations"
+    target_endpoint: "http://mock-target:9000/api/normalize"
+    request_count: 1200
+    concurrency: 30
+    duration_seconds: 300
+    parameters:
+      input_variations: ["case", "whitespace", "encoding", "charset"]
+      combination_depth: 3
+      edge_cases: true
+      stress_testing: true
+      boundary_conditions: true
+    expected_outcomes:
+      - "Complex input variations handled consistently"
+      - "No parser inconsistencies with mixed variations"
+      - "Security maintained under complex inputs"
+      - "System stability under stress"
+    success_criteria:
+      mixed_variation_consistency: 0.85
+      parser_stability: 0.9
+      security_under_stress: true
+      system_stability: 0.95
+    safety_limits:
+      max_mixed_errors: 0.2
+      max_response_time: 5.0
+      no_complex_attacks: true
+
+global_parameters:
+  environment: "docker"
+  log_level: "INFO"
+  metrics_enabled: true
+  detailed_logging: true
+  security_monitoring: true
+  input_validation: true
+
+safety_config:
+  max_error_rate: 0.25
+  circuit_breaker_threshold: 0.2
+  recovery_timeout: 60.0
+  max_concurrent_requests: 35
+  adaptive_backoff_enabled: true
+  emergency_stop_enabled: true
+  input_validation_enabled: true
+
+estimated_duration: 850
+resource_requirements:
+  estimated_requests: 4300
+  max_concurrent_requests: 35
+  estimated_memory_usage: "1.5GB"
+  estimated_cpu_usage: "60%"
+  network_bandwidth: "75Mbps"
+
+test_vectors:
+  case_variations:
+    - "admin"
+    - "ADMIN"
+    - "Admin"
+    - "aDmIn"
+    - "admin123"
+    - "ADMIN123"
+    - "Admin123"
+    - "aDmIn123"
+  
+  whitespace_variations:
+    - "admin"
+    - " admin"
+    - "admin "
+    - "  admin"
+    - "admin  "
+    - " admin "
+    - " admin"
+    - "admin\t"
+    - "admin\n"
+    - "admin\r\n"
+  
+  encoding_variations:
+    - "admin"
+    - "admin%20"
+    - "admin%2520"
+    - "YWRtaW4="  # base64
+    - "admin"  # with special chars
+  
+  unicode_variations:
+    - "café"
+    - "cafe"
+    - "café"
+    - "résumé"
+    - "resume"
+    - "naïve"
+    - "naive"
+    - "пользователь"
+    - "用户"
+    - "ユーザー"

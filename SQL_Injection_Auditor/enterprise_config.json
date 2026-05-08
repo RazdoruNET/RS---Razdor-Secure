@@ -1,0 +1,39 @@
+{
+  "enterprise_mode": true,
+  "pdp_config": "pdp_config.json",
+  "audit_chain_file": "audit_chain.db",
+  "isolation_type": "container",
+  "risk_thresholds": {
+    "low": 3.0,
+    "medium": 6.0,
+    "high": 8.0
+  },
+  "policy_settings": {
+    "default_deny": true,
+    "require_auth": false,
+    "audit_all": true,
+    "contextual_capabilities": true,
+    "risk_adaptive": true
+  },
+  "execution_settings": {
+    "max_concurrent_operations": 5,
+    "isolation_timeout": 300,
+    "resource_limits": {
+      "cpu": "50%",
+      "memory": "512MB",
+      "network": "1MB/s"
+    }
+  },
+  "crawl_delay": 2.0,
+  "crawl_depth": 2,
+  "timeout": 30,
+  "user_agent": "SQLiAuditor/2.0 (Enterprise Security Audit Tool)",
+  "respect_robots": true,
+  "database_types": ["mysql", "postgresql"],
+  "verify_vulnerabilities": true,
+  "enable_waf_bypass": false,
+  "output_dir": "reports",
+  "report_formats": ["json"],
+  "generate_pdf": false,
+  "proxies": null
+}

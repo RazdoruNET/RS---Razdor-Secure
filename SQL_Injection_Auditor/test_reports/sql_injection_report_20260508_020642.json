@@ -1,0 +1,143 @@
+{
+  "scan_summary": {
+    "scan_date": "2026-05-08T02:06:42.895655",
+    "target_url": "http://test.example.com",
+    "total_vectors_tested": 15,
+    "vulnerabilities_found": 3,
+    "high_risk_vulnerabilities": 2,
+    "medium_risk_vulnerabilities": 1,
+    "low_risk_vulnerabilities": 0,
+    "scan_duration": 45.5,
+    "databases_detected": [
+      "mysql",
+      "postgresql",
+      "mssql"
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "url": "http://test.example.com/user.php",
+      "parameter": "id",
+      "injection_type": "InjectionType.ERROR_BASED",
+      "database_type": "DatabaseType.MYSQL",
+      "payload": "' OR 1=1 -- ",
+      "evidence": "SQL syntax error detected",
+      "confidence": 0.95,
+      "response_time": 0.5,
+      "status_code": 200,
+      "error_message": "You have an error in your SQL syntax",
+      "database_info": {
+        "version": "5.7.33",
+        "database": "testdb"
+      },
+      "risk_level": "MEDIUM",
+      "severity": "MEDIUM",
+      "cvss_score": 5.4,
+      "base_score": 5.4,
+      "verified": false,
+      "verification_status": null
+    },
+    {
+      "url": "http://test.example.com/search.php",
+      "parameter": "q",
+      "injection_type": "InjectionType.BOOLEAN_BASED",
+      "database_type": "DatabaseType.POSTGRESQL",
+      "payload": "' AND 1=1 -- ",
+      "evidence": "Boolean-based response difference detected",
+      "confidence": 0.85,
+      "response_time": 0.3,
+      "status_code": 200,
+      "error_message": null,
+      "database_info": null,
+      "risk_level": "LOW",
+      "severity": "LOW",
+      "cvss_score": 3.7,
+      "base_score": 3.7,
+      "verified": false,
+      "verification_status": null
+    },
+    {
+      "url": "http://test.example.com/admin/login.php",
+      "parameter": "username",
+      "injection_type": "InjectionType.UNION_BASED",
+      "database_type": "DatabaseType.MSSQL",
+      "payload": "' UNION SELECT 1,@@version,3 -- ",
+      "evidence": "UNION-based response modification detected",
+      "confidence": 0.9,
+      "response_time": 0.8,
+      "status_code": 200,
+      "error_message": null,
+      "database_info": null,
+      "risk_level": "HIGH",
+      "severity": "HIGH",
+      "cvss_score": 6.3,
+      "base_score": 6.3,
+      "verified": false,
+      "verification_status": null
+    }
+  ],
+  "verification_results": [],
+  "recommendations": [
+    {
+      "title": "General SQL Injection Prevention",
+      "description": "Implement comprehensive SQL injection prevention measures",
+      "recommendations": [
+        "Use parameterized queries or prepared statements",
+        "Implement input validation and sanitization",
+        "Apply principle of least privilege to database accounts",
+        "Regularly update and patch database systems",
+        "Implement Web Application Firewall (WAF)",
+        "Conduct regular security audits and penetration testing"
+      ],
+      "code_examples": {
+        "php": "$stmt = $pdo->prepare(\"SELECT * FROM users WHERE id = ?\"); $stmt->execute([$id]);",
+        "python": "cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))",
+        "java": "PreparedStatement stmt = conn.prepareStatement(\"SELECT * FROM users WHERE id = ?\"); stmt.setInt(1, userId);",
+        "node": "db.query(\"SELECT * FROM users WHERE id = ?\", [userId]);"
+      }
+    },
+    {
+      "title": "Implement Parameterized Queries",
+      "description": "Replace dynamic SQL with parameterized queries",
+      "recommendations": [
+        "Use PDO prepared statements in PHP",
+        "Use parameterized queries in Python (psycopg2, pymysql)",
+        "Use PreparedStatement in Java",
+        "Use parameter binding in Node.js",
+        "Never concatenate user input directly into SQL queries"
+      ]
+    },
+    {
+      "title": "Input Validation and Sanitization",
+      "description": "Validate and sanitize all user inputs",
+      "recommendations": [
+        "Validate input format and length",
+        "Sanitize special characters",
+        "Use whitelist approach for allowed characters",
+        "Implement server-side validation (client-side is not enough)",
+        "Reject suspicious input patterns"
+      ]
+    },
+    {
+      "title": "Database Security Hardening",
+      "description": "Harden database security configuration",
+      "recommendations": [
+        "Use least privilege database accounts",
+        "Disable unnecessary database functions",
+        "Enable database auditing and logging",
+        "Regularly review database permissions",
+        "Separate development and production databases"
+      ]
+    }
+  ],
+  "technical_details": {
+    "test_mode": true,
+    "payloads_tested": 150,
+    "verification_enabled": true
+  },
+  "report_metadata": {
+    "generated_at": "2026-05-08T02:06:42.895917",
+    "generator": "SQL Injection Auditor v1.0",
+    "format": "JSON"
+  }
+}

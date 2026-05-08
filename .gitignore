@@ -14,6 +14,11 @@ cvu_intelligence.log
 reinforcement_learning.log
 network_defense.log
 
+# Exceptions for DAFT
+!DAFT/logs
+!DAFT/reports
+!DAFT/results
+
 # Data directories
 data/
 quarantine/
@@ -26,11 +31,18 @@ rl_models/
 *.sqlite3
 security_analytics.db
 
+# Exceptions for SQL Injection Auditor
+!SQL_Injection_Auditor/audit.db
+!SQL_Injection_Auditor/audit_chain.db
+
 # Configuration files with sensitive data
 rsecure_config.json
 system_config.json
 config.json
 *.config
+
+# Exception for SQL Injection Auditor
+!SQL_Injection_Auditor/config.json
 
 # Python cache and temporary files
 __pycache__/
@@ -60,6 +72,9 @@ env/
 ENV/
 .venv/
 .env/
+
+# Exception for SQL Injection Auditor
+!SQL_Injection_Auditor/venv
 
 # IDE files
 .vscode/
@@ -150,6 +165,9 @@ reports/
 *.pdf
 *.html.reports/
 security_reports*
+
+# Exception for SQL Injection Auditor
+!SQL_Injection_Auditor/reports
 
 # API keys and credentials (just in case)
 .env
@@ -254,12 +272,14 @@ Thumbs.db
 
 # Build and distribution artifacts
 build/
-dist/
 *.egg-info/
 *.egg
 *.whl
 *.tar.gz
 *.zip
+
+# Exception for DAFT
+!DAFT/build
 
 # Environment and configuration
 .env*

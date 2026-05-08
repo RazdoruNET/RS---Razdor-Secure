@@ -1,0 +1,37 @@
+{
+  "authorization_id": "AUTH-[UNIQUE-ID]",
+  "target_url": "https://dsmoto.ru",
+  "authorized_by": "[Company/Organization Name]",
+  "contact_email": "[security@company.com]",
+  "contact_phone": "[+1-555-0123]",
+  "scope": {
+    "authorized_targets": ["https://dsmoto.ru"],
+    "test_types": [
+      "authentication_stress",
+      "rate_limiting_validation",
+      "input_normalization"
+    ],
+    "purpose": "Security audit and resilience testing"
+  },
+  "time_window": {
+    "start_time": 1705272000.0,
+    "end_time": 1705358400.0
+  },
+  "limitations": {
+    "max_requests": 10000,
+    "max_concurrent": 50,
+    "rate_limit": 10,
+    "duration": 3600,
+    "daily_window": "02:00-06:00 UTC"
+  },
+  "status": "pending",
+  "verification_code": null,
+  "documents": [
+    "authorization_letter.pdf",
+    "scope_of_engagement.pdf",
+    "authorized_targets.txt",
+    "contact_info.txt"
+  ],
+  "created_at": 1705272000.0,
+  "verified_at": null
+}

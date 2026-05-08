@@ -1,0 +1,174 @@
+# Rate Limiting Test Scenario
+# Tests rate limiting effectiveness and bypass attempts
+
+name: "Rate Limiting Resilience Test"
+description: "Comprehensive rate limiting test with various attack patterns and load conditions"
+target_system: "http://mock-target:9000"
+
+test_scenarios:
+  - name: "Constant Load Rate Limiting"
+    test_type: "rate_limiting_test"
+    priority: "high"
+    description: "Tests rate limiting under constant load conditions"
+    target_endpoint: "http://mock-target:9000/api/data"
+    request_count: 2000
+    concurrency: 50
+    duration_seconds: 300
+    parameters:
+      burst_patterns: ["constant"]
+      rate_limit_thresholds: [10, 30, 60]
+      bypass_attempts: false
+      request_intervals: [0.1, 0.5, 1.0]
+    expected_outcomes:
+      - "Rate limiting effectively prevents abuse"
+      - "Legitimate requests are not overly restricted"
+      - "No rate limit bypass methods found"
+      - "System remains stable during rate limit activation"
+    success_criteria:
+      rate_limit_effectiveness: 0.9
+      response_consistency: 0.95
+      no_cascade_failures: true
+      max_4xx_rate: 0.5
+    safety_limits:
+      max_4xx_rate: 0.6
+      max_5xx_rate: 0.1
+      system_stability: true
+      max_response_time: 5.0
+
+  - name: "Spike Attack Pattern"
+    test_type: "rate_limiting_test"
+    priority: "high"
+    description: "Tests rate limiting against sudden traffic spikes"
+    target_endpoint: "http://mock-target:9000/api/data"
+    request_count: 1500
+    concurrency: 100
+    duration_seconds: 240
+    parameters:
+      burst_patterns: ["spike"]
+      spike_intensity: 5.0
+      spike_duration: 30
+      recovery_window: 60
+      bypass_attempts: false
+    expected_outcomes:
+      - "Rate limiting handles traffic spikes gracefully"
+      - "System recovers after spike periods"
+      - "No service degradation during spikes"
+      - "Consistent rate limiting behavior"
+    success_criteria:
+      spike_handling_effectiveness: 0.85
+      recovery_time_acceptable: true
+      response_time_stability: 0.8
+      error_rate_during_spike: 0.4
+    safety_limits:
+      max_downtime: 10.0
+      graceful_degradation: true
+      auto_recovery: true
+
+  - name: "Gradual Ramp Up Test"
+    test_type: "rate_limiting_test"
+    priority: "medium"
+    description: "Tests rate limiting with gradual traffic increase"
+    target_endpoint: "http://mock-target:9000/api/data"
+    request_count: 3000
+    concurrency: 75
+    duration_seconds: 400
+    parameters:
+      burst_patterns: ["gradual"]
+      ramp_up_rate: 0.1
+      max_concurrent: 100
+      plateau_duration: 120
+      bypass_attempts: false
+    expected_outcomes:
+      - "Rate limiting adapts to gradual load increases"
+      - "No sudden threshold violations"
+      - "Predictable behavior under load"
+      - "Stable performance throughout ramp"
+    success_criteria:
+      adaptive_rate_limiting: 0.9
+      threshold_consistency: 0.95
+      performance_stability: 0.85
+      no_threshold_surprises: true
+    safety_limits:
+      max_response_time_degradation: 2.0
+      gradual_degradation_only: true
+      no_system_crash: true
+
+  - name: "Rate Limit Bypass Attempts"
+    test_type: "rate_limiting_test"
+    priority: "high"
+    description: "Tests various rate limit bypass techniques"
+    target_endpoint: "http://mock-target:9000/api/data"
+    request_count: 1000
+    concurrency: 25
+    duration_seconds: 200
+    parameters:
+      bypass_attempts: true
+      bypass_techniques: ["header_rotation", "ip_rotation", "session_rotation", "user_agent_rotation"]
+      header_variations: 50
+      ip_variations: 20
+      session_variations: 30
+      user_agent_variants: 15
+    expected_outcomes:
+      - "Rate limit bypass attempts are blocked"
+      - "Consistent limiting across different techniques"
+      - "No successful bypass methods found"
+      - "Security maintained under bypass attempts"
+    success_criteria:
+      bypass_prevention_rate: 0.98
+      consistent_limiting: 0.95
+      security_maintained: true
+      no_successful_bypass: true
+    safety_limits:
+      max_bypass_success_rate: 0.02
+      security_integrity: true
+      no_privilege_escalation: true
+
+global_parameters:
+  environment: "docker"
+  log_level: "INFO"
+  metrics_enabled: true
+  detailed_logging: true
+  security_monitoring: true
+  attack_simulation: true
+
+safety_config:
+  max_error_rate: 0.3
+  circuit_breaker_threshold: 0.25
+  recovery_timeout: 45.0
+  max_concurrent_requests: 100
+  adaptive_backoff_enabled: true
+  emergency_stop_enabled: true
+  security_monitoring_enabled: true
+
+estimated_duration: 720
+resource_requirements:
+  estimated_requests: 7500
+  max_concurrent_requests: 100
+  estimated_memory_usage: "2GB"
+  estimated_cpu_usage: "75%"
+  network_bandwidth: "100Mbps"
+
+attack_patterns:
+  - name: "Header Rotation"
+    description: "Rotate HTTP headers to avoid rate limit detection"
+    headers: ["User-Agent", "X-Forwarded-For", "Accept-Language"]
+    variations: 50
+  
+  - name: "IP Rotation"
+    description: "Simulate requests from different IP addresses"
+    ip_ranges: ["192.168.1.0/24", "10.0.0.0/24", "172.16.0.0/24"]
+    variations: 20
+  
+  - name: "Session Rotation"
+    description: "Use different session identifiers"
+    session_types: ["cookie", "token", "jwt"]
+    variations: 30
+  
+  - name: "User Agent Rotation"
+    description: "Rotate user agent strings"
+    user_agents: 
+      - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      - "curl/8.0.0"
+      - "Python-requests/2.28.0"
+      - "PostmanRuntime/7.29.0"
+    variations: 15

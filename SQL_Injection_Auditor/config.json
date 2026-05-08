@@ -1,0 +1,15 @@
+{
+  "crawl_delay": 1.0,
+  "crawl_depth": 3,
+  "timeout": 30,
+  "user_agent": "SQLiAuditor/1.0 (Security Audit Tool)",
+  "respect_robots": true,
+  "database_types": ["mysql", "postgresql", "mssql"],
+  "payload_strategy": "effectiveness",
+  "verify_vulnerabilities": true,
+  "enable_waf_bypass": true,
+  "output_dir": "reports",
+  "report_formats": ["json"],
+  "generate_pdf": false,
+  "proxies": null
+}

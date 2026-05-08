@@ -1,0 +1,69 @@
+DMCA NOTICE OF COPYRIGHT INFRINGEMENT
+
+Date: {{ date }}
+
+To: {{ recipient }}
+From: {{ sender_name }} ({{ sender_email }})
+Company: {{ company_name }}
+Address: {{ sender_address }}
+Phone: {{ sender_phone }}
+
+RE: NOTICE OF COPYRIGHT INFRINGEMENT - Case #{{ case_number }}
+
+Dear Telegram Support Team,
+
+I am writing to notify you of copyright infringement occurring on your platform. 
+Under penalty of perjury, I state that I am the copyright owner or authorized 
+to act on behalf of the copyright owner of the exclusive rights that are being infringed.
+
+IDENTIFIED INFRINGING CONTENT:
+{% for item in infringing_items %}
+- Channel: {{ item.channel }}
+- Message ID: {{ item.message_id }}
+- Content Type: {{ item.content_type }}
+- Description: {{ item.description }}
+- Direct Link: {{ item.direct_link }}
+{% endfor %}
+
+ORIGINAL COPYRIGHTED WORK:
+- Title: {{ original_work.title }}
+- Author/Artist: {{ original_work.author }}
+- Registration Number: {{ original_work.registration_number }}
+- Publication Date: {{ original_work.publication_date }}
+
+VIOLATION DETAILS:
+The infringing content posted on your platform reproduces, distributes, and displays 
+our copyrighted work without authorization. This constitutes direct copyright infringement 
+under 17 U.S.C. § 106 and international copyright treaties.
+
+GOOD FAITH BELIEF STATEMENT:
+I have a good faith belief that the use of the copyrighted materials described above 
+is not authorized by the copyright owner, its agent, or the law.
+
+ACCURACY STATEMENT:
+I swear, under penalty of perjury, that the information in this notification is accurate 
+and that I am the copyright owner or am authorized to act on behalf of the owner of an 
+exclusive right that is allegedly infringed.
+
+ELECTRONIC SIGNATURE:
+{{ digital_signature }}
+
+DEMAND FOR ACTION:
+We request that you:
+1. Immediately remove or disable access to the infringing content
+2. Notify the user responsible for the infringement of this action
+3. Take appropriate measures to prevent future infringement by this user
+
+Please respond within 24-48 hours to confirm receipt of this notice and the actions taken.
+
+Sincerely,
+
+{{ sender_name }}
+{{ company_name }}
+{{ sender_title }}
+{{ sender_email }}
+{{ sender_phone }}
+
+---
+This DMCA notice is sent in accordance with the Digital Millennium Copyright Act (17 U.S.C. § 512)
+and applicable international copyright laws.
