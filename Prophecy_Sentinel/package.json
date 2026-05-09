@@ -1,0 +1,62 @@
+{
+  "name": "prophecy-sentinel",
+  "version": "1.0.0",
+  "description": "Prophecy Sentinel - Professional Security Assessment Framework with Empirical Validation",
+  "main": "ProphecySentinel.js",
+  "scripts": {
+    "start": "node ProphecySentinel.js",
+    "test": "node test/test.js",
+    "benchmark:dvwa": "docker-compose -f docker-compose.dvwa.yml up -d && node src/benchmark/DVWAValidationRunner.js && docker-compose -f docker-compose.dvwa.yml down",
+    "benchmark:juiceshop": "docker-compose -f docker-compose.juiceshop.yml up -d && node src/benchmark/JuiceShopValidationRunner.js && docker-compose -f docker-compose.juiceshop.yml down",
+    "benchmark:owasp": "node src/benchmark/OWASPBenchmarkRunner.js",
+    "validate": "node src/confirmation/MultiStageConfirmation.js",
+    "regression": "node src/testing/RegressionSuite.js",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": [
+    "security",
+    "vulnerability-scanner",
+    "penetration-testing",
+    "sql-injection",
+    "xss",
+    "security-assessment",
+    "empirical-validation",
+    "exploit-confirmation"
+  ],
+  "author": "Prophecy Sentinel Team",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "typescript": "^5.3.0",
+    "axios": "^1.6.0",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "ts-node": "^10.9.1",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.8"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prophecy-sentinel/prophecy-sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/prophecy-sentinel/prophecy-sentinel/issues"
+  },
+  "homepage": "https://github.com/prophecy-sentinel/prophecy-sentinel#readme"
+}

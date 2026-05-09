@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: prophecy-sentinel-juiceshop
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CTF_KEY=prophecy-sentinel-secret-key
+    networks:
+      - prophecy-sentinel-network
+    restart: unless-stopped
+
+networks:
+  prophecy-sentinel-network:
+    driver: bridge
