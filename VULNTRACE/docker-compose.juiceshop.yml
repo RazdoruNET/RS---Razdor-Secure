@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: juice-shop-benchmark
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CTF_KEY=juice-shop-secret-key
+    networks:
+      - juice-shop-network
+    restart: unless-stopped
+
+networks:
+  juice-shop-network:
+    driver: bridge

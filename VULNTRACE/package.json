@@ -1,0 +1,46 @@
+{
+  "name": "vulntrace",
+  "version": "1.0.0",
+  "description": "Network-Level Security Observation Scanner with Sink-Level Validation",
+  "main": "real-audit-engine.js",
+  "scripts": {
+    "start": "node real-vk-audit.js",
+    "audit": "node real-vk-audit.js",
+    "sink": "node sink-level-validator.js",
+    "full": "node vulntrace-final-test.js",
+    "test": "node -e \"console.log('🔥 VULNTRACE - Network-Level Security Observation Scanner')\""
+  },
+  "keywords": [
+    "security",
+    "vulnerability",
+    "network",
+    "scanner",
+    "evidence",
+    "traces",
+    "sink-level",
+    "validation",
+    "vulntrace"
+  ],
+  "author": "VULNTRACE Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dns": "^0.2.2",
+    "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "https": "^1.0.0",
+    "net": "^1.0.2",
+    "path": "^0.12.7",
+    "playwright": "^1.59.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "reports": "reports",
+    "traces": "traces"
+  },
+  "type": "commonjs"
+}

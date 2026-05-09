@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: dvwa-benchmark
+    ports:
+      - "8080:80"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=dvwa
+      - MYSQL_PASSWORD=p@ssw0rd
+      - MYSQL_DATABASE=dvwa
+      - RECAPTCHA_DISABLE=true
+    depends_on:
+      - mysql
+    networks:
+      - dvwa-network
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:5.7
+    container_name: dvwa-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USER=dvwa
+      - MYSQL_PASSWORD=p@ssw0rd
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dvwa-network
+    restart: unless-stopped
+
+networks:
+  dvwa-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

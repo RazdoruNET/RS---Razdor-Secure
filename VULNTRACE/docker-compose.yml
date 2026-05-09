@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  prophecy-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prophecy-sandbox
+    ports:
+      - "3000:3000"  # Dashboard port
+      - "8080:8080"  # API port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for sandbox containers
+      - prophecy-data:/app/.prophecy-sandbox  # Persistent data
+      - prophecy-logs:/app/logs  # Log files
+      - prophecy-temp:/tmp/prophecy-sandbox  # Temporary files
+    environment:
+      - NODE_ENV=production
+      - SANDBOX_ENABLED=true
+      - DASHBOARD_PORT=3000
+      - API_PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-prophecy-sandbox-secret}
+      - AUDIT_LOG_ENABLED=true
+      - NETWORK_ISOLATION=true
+    networks:
+      - prophecy-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    container_name: prophecy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - prophecy-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-prophecy-redis-pass}
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: prophecy-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_DB=prophecy_sandbox
+      - POSTGRES_USER=prophecy
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-prophecy-pass}
+    networks:
+      - prophecy-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: prophecy-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    networks:
+      - prophecy-network
+    depends_on:
+      - prophecy-sandbox
+    restart: unless-stopped
+
+  # Monitoring stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prophecy-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - prophecy-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: prophecy-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-prophecy-grafana}
+    networks:
+      - prophecy-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prophecy-data:
+    driver: local
+  prophecy-logs:
+    driver: local
+  prophecy-temp:
+    driver: local
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  prophecy-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
