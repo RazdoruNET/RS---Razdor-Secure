@@ -45,6 +45,21 @@ network_defense.log
 !Prophecy_Sentinel/docs/
 !Prophecy_Sentinel/src/
 
+# Exceptions for SQLGuard Pro
+!SQLGuard_Pro/
+!SQLGuard_Pro/*.js
+!SQLGuard_Pro/*.json
+!SQLGuard_Pro/*.md
+!SQLGuard_Pro/*.sql
+!SQLGuard_Pro/*.yml
+!SQLGuard_Pro/*.yaml
+!SQLGuard_Pro/dist/
+!SQLGuard_Pro/docs/
+!SQLGuard_Pro/examples/
+!SQLGuard_Pro/src/
+!SQLGuard_Pro/tests/
+!SQLGuard_Pro/tsconfig.json
+
 # Data directories
 data/
 quarantine/

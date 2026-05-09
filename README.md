@@ -211,6 +211,47 @@ const result = await xssConfirm.confirmXSS(
 console.log(`XSS подтвержден: ${result.confirmed}`);
 ```
 
+#### 🔒 [SQLGuard Pro](SQLGuard_Pro/) - Профессиональный сканер уязвимостей SQL-кода
+**Продвинутый инструмент для анализа безопасности SQL-кода с AI-powered анализом**
+
+- **🔍 SQL Injection Detection** - обнаружение инъекций через статический анализ
+- **🤖 AI-Powered Analysis** - умный анализ с помощью GPT
+- **⚡ Performance Analysis** - выявление неэффективных запросов
+- **📊 Multi-format Reporting** - JSON, HTML, PDF, SARIF отчеты
+- **🔧 IDE Integration** - реальная подсветка уязвимостей в редакторе
+
+**Ключевые возможности:**
+- **Поддерживаемые БД:** MySQL, PostgreSQL, MSSQL, Oracle, SQLite
+- **Типы уязвимостей:** SQL Injection, Data Exposure, Privilege Escalation
+- **Enterprise функции:** SSO интеграция, RBAC, SOC 2 соответствие
+- **CI/CD интеграция:** GitHub Actions, SARIF формат
+
+**Использование:**
+```bash
+# Анализ одного файла
+sqlguard analyze file.sql
+
+# Анализ всего проекта
+sqlguard analyze --directory ./project
+
+# Генерация отчета
+sqlguard analyze --directory . --format html --output report.html
+```
+
+```javascript
+import { SQLVulnerabilityScanner } from 'sqlguard-pro';
+
+const scanner = new SQLVulnerabilityScanner({
+  databaseType: 'mysql',
+  securityLevel: 'strict',
+  enableGPTAnalysis: true
+});
+
+// Анализ файла
+const result = await scanner.analyzeFile('query.sql', sqlContent);
+console.log(`Найдено уязвимостей: ${result.vulnerabilities.length}`);
+```
+
 ### 📊 [8. СТРУКТУРА ПРОЕКТА](docs/project-structure.md)
 - Полная организация директорий
 - Ключевые компоненты и модули
