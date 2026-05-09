@@ -1,0 +1,65 @@
+export declare const SECURITY_CONSTANTS: {
+    readonly USER_INPUT_TIMEOUT: 30000;
+    readonly NETWORK_REQUEST_TIMEOUT: 10000;
+    readonly ANALYSIS_TIMEOUT: 300000;
+    readonly LICENSE_PATH: ".prophecy-sandbox/license.json";
+    readonly AUDIT_LOG_PATH: ".prophecy-sandbox/audit.log";
+    readonly ETHICAL_WARNING_PATH: ".prophecy-sandbox/ethical-warning.json";
+    readonly DEFAULT_BUFFER_SIZE: 8192;
+    readonly NETWORK_BUFFER_SIZE: 65536;
+    readonly LOG_BUFFER_SIZE: 1024;
+    readonly MAX_RETRY_ATTEMPTS: 3;
+    readonly MAX_AUTH_ATTEMPTS: 5;
+    readonly MAX_FILE_SIZE: number;
+    readonly MAX_LOG_SIZE: number;
+    readonly MAX_CONCURRENT_REQUESTS: 10;
+    readonly RATE_LIMIT_WINDOW: 60000;
+    readonly MAX_RISK_SCORE: 100;
+    readonly CRITICAL_RISK_THRESHOLD: 80;
+    readonly HIGH_RISK_THRESHOLD: 60;
+    readonly MEDIUM_RISK_THRESHOLD: 40;
+    readonly FEATURE_VECTOR_SIZE: 256;
+    readonly MODEL_TRAINING_EPOCHS: 100;
+    readonly MODEL_BATCH_SIZE: 32;
+    readonly DEFAULT_MEMORY_LIMIT: "512m";
+    readonly DEFAULT_CPU_LIMIT: "0.5";
+    readonly DEFAULT_TIMEOUT: 60000;
+    readonly DEFAULT_KEY_SIZE: 2048;
+    readonly DEFAULT_SALT_SIZE: 32;
+    readonly DEFAULT_IV_SIZE: 16;
+    readonly MAX_FUZZING_INPUTS: 1000;
+    readonly MAX_FUZZING_DURATION: 300000;
+    readonly MONITORING_INTERVAL: 5000;
+    readonly STATS_COLLECTION_INTERVAL: 10000;
+    readonly CACHE_TTL: 3600000;
+    readonly MAX_CACHE_SIZE: 1000;
+    readonly LOG_LEVELS: {
+        readonly ERROR: "error";
+        readonly WARN: "warn";
+        readonly INFO: "info";
+        readonly DEBUG: "debug";
+    };
+    readonly EVENT_TYPES: {
+        readonly SECURITY_VIOLATION: "security_violation";
+        readonly AUDIT_LOG: "audit_log";
+        readonly ANALYSIS_STARTED: "analysis_started";
+        readonly ANALYSIS_COMPLETED: "analysis_completed";
+        readonly THREAT_DETECTED: "threat_detected";
+        readonly SYSTEM_ERROR: "system_error";
+    };
+    readonly STATUS_CODES: {
+        readonly SUCCESS: "success";
+        readonly ERROR: "error";
+        readonly WARNING: "warning";
+        readonly PENDING: "pending";
+        readonly BLOCKED: "blocked";
+        readonly TIMEOUT: "timeout";
+    };
+};
+export type TimeoutConstant = typeof SECURITY_CONSTANTS.USER_INPUT_TIMEOUT;
+export type PathConstant = typeof SECURITY_CONSTANTS.LICENSE_PATH;
+export type BufferSizeConstant = typeof SECURITY_CONSTANTS.DEFAULT_BUFFER_SIZE;
+export type LogLevel = typeof SECURITY_CONSTANTS.LOG_LEVELS[keyof typeof SECURITY_CONSTANTS.LOG_LEVELS];
+export type EventType = typeof SECURITY_CONSTANTS.EVENT_TYPES[keyof typeof SECURITY_CONSTANTS.EVENT_TYPES];
+export type StatusCode = typeof SECURITY_CONSTANTS.STATUS_CODES[keyof typeof SECURITY_CONSTANTS.STATUS_CODES];
+//# sourceMappingURL=constants.d.ts.map

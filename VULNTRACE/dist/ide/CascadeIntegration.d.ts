@@ -1,0 +1,45 @@
+import { Vulnerability, AnalysisResult, IDEIntegration } from '../types';
+import { SQLVulnerabilityScanner } from '../core/SQLVulnerabilityScanner';
+export declare class CascadeIntegration implements IDEIntegration {
+    private scanner;
+    private decorations;
+    private tooltipProvider;
+    private commandProvider;
+    private statusBarItem;
+    constructor(scanner: SQLVulnerabilityScanner);
+    private setupIntegration;
+    private registerCommands;
+    private registerEventListeners;
+    private createStatusBarItem;
+    private setupTooltipProvider;
+    highlightVulnerabilities(vulnerabilities: Vulnerability[]): Promise<void>;
+    private groupVulnerabilitiesByFile;
+    private highlightFileVulnerabilities;
+    private createDecoration;
+    private createHoverMessage;
+    showTooltip(vulnerability: Vulnerability): void;
+    private createDetailedTooltip;
+    openFile(filePath: string, line: number, column: number): void;
+    showReport(result: AnalysisResult): void;
+    private generateReportContent;
+    ignoreVulnerability(vulnerabilityId: string): void;
+    private analyzeCurrentFile;
+    private analyzeWorkspace;
+    private generateReport;
+    private clearHighlights;
+    private ignoreCurrentVulnerability;
+    private showSettings;
+    private updateStatusBar;
+    private onFileChanged;
+    private onFileOpened;
+    private onFileSaved;
+    private getActiveFile;
+    private getFileContent;
+    private getWorkspaceSQLFiles;
+    private findSQLFiles;
+    private isSQLFile;
+    private getVulnerabilityAtCursor;
+    private provideHover;
+    private showNotification;
+}
+//# sourceMappingURL=CascadeIntegration.d.ts.map
