@@ -420,20 +420,26 @@ cp .env.example .env
 # API: http://localhost:8000
 # Grafana: http://localhost:3000
 # Prometheus: http://localhost:9090
+
 🛡️ Security Features
+
 Container isolation with custom networks
 Redis authentication and encrypted volumes
 JWT-based API authentication
 SSH key management for Dead Hand
 Resource limits and security profiles
 Read-only configuration volumes
+
 📊 Monitoring & Management
+
 Comprehensive health checks (./scripts/health-check.sh)
 Prometheus metrics collection
 Grafana dashboards for visualization
 Automated deployment scripts
 Debug configuration for development
+
 🔧 Resource Limits
+
 API: 1 CPU, 2GB RAM
 Sandbox: 4 CPU, 8GB RAM (for virtualization)
 Threat Analyzer: 4GB RAM (for analysis)
