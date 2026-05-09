@@ -133,6 +133,84 @@ python main.py -u http://example.com --databases mysql postgresql --proxy http:/
 python main.py -u http://example.com --pdf
 ```
 
+#### 🔍 [VULNTRACE](VULNTRACE/) - Network-Level Security Observation Scanner
+**Профессиональный инструмент для network-level security observation с sink-level validation**
+
+- **🔍 Network-Level Security Observation** - реальное HTTP выполнение и сбор evidence
+- **🔬 Sink-Level Validation** - browser-based подтверждение уязвимостей  
+- **📊 Reproducible Traces** - уникальные trace IDs для воспроизводимости
+- **🔬 Evidence-Based Detection** - детекция без synthetic данных
+- **📈 Ground Truth Evaluation** - научная валидация с метриками
+
+**Ключевые компоненты:**
+- **Real Audit Engine** - основной движок HTTP аудита
+- **Sink-Level Validator** - browser-based валидация
+- **Ground Truth Evaluation** - научная валидация
+- **Final Test Orchestrator** - комплексное тестирование
+
+**Использование:**
+```bash
+# Базовый network-level аудит
+npm start
+
+# Полный комплексный аудит
+npm run full
+
+# Только sink-level валидация
+npm run sink
+```
+
+```javascript
+// Комплексный аудит
+const VULNTRACEFinalTest = require('./vulntrace-final-test');
+const vulntrace = new VULNTRACEFinalTest('target.com');
+const results = await vulntrace.performFullEmpiricalTest();
+```
+
+#### 🛡️ [Prophecy Sentinel](Prophecy_Sentinel/) - Профессиональная система оценки безопасности с эмпирической валидацией
+**Продвинутая система оценки безопасности с подтверждением эксплойтов и бенчмаркингом**
+
+- **🔍 Эмпирическая валидация** - тестирование на реальных уязвимых приложениях (DVWA, Juice Shop)
+- **🎭 Подтверждение эксплойтов** - многостадийная проверка уязвимостей с помощью Playwright
+- **📈 Регрессионное тестирование** - отслеживание качества обнаружения во времени
+- **🧪 Бенчмаркинг** - интеграция с OWASP Benchmark для метрик качества
+- **🚫 Без эмуляций** - только реальная работа кода и реальные тесты
+
+**Ключевые компоненты:**
+- **SQL Injection** - продвинутое обнаружение с тайминг-анализом
+- **XSS** - отраженный, хранимый и DOM-based XSS
+- **Directory Traversal** - безопасное тестирование путей
+- **File Inclusion** - LFI/RFI с PHP обертками
+- **Security Headers** - анализ заголовков безопасности
+
+**Использование:**
+```bash
+# Запуск сканирования
+node ProphecySentinel.js vk.com
+
+# Запуск с TypeScript
+npm run dev vk.com
+
+# Бенчмаркинг DVWA
+npm run benchmark:dvwa
+
+# Бенчмаркинг Juice Shop
+npm run benchmark:juiceshop
+```
+
+```javascript
+// Подтверждение XSS уязвимости
+const { PlaywrightXSSConfirmation } = require('./src/confirmation/PlaywrightXSSConfirmation');
+const xssConfirm = new PlaywrightXSSConfirmation();
+await xssConfirm.initialize();
+const result = await xssConfirm.confirmXSS(
+  'https://target.com/search',
+  '<script>alert(1)</script>',
+  'query'
+);
+console.log(`XSS подтвержден: ${result.confirmed}`);
+```
+
 ### 📊 [8. СТРУКТУРА ПРОЕКТА](docs/project-structure.md)
 - Полная организация директорий
 - Ключевые компоненты и модули
