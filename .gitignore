@@ -19,6 +19,32 @@ network_defense.log
 !DAFT/reports
 !DAFT/results
 
+# Exceptions for VULNTRACE
+!VULNTRACE/
+!VULNTRACE/*.js
+!VULNTRACE/*.json
+!VULNTRACE/*.md
+!VULNTRACE/*.yml
+!VULNTRACE/*.yaml
+!VULNTRACE/audit_reports/
+!VULNTRACE/dist/
+!VULNTRACE/docs/
+!VULNTRACE/reports/
+!VULNTRACE/tests/
+!VULNTRACE/tsconfig.json
+
+# Exceptions for Prophecy Sentinel
+!Prophecy_Sentinel/
+!Prophecy_Sentinel/*.js
+!Prophecy_Sentinel/*.json
+!Prophecy_Sentinel/*.md
+!Prophecy_Sentinel/*.yml
+!Prophecy_Sentinel/*.yaml
+!Prophecy_Sentinel/audit_reports/
+!Prophecy_Sentinel/docker/
+!Prophecy_Sentinel/docs/
+!Prophecy_Sentinel/src/
+
 # Data directories
 data/
 quarantine/
