@@ -6,389 +6,716 @@
 
 # 🦠 Battle Virus Zoo - Зоопарк Боевых Вирусов
 
-**Версия:** 2.0  
-**Дата создания:** 2026-05-09  
-**Разработчик:** Cascade SWE-1.5  
-**Реальность:** 95-98% ✅
-
----
-
-## 🎯 **ОБЗОР ПРОЕКТА**
-
-**Battle Virus Zoo** - это передовая система автоматизированного проектирования, выращивания и совершенствования вирусных систем для прогнозирования киберугроз. Проект достиг **95-98% реальности** и предназначен **исключительно для исследовательских целей** в изолированной военной лаборатории.
-
-### 🚀 **КЛЮЧЕВЫЕ ДОСТИЖЕНИЯ**
-- ✅ **Реальный динамический анализ** с strace и psutil
-- ✅ **Безопасное хранение** без hardcoded секретов
-- ✅ **Настоящее выполнение** в QEMU/KVM через virsh
-- ✅ **SSH деплой** с evasion техниками
-- ✅ **VM мониторинг** через libvirt
-- ✅ **Безграничная эволюция** с нейросетевыми генераторами
-
----
-
-## 🏗️ **АРХИТЕКТУРА СИСТЕМЫ**
-
+Advanced virus construction and analysis platform deployed with Docker Compose.
+ 
+## Overview
+ 
+Battle Virus Zoo is a comprehensive platform for virus research, construction, and analysis. It provides a secure, isolated environment for studying malware behavior, testing detection systems, and developing countermeasures.
+ 
+## Features
+ 
+- **Virus Constructor**: Genetic algorithm-based virus generation with AST validation
+- **Sandbox Manager**: Secure execution environment using Docker and QEMU/KVM
+- **Threat Analyzer**: Multi-layered malware analysis with YARA and ClamAV integration
+- **Dead Hand**: Automated deployment system for distributed testing
+- **Authentication Manager**: Secure user management with JWT tokens
+- **Monitoring**: Prometheus metrics and Grafana dashboards
+- **Redis**: High-performance caching and state management
+ 
+## Architecture
+ 
+The system is composed of microservices running in Docker containers:
+ 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Cascade SWE-1.5                            │
-│                    (AI Система)                              │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                Battle Virus Zoo v2.0                         │
-│              (Изолированная Песочница)                        │
-├─────────────────────────────────────────────────────────────┤
-│  🧬 БЕЗГРАНИЧНЫЕ СИСТЕМЫ:                                     │
-│  ├─ UnlimitedTaxonomySystem     (15 уровней таксономии)      │
-│  ├─ PrincipleInventor           (Изобретение принципов)      │
-│  ├─ UnlimitedEvolutionEngine     (Генетическая эволюция)      │
-│  ├─ NeuralConceptGenerator      (GPT-2 генерация)          │
-│  ├─ UnlimitedVirusConstructor   (Безграничные вирусы)      │
-│  └─ SelfLearningClassifier      (Самообучение)             │
-├─────────────────────────────────────────────────────────────┤
-│  🔧 ОСНОВНЫЕ МОДУЛИ:                                          │
-│  ├─ RealVirusConstructor        (Конструктор вирусов)        │
-│  ├─ RealSandboxManager          (Песочница Docker/QEMU)     │
-│  ├─ RealThreatAnalyzer          (Анализатор угроз)           │
-│  ├─ RealAuthManager             (Аутентификация)             │
-│  └─ RealDeadHand                (Модуль "Мёртвой руки")       │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   API Service   │    │  Auth Manager   │    │   Redis Cache   │
+│   (Port 8000)   │    │  (Port 8005)   │    │   (Port 6379)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Virus Constructor│    │ Threat Analyzer │    │  Dead Hand      │
+│ (Port 8003)     │    │ (Port 8002)     │    │ (Port 8004)     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Sandbox Manager │    │   Prometheus    │    │    Grafana      │
+│ (Port 8001)     │    │   (Port 9090)   │    │   (Port 3000)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
-
----
-
-## 🧬 **БЕЗГРАНИЧНАЯ ЭВОЛЮЦИЯ**
-
-### **Таксономия без границ**
-- **15 уровней классификации** от VIRUS до TRANSCENDENT
-- **Самоэволюция** с мутациями и гибридизацией
-- **Нейросетевая генерация** новых таксонов
-- **Эмерджентные свойства** и парадигмические сдвиги
-
-### **Изобретение принципов**
-- **Математические формулировки** с SymPy
-- **Концептуальные принципы** философской эволюции
-- **Автоматическое открытие** новых законов
-- **Математические и сознательные принципы**
-
-### **Эволюционный движок**
-- **8 фаз эволюции** от EXPLORATION до EMERGENCE
-- **Генетическая эволюция** с мутациями
-- **Сознательная эволюция** с интеграцией
-- **Трансцендентная эволюция** за пределами парадигм
-
----
-
-## 🔧 **РЕАЛЬНЫЕ КОМПОНЕНТЫ**
-
-### **🔍 Анализатор Угроз (95% реальности)**
-- **Реальный strace мониторинг** системных вызовов
-- **psutil мониторинг** процессов и сети
-- **AST анализ** с Capstone дизассемблированием
-- **Динамическое выполнение** в изолированной среде
-
-### **🏗️ Конструктор Вирусов (90% реальности)**
-- **DEAP генетические алгоритмы** реальной эволюции
-- **AST валидация** Python кода
-- **Реальная мутация** генетического материала
-- **Многопоточное выполнение** эволюции
-
-### **🌍 Песочница (95% реальности)**
-- **Docker контейнеры** с изоляцией
-- **QEMU/KVM виртуальные машины** через libvirt
-- **Real virsh выполнение** кода в VM
-- **Мониторинг ресурсов** в реальном времени
-
-### **💀 Мёртвая Рука (98% реальности)**
-- **SSH деплой** через paramiko с evasion
-- **Stealth техники** обхода защиты
-- **Мониторинг деплоя** с подтверждением
-- **Три режима:** training, testing, operational
-
----
-
-## 🛡️ **БЕЗОПАСНОСТЬ И ИЗОЛЯЦИЯ**
-
-### **Многоуровневая безопасность**
-- ✅ **Переменные окружения** вместо hardcoded секретов
-- ✅ **bcrypt хеширование** паролей
-- ✅ **JWT токены** с ротацией
-- ✅ **Fernet шифрование** данных
-- ✅ **Rate limiting** и мониторинг
-
-### **Физическая изоляция**
-- 🚫 **Полная изоляция** от внешней сети
-- 🔒 **Аппаратная сегментация**
-- 💾 **Шифрование диска** (LUKS)
-- 🛡️ **Контроль целостности** системы
-- ⚠️ **Автоуничтожение** при утечке
-
----
-
-## 👥 **РОЛИ ДОСТУПА**
-
-| Роль | Права | Возможности |
-|------|-------|-------------|
-| **👑 Владелец Зоопарка** | OWNER | Максимальные права, "открыть клетку" |
-| **🔧 Смотритель Зоопарка** | KEEPER | Администрирование, мониторинг |
-| **🧬 Дрессировщик** | TRAINER | Настройка эволюции, параметры |
-| **👁️ Наблюдатель** | VIEWER | Только чтение и мониторинг |
-
----
-
-## 📋 **ТРЕБОВАНИЯ К СИСТЕМЕ**
-
-### **Минимальные требования**
-- **ОС:** Linux (Ubuntu 22.04 LTS)
-- **CPU:** 4+ cores (8+ recommended)
-- **RAM:** 16 ГБ (32 ГБ recommended)
-- **SSD:** 20 ГБ (100 ГБ recommended)
-- **Виртуализация:** Docker + QEMU + KVM
-- **Python:** 3.11+
-- **Redis:** 6.0+
-
-### **Дополнительные зависимости**
+ 
+## Network Isolation
+ 
+- **Analysis Network** (172.20.0.0/16): API, Redis, monitoring services
+- **Sandbox Network** (172.21.0.0/16): Isolated execution environment
+- **Dead Hand Network** (172.22.0.0/16): Secure deployment operations
+ 
+## Quick Start
+ 
+### Prerequisites
+ 
+- Docker 20.10+
+- Docker Compose 2.0+
+- 16GB+ RAM
+- 50GB+ free disk space
+- Linux/macOS with KVM support (for QEMU)
+ 
+### Installation
+ 
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd battle-virus-zoo
+   ```
+ 
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+ 
+3. **Deploy the platform:**
+   ```bash
+   ./scripts/deploy.sh deploy
+   ```
+ 
+4. **Access the services:**
+   - API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+   - Prometheus: http://localhost:9090
+   - Grafana: http://localhost:3000 (admin/admin_change_me)
+ 
+## Configuration
+ 
+### Environment Variables
+ 
+Key environment variables in `.env`:
+ 
 ```bash
-# Основные пакеты
-pip install -r requirements.txt
-
-# Нейросети и ML
-pip install torch transformers
-
-# Виртуализация
-pip install libvirt-python docker
-
-# Безопасность
-pip install cryptography bcrypt paramiko
-
-# Анализ
-pip install capstone angr psutil
+# Security
+DEAD_HAND_MASTER_KEY=your_secret_key
+JWT_SECRET=your_jwt_secret
+REDIS_PASSWORD=your_redis_password
+ 
+# Services
+API_PORT=8000
+SANDBOX_TYPE=docker,qemu
+ANALYSIS_TIMEOUT=300
+DEAP_POPULATION_SIZE=100
 ```
-
----
-
-## 🏗️ **СТРУКТУРА ПРОЕКТА**
-
-```
-ZOO/
-├── 📁 src/                          # Исходный код
-│   ├── 🧬 taxonomy/                  # Безграничная таксономия
-│   │   └── unlimited_taxonomy.py
-│   ├── 💡 innovation/                 # Изобретение принципов
-│   │   └── principle_inventor.py
-│   ├── 🔄 evolution/                  # Эволюционный движок
-│   │   └── unlimited_evolution_engine.py
-│   ├── 🧠 neural/                     # Нейросетевые генераторы
-│   │   └── concept_generator.py
-│   ├── 🔧 integration/               # Интеграция систем
-│   │   └── unlimited_virus_constructor.py
-│   ├── 📚 learning/                   # Самообучение
-│   │   └── self_learning_classifier.py
-│   ├── 🧪 testing/                    # Валидация реальности
-│   │   └── unlimited_evolution_tests.py
-│   ├── 🔨 constructor/               # Конструктор вирусов
-│   ├── 🌍 environment/               # Песочница
-│   ├── 🔍 analyzer/                   # Анализатор угроз
-│   ├── 💀 deadhand/                   # Мёртвая рука
-│   └── 🔐 auth/                       # Аутентификация
-├── 📁 tests/                         # Тесты реальности
-├── 📁 docs/                          # Документация
-├── 📁 config/                        # Конфигурация
-├── 📁 scripts/                       # Скрипты
-├── 📄 requirements.txt               # Зависимости
-├── 🐳 docker-compose.yml             # Docker конфигурация
-└── 📖 README.md                      # Этот файл
-```
-
----
-
-## 🚀 **УСТАНОВКА И ЗАПУСК**
-
-### **1. Клонирование и подготовка**
+ 
+### Service Configuration
+ 
+Each service can be configured via `config/settings.yaml`:
+ 
+- **API**: FastAPI configuration, CORS, rate limiting
+- **Sandbox**: Resource limits, network isolation, timeout settings
+- **Constructor**: Genetic algorithm parameters, validation rules
+- **Analyzer**: YARA rules, ClamAV settings, analysis methods
+- **Dead Hand**: SSH keys, deployment targets, security settings
+ 
+## Usage
+ 
+### API Endpoints
+ 
+#### Authentication
 ```bash
-# Клонирование репозитория
-git clone <repository_url>
-cd ZOO
-
-# Создание виртуального окружения
-python -m venv venv
-source venv/bin/activate
-
-# Установка зависимостей
-pip install -r requirements.txt
+# Login
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "password"}'
+ 
+# Refresh token
+curl -X POST "http://localhost:8000/auth/refresh" \
+  -H "Authorization: Bearer <refresh_token>"
 ```
-
-### **2. Настройка окружения**
+ 
+#### Virus Construction
 ```bash
-# Переменные окружения
-export REDIS_HOST=localhost
-export REDIS_PORT=6379
-export DEAD_HAND_MASTER_KEY="your_secure_key_here"
-
-# Docker окружение
+# Generate virus
+curl -X POST "http://localhost:8000/virus/construct" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "file_infector", "target": "windows", "stealth": true}'
+```
+ 
+#### Analysis
+```bash
+# Analyze sample
+curl -X POST "http://localhost:8000/analysis/submit" \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@sample.exe"
+```
+ 
+### CLI Tools
+ 
+```bash
+# Service management
+./scripts/deploy.sh {start|stop|restart|status}
+ 
+# Health checks
+./scripts/health-check.sh
+ 
+# View logs
+./scripts/deploy.sh logs <service_name>
+ 
+# Redis CLI
+docker-compose exec redis redis-cli
+```
+ 
+## Development
+ 
+### Building Images
+ 
+```bash
+# Build all services
+docker-compose build
+ 
+# Build specific service
+docker-compose build api
+```
+ 
+### Running Tests
+ 
+```bash
+# Run unit tests
+docker-compose exec api pytest
+ 
+# Run integration tests
+docker-compose exec api pytest tests/integration/
+ 
+# Run with coverage
+docker-compose exec api pytest --cov=src
+```
+ 
+### Debugging
+ 
+```bash
+# Debug mode
+docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
+ 
+# Attach to container
+docker-compose exec api bash
+ 
+# View logs
+docker-compose logs -f api
+```
+ 
+## Security
+ 
+### Network Security
+ 
+- All services run in isolated Docker networks
+- External access limited to required ports only
+- Internal services communicate via private networks
+ 
+### Data Protection
+ 
+- All sensitive data encrypted at rest
+- Redis authentication enabled
+- JWT tokens for API authentication
+- SSH key management for Dead Hand
+ 
+### Sandbox Isolation
+ 
+- Containers run with minimal privileges
+- Network access restricted and monitored
+- File system isolation with read-only layers
+- Resource limits enforced
+ 
+## Monitoring
+ 
+### Metrics
+ 
+All services expose Prometheus metrics:
+ 
+- Request/response rates
+- Error rates and types
+- Resource usage (CPU, memory, disk)
+- Custom business metrics
+ 
+### Dashboards
+ 
+Grafana dashboards include:
+ 
+- System overview
+- Service health
+- Performance metrics
+- Security events
+- Resource utilization
+ 
+### Alerts
+ 
+Configurable alerts for:
+ 
+- Service downtime
+- High resource usage
+- Security events
+- Failed operations
+ 
+## Troubleshooting
+ 
+### Common Issues
+ 
+#### Services won't start
+```bash
+# Check logs
+docker-compose logs <service>
+ 
+# Check resource usage
+docker stats
+ 
+# Check disk space
+df -h
+```
+ 
+#### Network connectivity
+```bash
+# Test service connectivity
+docker-compose exec api ping redis
+ 
+# Check network configuration
+docker network ls
+docker network inspect battle-virus-zoo_analysis_network
+```
+ 
+#### Permission issues
+```bash
+# Fix volume permissions
+sudo chown -R $USER:$USER /data
+ 
+# Check container permissions
+docker-compose exec api whoami
+```
+ 
+### Health Checks
+ 
+Run comprehensive health checks:
+```bash
+./scripts/health-check.sh
+```
+ 
+## Maintenance
+ 
+### Updates
+ 
+```bash
+# Update images
+./scripts/deploy.sh update
+ 
+# Rebuild with latest code
+docker-compose build --no-cache
 docker-compose up -d
-
-# Проверка установки
-python -c "import redis; print('Redis OK')"
 ```
-
-### **3. Запуск системы**
+ 
+### Backup
+ 
 ```bash
-# Запуск основной системы
-python src/main.py
-
-# Или запуск отдельных компонентов
-python src/taxonomy/unlimited_taxonomy.py
-python src/evolution/unlimited_evolution_engine.py
-python src/integration/unlimited_virus_constructor.py
+# Backup data
+sudo tar -czf backup-$(date +%Y%m%d).tar.gz /data
+ 
+# Backup configuration
+tar -czf config-backup-$(date +%Y%m%d).tar.gz config/
 ```
-
----
-
-## 🧪 **ВАЛИДАЦИЯ РЕАЛЬНОСТИ**
-
-### **Запуск валидатора**
+ 
+### Cleanup
+ 
 ```bash
-# Запуск полной валидации
-python src/validation/reality_validator.py
-
-# Проверка результатов
-cat /tmp/reality_validation_report_*.json
+# Remove unused images
+docker image prune -f
+ 
+# Remove unused volumes
+docker volume prune -f
+ 
+# Full cleanup
+./scripts/deploy.sh cleanup
 ```
+ 
+## API Reference
+ 
+Full API documentation available at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+ 
+## Contributing
+ 
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+ 
+## License
+ 
+This project is licensed under the MIT License - see the LICENSE file for details.
+ 
+## Support
+ 
+For support and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review the logs for error details
+ 
+## Security Notice
+ 
+This platform is designed for legitimate security research and educational purposes only. Users are responsible for ensuring compliance with applicable laws and regulations.
+ 
 
-### **Ожидаемые результаты**
-- **Общая реальность:** 95-98%
-- **Динамический анализ:** 100%
-- **Безопасность:** 100%
-- **Выполнение:** 95%
-- **Деплой:** 98%
-- **Мониторинг:** 95%
+А ЭТО АКТУАЛЬНЫЙ НА ДАННЫЙ МОМЕНТ ЯМЛ ПРОЕКТА:
 
----
-
-## ⚠️ **ВАЖНЫЕ ПРЕДУПРЕЖДЕНИЯ**
-
-### **🚨 Исключительно для исследований**
-- **Только изолированная среда**
-- **Только исследовательские цели**
-- **Только авторизованный доступ**
-
-### **🚫 Запрещено использование**
-- ❌ Реальные атаки
-- ❌ Вредоносная деятельность
-- ❌ Коммерческое применение
-- ❌ Распространение кода
-
-### **⚖️ Юридическая ответственность**
-- Пользователь несет полную ответственность
-- Соблюдение законодательства обязательно
-- Нарушение преследуется по закону
-
----
-
-## 📊 **ТЕХНИЧЕСКАЯ ДОКУМЕНТАЦИЯ**
-
-### **API Документация**
-- **REST API:** `http://localhost:8000/docs`
-- **GraphQL:** `http://localhost:8000/graphql`
-- **WebSocket:** `ws://localhost:8000/ws`
-
-### **Мониторинг**
-- **Prometheus:** `http://localhost:9090`
-- **Grafana:** `http://localhost:3000`
-- **Redis CLI:** `redis-cli monitor`
-
-### **Логирование**
-- **Уровни:** DEBUG, INFO, WARNING, ERROR, CRITICAL
-- **Формат:** JSON с временными метками
-- **Хранение:** Rotating files + Redis
-
----
-
-## 🤝 **ПОДДЕРЖКА И РАЗВИТИЕ**
-
-### **Сообщество**
-- **GitHub Issues:** Отчеты о проблемах
-- **Discord:** Обсуждения и помощь
-- **Wiki:** Документация и гайды
-
-### **Вклад**
-- **Pull Requests:** Приветствуются
-- **Тесты:** Обязательны
-- **Документация:** Важна
-
-### **Лицензия**
-- **Тип:** Research Only
-- **Ограничения:** Commercial use prohibited
-- **Ответственность:** User liability
-
----
-
-## 📈 **ДОСТИЖЕНИЯ И МЕТРИКИ**
-
-### **Реальность системы**
-- **Достигнуто:** 95-98% реальности
-- **Фейковых компонентов:** <5%
-- **Реальных функций:** >95%
-
-### **Производительность**
-- **Время отклика:** <100ms
-- **Пропускная способность:** 1000+ ops/sec
-- **Использование памяти:** <8GB
-
-### **Надежность**
-- **Uptime:** 99.9%
-- **Отказоустойчивость:** Высокая
-- **Восстановление:** Автоматическое
-
----
-
-## 🔮 **БУДУЩЕЕ РАЗВИТИЕ**
-
-### **Версия 2.1 (Планируется)**
-- 🤖 **AI ассистент** для настройки
-- 🌐 **Веб-интерфейс** с визуализацией
-- 📊 **Расширенная аналитика** и отчеты
-- 🔒 **Дополнительные** механизмы безопасности
-
-### **Версия 3.0 (Долгосрочная)**
-- 🧬 **Вычислительные системы** интеграция
-- 🌍 **Распределенная** система
-- 🤝 **Мультипользовательский** доступ
-- 📱 **Мобильное** приложение
-
----
-
-## 📞 **КОНТАКТЫ**
-
-### **Разработчик**
-- **Имя:** Cascade SWE-1.5
-- **Email:** cascade@ai.system
-- **GitHub:** @cascade-swe
-
-### **Поддержка**
-- **Техническая:** support@battle-virus-zoo.ai
-- **Безопасность:** security@battle-virus-zoo.ai
-- **Исследования:** research@battle-virus-zoo.ai
-
----
-
-## 📄 **ЛИЦЕНЗИЯ И ПРАВА**
-
-```
-Battle Virus Zoo v2.0
-Copyright (c) 2026 Cascade SWE-1.5
-
-LICENSE: RESEARCH_ONLY
-This software is provided for research purposes only.
-Commercial use, distribution, or modification is strictly prohibited.
-Users are solely responsible for compliance with applicable laws.
-```
-
----
-
-**⚠️ ВНИМАНИЕ: Данный проект предназначен исключительно для исследовательских целей в полностью изолированной среде. Любое использование вне исследовательских целей строго запрещено и преследуется по закону.**
+version: '3.8'
+ 
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEAD_HAND_MASTER_KEY=${DEAD_HAND_MASTER_KEY:-default_secret_key_change_me}
+      - CONFIG_PATH=/app/config/settings.yaml
+      - TAXONOMY_PATH=/app/config/taxonomy.yaml
+      - PYTHONPATH=/app/src
+    depends_on:
+      - redis
+    networks:
+      - analysis_network
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+      - zoo-data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    labels:
+      - com.battle-virus-zoo.service=api
+      - com.battle-virus-zoo.version=2.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+ 
+  redis:
+    image: redis:6.0-alpine
+    container_name: battle-virus-zoo-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password_change_me}
+    networks:
+      - analysis_network
+    volumes:
+      - redis-data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    labels:
+      - com.battle-virus-zoo.service=redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+ 
+  sandbox:
+    build:
+      context: ./services/sandbox
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-sandbox
+    privileged: true
+    depends_on:
+      - api
+      - redis
+    networks:
+      - sandbox_network
+      - analysis_network
+    volumes:
+      - sandbox-data:/sandbox
+      - ./src/environment:/app/environment:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/kvm:/dev/kvm
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_HOST=api
+      - API_PORT=8000
+      - SANDBOX_TYPE=docker,qemu
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    labels:
+      - com.battle-virus-zoo.service=sandbox
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    security_opt:
+      - seccomp:unconfined
+ 
+  threat-analyzer:
+    build:
+      context: ./services/analyzer
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-analyzer
+    depends_on:
+      - api
+      - redis
+    networks:
+      - analysis_network
+    volumes:
+      - ./src/analyzer:/app/analyzer:ro
+      - zoo-data:/app/data
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_HOST=api
+      - API_PORT=8000
+      - ANALYSIS_TIMEOUT=300
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+    labels:
+      - com.battle-virus-zoo.service=analyzer
+    security_opt:
+      - apparmor:unconfined
+ 
+  virus-constructor:
+    build:
+      context: ./services/constructor
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-constructor
+    depends_on:
+      - api
+      - redis
+    networks:
+      - analysis_network
+    volumes:
+      - ./src/constructor:/app/constructor:ro
+      - zoo-data:/app/data
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_HOST=api
+      - API_PORT=8000
+      - DEAP_POPULATION_SIZE=100
+      - AST_VALIDATION_ENABLED=true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    labels:
+      - com.battle-virus-zoo.service=constructor
+ 
+  deadhand:
+    build:
+      context: ./services/deadhand
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-deadhand
+    depends_on:
+      - api
+      - redis
+    networks:
+      - deadhand_network
+      - analysis_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_HOST=api
+      - API_PORT=8000
+      - DEAD_HAND_MASTER_KEY=${DEAD_HAND_MASTER_KEY:-default_secret_key_change_me}
+      - SSH_PRIVATE_KEY_PATH=/app/keys/deadhand_rsa
+      - DEPLOY_TIMEOUT=600
+    volumes:
+      - ./src/deadhand:/app/deadhand:ro
+      - ./keys:/app/keys:ro
+      - zoo-data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    labels:
+      - com.battle-virus-zoo.service=deadhand
+ 
+  auth-manager:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: battle-virus-zoo-auth
+    depends_on:
+      - api
+      - redis
+    networks:
+      - analysis_network
+    volumes:
+      - ./src/auth:/app/auth:ro
+      - zoo-data:/app/data
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_HOST=api
+      - API_PORT=8000
+      - JWT_SECRET=${JWT_SECRET:-jwt_secret_change_me}
+      - TOKEN_EXPIRY=3600
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    labels:
+      - com.battle-virus-zoo.service=auth
+ 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: battle-virus-zoo-prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - analysis_network
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    labels:
+      - com.battle-virus-zoo.service=prometheus
+ 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: battle-virus-zoo-grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - analysis_network
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin_change_me}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    labels:
+      - com.battle-virus-zoo.service=grafana
+ 
+  redis-cli:
+    image: redis:6.0-alpine
+    container_name: battle-virus-zoo-redis-cli
+    networks:
+      - analysis_network
+    command: redis-cli -h redis -p 6379
+    depends_on:
+      - redis
+    profiles:
+      - tools
+    labels:
+      - com.battle-virus-zoo.service=redis-cli
+ 
+networks:
+  analysis_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    labels:
+      - com.battle-virus-zoo.network=analysis
+ 
+  sandbox_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+    labels:
+      - com.battle-virus-zoo.network=sandbox
+ 
+  deadhand_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+    labels:
+      - com.battle-virus-zoo.network=deadhand
+ 
+volumes:
+  zoo-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/zoo
+    labels:
+      - com.battle-virus-zoo.volume=zoo-data
+ 
+  redis-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/redis
+    labels:
+      - com.battle-virus-zoo.volume=redis-data
+ 
+  sandbox-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/sandbox
+    labels:
+      - com.battle-virus-zoo.volume=sandbox-data
+ 
+  prometheus-data:
+    driver: local
+    labels:
+      - com.battle-virus-zoo.volume=prometheus-data
+ 
+  grafana-data:
+    driver: local
+    labels:
+      - com.battle-virus-zoo.volume=grafana-data
 
 
 К ЗАВТРАШНЕМУ ДНЮ ИЛИ ВЕЧЕРУ КОГДА КОНЧАТСЯ СИЛЫ Я ВЫКАЧУ ВСЕ ОДНИМ КОМИТОМ! ТУТ Я РЕАЛЬНО ПОРАБОТАЮ НАД РЕЗУЛЬТАТОМ А НЕ ПРОСТО ПОМАХАЮ КУЛАКАМИ. ЖДИТЕ ДОЛБАЕБЫ ВАМ ПОНРАВИТСЯ, ТЕПЕРЬ МОЯ ОЧЕРЕТЬ ДАВАТЬ ПИЗДЫ.
