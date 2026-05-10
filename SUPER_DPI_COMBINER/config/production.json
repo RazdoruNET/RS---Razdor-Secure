@@ -50,7 +50,17 @@
       "code.jquery.com",
       "stackpath.bootstrapcdn.com",
       "fonts.googleapis.com",
-      "fonts.gstatic.com"
+      "fonts.gstatic.com",
+      "cdn1.skype.com",
+      "cdn2.skype.com",
+      "cdn3.skype.com",
+      "cdn4.skype.com",
+      "cdn5.skype.com",
+      "ajax.microsoft.com",
+      "ajax.aspnetcdn.com",
+      "cdnjs.cloudflare.com",
+      "staging.cloudflare.com",
+      "testing.cloudflare.com"
     ],
     "fronting_techniques": [
       "host_header",
@@ -135,9 +145,59 @@
       "https://httpbin.org/ip",
       "https://api.ipify.org",
       "https://ifconfig.me/ip",
-      "https://icanhazip.com"
+      "https://icanhazip.com",
+      "https://check.torproject.org",
+      "https://www.google.com",
+      "https://www.youtube.com",
+      "https://www.facebook.com",
+      "https://www.twitter.com"
     ],
     "timeout": 10.0,
     "retries": 3
+  },
+  "tor_bridges": {
+    "enabled": true,
+    "bridge_types": [
+      "obfs4",
+      "meiko",
+      "snowflake",
+      "obfs5",
+      "fte"
+    ],
+    "bridge_configs": {
+      "obfs4": {
+        "servers": [
+          "bridge1.torproject.org:443",
+          "bridge2.torproject.org:443",
+          "bridge3.torproject.org:443"
+        ]
+      },
+      "meiko": {
+        "servers": [
+          "meek.azureedge.net:443",
+          "meek.google.com:443"
+        ]
+      },
+      "snowflake": {
+        "servers": [
+          "snowflake-broker.torproject.net:443"
+        ]
+      }
+    }
+  },
+  "i2p": {
+    "enabled": true,
+    "routers": [
+      "router1.i2p.net:4567",
+      "router2.i2p.net:4567",
+      "router3.i2p.net:4567",
+      "router4.i2p.net:4567",
+      "i2p-prod.i2p.net:4567",
+      "i2p-dev.i2p.net:4567",
+      "reseed.i2p.net:4567",
+      "seed.i2p.net:4567",
+      "bootstrap.i2p.net:4567"
+    ],
+    "tunnel_depth": 3
   }
 }
