@@ -37,14 +37,14 @@ class PacketShaperPipeline(BasePipeline):
                 
                 # Фейковый TTL для обхода DPI
                 if self.fake_ttl > 1:
-                    await asyncio.sleep(0.001)  # Имитация TTL манипуляции
+                    await asyncio.sleep(0.001)  # Имитация TTL манипуляции // TODO 
             
             # Имитация успешного ответа
             response_time = time.time() - start_time
             
             # Вероятность успеха зависит от параметров
             success_probability = 0.4 + (self.segment_size * 0.1) + (self.fake_ttl * 0.05)
-            success = random.random() < success_probability
+            success = random.random() < success_probability // TODO 
             
             return BypassResponse(
                 success=success,
