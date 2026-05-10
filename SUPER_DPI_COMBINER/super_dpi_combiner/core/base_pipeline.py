@@ -9,76 +9,18 @@ import asyncio
 import time
 import threading
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
-from enum import Enum
 import sys
 import os
 
-from utils.logger import get_tracer
-from core.network_reality_verifier import NetworkRealityVerifier, NetworkOperation
-from core.execution_trace import ExecutionTrace
+from .types import (
+    PipelineStatus, PipelineExecutionStatus, BypassTechnique,
+    PipelineMetrics, BypassRequest, BypassResponse
+)
 
-class PipelineStatus(Enum):
-    """Статусы пайплайна"""
-    IDLE = "idle"
-    ACTIVE = "active"
-    FAILED = "failed"
-    OPTIMIZING = "optimizing"
-
-class PipelineExecutionStatus(Enum):
-    """Статус выполнения пайплайна - реальность операций"""
-    REAL = "REAL"          # Выполняет реальные сетевые операции
-    PARTIAL = "PARTIAL"    # Частично реальные операции
-    SIMULATION = "SIMULATION"  # Только симуляция/заглушки
-
-class BypassTechnique(Enum):
-    """Типы техник обхода"""
-    SPOOF_DPI = "spoof_dpi"
-    DOMAIN_FRONTING = "domain_fronting"
-    PROTOCOL_OBFUSCATION = "protocol_obfuscation"
-    TOR_INTEGRATION = "tor_integration"
-    OMEGA_TRANSPORT = "omega_transport"
-    ADAPTIVE = "adaptive"
-    DARKNET = "darknet"
-    SECRET_DATABASES = "secret_databases"
-    ADVANCED_OBFUSCATION = "advanced_obfuscation"
-    BLOCKCHAIN_INTEGRATION = "blockchain_integration"
-
-@dataclass
-class PipelineMetrics:
-    """Метрики производительности пайплайна"""
-    success_rate: float = 0.0
-    avg_response_time: float = 0.0
-    total_requests: int = 0
-    failed_requests: int = 0
-    last_success: float = 0.0
-    last_failure: float = 0.0
-    active_connections: int = 0
-
-@dataclass
-class BypassRequest:
-    """Запрос на обход DPI"""
-    host: str
-    port: int
-    method: str = "GET"
-    headers: Dict[str, str] = None
-    data: bytes = None
-    timeout: float = 30.0
-
-@dataclass
-class BypassResponse:
-    """Стандартизированный ответ от пайплайна"""
-    success: bool
-    latency: float = 0.0  # Обязательное поле latency
-    status_code: int = 0
-    headers: Dict[str, str] = None
-    data: bytes = None
-    error_reason: str = None  # Переименовано из error для стандартизации
-    technique_used: str = None
-    response_time: float = 0.0  # Оставлено для обратной совместимости
-    network_verified: bool = False  # TASK 8.3 - Network Reality Verifier
-    simulation_detected: bool = False  # TASK 8.4 - Simulation Detector
-    simulation_reason: str = None  # TASK 8.4 - Simulation Detector
+from super_dpi_combiner.utils.logger import get_tracer
+from .network_reality_verifier import NetworkRealityVerifier, NetworkOperation
+from .execution_trace import ExecutionTrace
+from .reality_logger import get_reality_logger
 
 class BasePipeline(abc.ABC):
     """Базовый абстрактный класс для всех пайплайнов обхода DPI"""
@@ -102,12 +44,31 @@ class BasePipeline(abc.ABC):
         # Tracer for pipeline execution
         self.tracer = get_tracer(f"pipeline.{name}")
         
+        # Reality Logger for ТЗ-5
+        self.reality_logger = get_reality_logger()
+        
         # TASK 8.3 - Network Reality Verifier
         self.network_verifier = NetworkRealityVerifier()
         
         # TASK 8.4 - Simulation Detector (lazy import to avoid circular dependency)
         from core.simulation_detector import get_simulation_detector
         self.simulation_detector = get_simulation_detector()
+        
+        # Log import for Reality Logger
+        try:
+            self.reality_logger.log_import(
+                component_name=self.name,
+                success=True,
+                is_simulation=(self.execution_status == PipelineExecutionStatus.SIMULATION),
+                metadata={
+                    'technique': self.technique.value,
+                    'priority': self.priority,
+                    'execution_status': self.execution_status.value
+                }
+            )
+        except Exception as e:
+            # Fallback logging if reality logger fails
+            print(f"Reality Logger import logging failed for {self.name}: {e}")
         
     @abc.abstractmethod
     async def execute(self, request: BypassRequest) -> BypassResponse:
@@ -211,6 +172,29 @@ class BasePipeline(abc.ABC):
             final_status = "success" if response.success else "failed"
             await trace.end_execution(success=response.success, final_status=final_status)
             
+            # Log execution for Reality Logger
+            try:
+                self.reality_logger.log_execute(
+                    component_name=self.name,
+                    success=response.success,
+                    error=error,
+                    is_simulation=response.simulation_detected,
+                    duration=response_latency,
+                    metadata={
+                        'technique': self.technique.value,
+                        'status_code': response.status_code,
+                        'network_verified': response.network_verified,
+                        'simulation_detected': response.simulation_detected,
+                        'simulation_reason': response.simulation_reason,
+                        'host': request.host,
+                        'port': request.port,
+                        'method': request.method
+                    }
+                )
+            except Exception as e:
+                # Fallback logging if reality logger fails
+                print(f"Reality Logger execute logging failed for {self.name}: {e}")
+            
             return response
             
         except asyncio.TimeoutError:
@@ -218,6 +202,27 @@ class BasePipeline(abc.ABC):
             await trace.add_timeout("pipeline_execution", timeout)
             self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
             await trace.end_execution(success=False, final_status="timeout")
+            
+            # Log timeout for Reality Logger
+            try:
+                self.reality_logger.log_execute(
+                    component_name=self.name,
+                    success=False,
+                    error=error_msg,
+                    is_simulation=False,
+                    duration=timeout,
+                    metadata={
+                        'technique': self.technique.value,
+                        'error_type': 'TIMEOUT',
+                        'timeout_duration': timeout,
+                        'host': request.host,
+                        'port': request.port,
+                        'method': request.method
+                    }
+                )
+            except Exception as e:
+                print(f"Reality Logger timeout logging failed for {self.name}: {e}")
+            
             return BypassResponse(
                 success=False,
                 latency=time.time() - start_time,
@@ -232,6 +237,27 @@ class BasePipeline(abc.ABC):
             })
             self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
             await trace.end_execution(success=False, final_status="error")
+            
+            # Log exception for Reality Logger
+            try:
+                self.reality_logger.log_execute(
+                    component_name=self.name,
+                    success=False,
+                    error=error_msg,
+                    is_simulation=False,
+                    duration=time.time() - start_time,
+                    metadata={
+                        'technique': self.technique.value,
+                        'error_type': type(e).__name__,
+                        'exception_args': str(e.args),
+                        'host': request.host,
+                        'port': request.port,
+                        'method': request.method
+                    }
+                )
+            except Exception as re:
+                print(f"Reality Logger exception logging failed for {self.name}: {re}")
+            
             return BypassResponse(
                 success=False,
                 latency=time.time() - start_time,
@@ -260,6 +286,23 @@ class BasePipeline(abc.ABC):
             success: Успешность инициализации
         """
         self._initialized = success
+        
+        # Log initialization for Reality Logger
+        try:
+            self.reality_logger.log_init(
+                component_name=self.name,
+                success=success,
+                is_simulation=(self.execution_status == PipelineExecutionStatus.SIMULATION),
+                metadata={
+                    'technique': self.technique.value,
+                    'priority': self.priority,
+                    'config_keys': list(self.config.keys()) if self.config else []
+                }
+            )
+        except Exception as e:
+            # Fallback logging if reality logger fails
+            print(f"Reality Logger init logging failed for {self.name}: {e}")
+        
         if success:
             self.set_status(PipelineStatus.IDLE)
         else:

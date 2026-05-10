@@ -13,12 +13,10 @@ from dataclasses import dataclass
 from collections import deque
 import json
 
-# Импорт с корректным путем
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import SafePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
-from core.http_client import TCPClient
+from super_dpi_combiner.core.base_pipeline import BasePipeline
+from super_dpi_combiner.core.safe_pipeline import SafePipeline
+from super_dpi_combiner.core.types import BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
+from super_dpi_combiner.core.http_client import TCPClient
 
 from enum import Enum
 

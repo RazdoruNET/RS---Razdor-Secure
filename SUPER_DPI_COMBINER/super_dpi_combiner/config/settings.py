@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 
-from config.config_validator import SafeConfigLoader
+from super_dpi_combiner.config.config_validator import SafeConfigLoader
 
 logger = logging.getLogger(__name__)
 

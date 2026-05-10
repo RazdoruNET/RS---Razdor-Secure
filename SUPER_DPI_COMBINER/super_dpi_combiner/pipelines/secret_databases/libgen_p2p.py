@@ -8,11 +8,8 @@ import random
 import hashlib
 from typing import Dict, Any
 
-# Импорт с корректным путем
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import SafePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
+from super_dpi_combiner.core.safe_pipeline import SafePipeline
+from super_dpi_combiner.core.types import BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class LibGenP2PPipeline(SafePipeline):
     """Пайплайн для P2P доступа к Library Genesis"""

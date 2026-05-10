@@ -17,9 +17,11 @@ import json
 from core.base_pipeline import BasePipeline, BypassTechnique, PipelineStatus
 
 from utils.logger import get_logger, get_tracer
+from core.reality_logger import get_reality_logger
 
 logger = get_logger(__name__)
 tracer = get_tracer(__name__)
+reality_logger = get_reality_logger()
 
 class PipelineManager:
     """Менеджер для динамической загрузки и управления пайплайнами"""
@@ -229,7 +231,34 @@ class PipelineManager:
             
             # Импортируем модуль техники
             module_name = f"pipelines.{technique_name}"
-            technique_module = importlib.import_module(module_name)
+            
+            # Log module import for Reality Logger
+            import_success = False
+            import_error = None
+            try:
+                technique_module = importlib.import_module(module_name)
+                import_success = True
+                reality_logger.log_import(
+                    component_name=module_name,
+                    success=True,
+                    metadata={
+                        'technique_name': technique_name,
+                        'operation': 'pipeline_module_import'
+                    }
+                )
+            except Exception as e:
+                import_error = str(e)
+                reality_logger.log_import(
+                    component_name=module_name,
+                    success=False,
+                    error=import_error,
+                    metadata={
+                        'technique_name': technique_name,
+                        'operation': 'pipeline_module_import'
+                    }
+                )
+                logger.error(f"Failed to import module {module_name}: {e}")
+                return False
             
             # Ищем классы пайплайнов в модуле
             pipeline_classes = []
