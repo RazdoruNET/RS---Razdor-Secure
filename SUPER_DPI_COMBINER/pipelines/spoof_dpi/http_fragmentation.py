@@ -127,4 +127,6 @@ class HTTPFragmentationPipeline(BasePipeline):
     
     async def cleanup(self) -> bool:
         """Очистка ресурсов"""
+        if self.tcp_client:
+            await self.tcp_client.cleanup()
         return True

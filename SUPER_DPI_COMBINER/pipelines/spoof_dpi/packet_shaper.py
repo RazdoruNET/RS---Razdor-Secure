@@ -128,6 +128,8 @@ class PacketShaperPipeline(BasePipeline):
         
         return segments
     
-    def cleanup(self) -> bool:
+    async def cleanup(self) -> bool:
         """Очистка ресурсов"""
+        if self.tcp_client:
+            await self.tcp_client.cleanup()
         return True
