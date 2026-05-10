@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class DarknetAccessPipeline(BasePipeline):
     """Пайплайн для доступа к Darknet"""
     
     def __init__(self):
-        super().__init__("DarknetAccess", BypassTechnique.TOR_INTEGRATION, priority=2)
+        super().__init__("DarknetAccess", BypassTechnique.TOR_INTEGRATION, priority=2, execution_status=PipelineExecutionStatus.SIMULATION)
         self.onion_addresses = []
         self.selected_onion = ""
         

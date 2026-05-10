@@ -22,6 +22,7 @@ from core.multi_thread_engine import MultiThreadEngine, EngineMode
 from core.llm_integration import LLMIntegration
 from core.base_pipeline import BypassRequest, BypassResponse
 from utils.logger import get_logger
+from config.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -30,7 +31,8 @@ class SuperDPICombiner:
     
     def __init__(self, config_path: str = "config/settings.json"):
         self.config_path = Path(config_path)
-        self.config = {}
+        self.settings = Settings(config_path)
+        self.config = self.settings.settings
         self.running = False
         
         # Компоненты
@@ -50,12 +52,26 @@ class SuperDPICombiner:
         try:
             logger.info("=== Инициализация Super DPI Combiner ===")
             
-            # Загрузка конфигурации
-            await self._load_config()
+            # Проверка валидности конфигурации
+            if not self.settings.is_valid():
+                errors = self.settings.get_errors()
+                warnings = self.settings.get_warnings()
+                
+                logger.error(f"❌ Конфигурация невалидна: {len(errors)} ошибок")
+                for error in errors:
+                    logger.error(f"  - {error['path']}: {error['message']}")
+                
+                if warnings:
+                    logger.warning(f"⚠️ Предупреждений: {len(warnings)}")
+                    for warning in warnings:
+                        logger.warning(f"  - {warning['path']}: {warning['message']}")
+                
+                # В safe mode продолжаем работу с ограничениями
+                logger.warning("🛡️ Работа в безопасном режиме из-за ошибок конфигурации")
             
             # Инициализация LLM
-            ollama_url = self.config.get('llm', {}).get('url', 'http://localhost:11434')
-            ollama_model = self.config.get('llm', {}).get('model', 'llama2')
+            ollama_url = self.settings.get('llm.url', 'http://localhost:11434')
+            ollama_model = self.settings.get('llm.model', 'llama2')
             
             self.llm_integration = LLMIntegration(
                 ollama_url=ollama_url,
@@ -68,18 +84,21 @@ class SuperDPICombiner:
                 logger.warning("⚠️ LLM недоступен, работа без ИИ")
             
             # Инициализация менеджера пайплайнов
-            pipelines_dir = self.config.get('pipelines', {}).get('directory', 'pipelines')
+            pipelines_dir = self.settings.get('pipelines.directory', 'pipelines')
             self.pipeline_manager = PipelineManager(pipelines_dir)
             
             if self.pipeline_manager.auto_load_pipelines():
                 logger.info("✅ Менеджер пайплайнов инициализирован")
             else:
-                raise Exception("Не удалось загрузить пайплайны")
+                if self.settings.is_valid():
+                    raise Exception("Не удалось загрузить пайплайны")
+                else:
+                    logger.warning("⚠️ Не удалось загрузить пайплайны, продолжаем в safe mode")
             
             # Инициализация движка
-            max_workers = self.config.get('engine', {}).get('max_workers', 20)
+            max_workers = self.settings.get('engine.max_workers', 20)
             engine_mode = EngineMode(
-                self.config.get('engine', {}).get('mode', 'adaptive')
+                self.settings.get('engine.mode', 'adaptive')
             )
             
             self.engine = MultiThreadEngine(
@@ -96,72 +115,19 @@ class SuperDPICombiner:
             logger.error(f"Ошибка инициализации: {e}")
             return False
     
-    async def _load_config(self):
-        """Загрузка конфигурации"""
-        if self.config_path.exists():
-            try:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    self.config = json.load(f)
-                logger.info(f"Конфигурация загружена из {self.config_path}")
-            except Exception as e:
-                logger.warning(f"Ошибка загрузки конфигурации: {e}")
-                self.config = self._get_default_config()
-        else:
-            logger.info("Использование конфигурации по умолчанию")
-            self.config = self._get_default_config()
-            
-            # Создаем файл конфигурации
-            await self._save_config()
-    
-    def _get_default_config(self) -> Dict[str, Any]:
-        """Конфигурация по умолчанию"""
-        return {
-            "engine": {
-                "max_workers": 20,
-                "mode": "adaptive",
-                "auto_optimization": True,
-                "optimization_interval": 300
-            },
-            "pipelines": {
-                "directory": "pipelines",
-                "auto_generation": True,
-                "max_generations": 5,
-                "templates_per_technique": 50
-            },
-            "llm": {
-                "enabled": True,
-                "url": "http://localhost:11434",
-                "model": "llama2",
-                "auto_analysis": True,
-                "optimization_requests": True
-            },
-            "targets": {
-                "default_urls": [
-                    "https://www.youtube.com",
-                    "https://m.youtube.com",
-                    "https://youtu.be"
-                ],
-                "test_interval": 60,
-                "timeout": 30
-            },
-            "logging": {
-                "level": "INFO",
-                "file": "logs/combiner.log",
-                "max_file_size": "100MB"
-            }
-        }
-    
-    async def _save_config(self):
-        """Сохранение конфигурации"""
+    def reload_config(self) -> bool:
+        """Перезагрузка конфигурации"""
         try:
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=2, ensure_ascii=False)
-            
-            logger.info(f"Конфигурация сохранена в {self.config_path}")
+            success = self.settings.reload()
+            if success:
+                self.config = self.settings.settings
+                logger.info("✅ Конфигурация успешно перезагружена")
+            else:
+                logger.error("❌ Ошибка перезагрузки конфигурации")
+            return success
         except Exception as e:
-            logger.error(f"Ошибка сохранения конфигурации: {e}")
+            logger.error(f"Критическая ошибка перезагрузки: {e}")
+            return False
     
     async def start(self, target_url: str = None):
         """
@@ -183,7 +149,8 @@ class SuperDPICombiner:
             
             # Определение целевого URL
             if not target_url:
-                target_url = self.config.get('targets', {}).get('default_urls', ['https://www.youtube.com'])[0]
+                default_urls = self.settings.get('targets.default_urls', ['https://www.youtube.com'])
+                target_url = default_urls[0] if default_urls else 'https://www.youtube.com'
             
             logger.info(f"🎯 Целевой URL: {target_url}")
             
@@ -365,10 +332,11 @@ class SuperDPICombiner:
                         await self.engine.stop()
                         await asyncio.sleep(2)
                         
-                        target_url = self.config.get('targets', {}).get('default_urls', ['https://www.youtube.com'])[0]
+                        default_urls = self.settings.get('targets.default_urls', ['https://www.youtube.com'])
+                        target_url = default_urls[0] if default_urls else 'https://www.youtube.com'
                         await self.engine.start(target_url)
-                else:
-                    logger.error("❌ Не удалось перезагрузить пайплайны")
+                    else:
+                        logger.error("❌ Не удалось перезагрузить пайплайны")
             
         except Exception as e:
             logger.error(f"Ошибка перезагрузки: {e}")
@@ -470,7 +438,7 @@ async def main():
         if args.status:
             # Показываем статус
             status = combinor_instance.get_status()
-            print(json.dumps(status, indent=2, ensure_ascii=False))
+            logger.info("system_status", **status)
             return
         
         # Отключаем LLM если указано
@@ -510,7 +478,7 @@ if __name__ == "__main__":
     try:
         import aiohttp
     except ImportError:
-        print("❌ Требуется aiohttp: pip install aiohttp")
+        logger.error("dependency_missing", dependency="aiohttp", install_command="pip install aiohttp")
         sys.exit(1)
     
     # Запускаем

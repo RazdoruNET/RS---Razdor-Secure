@@ -20,9 +20,10 @@ from .base_pipeline import BasePipeline, BypassTechnique, PipelineStatus
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from utils.logger import get_logger
+from utils.logger import get_logger, get_tracer
 
 logger = get_logger(__name__)
+tracer = get_tracer(__name__)
 
 class PipelineManager:
     """Менеджер для динамической загрузки и управления пайплайнами"""
@@ -53,12 +54,16 @@ class PipelineManager:
         Returns:
             bool: Успешность загрузки
         """
+        trace_id = tracer.start_pipeline("auto_load_pipelines", directory=str(self.pipelines_dir))
+        
         try:
-            logger.info("Начало автозагрузки пайплайнов...")
+            logger.info("pipeline_auto_load_start", directory=str(self.pipelines_dir))
             
             # Проверяем существование директории
             if not self.pipelines_dir.exists():
-                logger.error(f"Директория пайплайнов не найдена: {self.pipelines_dir}")
+                error_msg = f"Директория пайплайнов не найдена: {self.pipelines_dir}"
+                logger.error("pipeline_directory_not_found", directory=str(self.pipelines_dir))
+                tracer.finish_pipeline(trace_id, "fail", error=error_msg)
                 return False
             
             # Загружаем конфигурации
@@ -78,15 +83,23 @@ class PipelineManager:
                     else:
                         failed_count += 1
             
-            logger.info(f"Загрузка завершена: {loaded_count} техник, {failed_count} ошибок")
+            logger.info("pipeline_auto_load_complete", 
+                       loaded_count=loaded_count, 
+                       failed_count=failed_count,
+                       total_techniques=loaded_count + failed_count)
             
             # Сортируем пайплайны по приоритету
             self._sort_pipelines_by_priority()
             
-            return loaded_count > 0
+            success = loaded_count > 0
+            tracer.finish_pipeline(trace_id, "success" if success else "fail", 
+                                 error=None if success else "No pipelines loaded")
+            return success
             
         except Exception as e:
-            logger.error(f"Ошибка автозагрузки пайплайнов: {e}")
+            error_msg = f"Ошибка автозагрузки пайплайнов: {e}"
+            logger.error("pipeline_auto_load_error", error=str(e))
+            tracer.finish_pipeline(trace_id, "fail", error=error_msg)
             return False
     
     def _load_pipeline_configs(self):
@@ -159,6 +172,41 @@ class PipelineManager:
         except Exception as e:
             logger.error(f"Ошибка сохранения конфигураций: {e}")
     
+    def _validate_pipeline_interface(self, pipeline_class: Type[BasePipeline]) -> Tuple[bool, str]:
+        """
+        Валидация интерфейса пайплайна
+        
+        Args:
+            pipeline_class: Класс пайплайна для проверки
+            
+        Returns:
+            Tuple[bool, str]: (Валиден, Сообщение об ошибке)
+        """
+        try:
+            # Проверяем наследование от BasePipeline
+            if not issubclass(pipeline_class, BasePipeline):
+                return False, f"Not a subclass of BasePipeline"
+            
+            # Проверяем обязательные методы
+            required_methods = ['initialize', 'execute', 'cleanup']
+            for method_name in required_methods:
+                if not hasattr(pipeline_class, method_name):
+                    return False, f"Missing required method: {method_name}"
+                
+                method = getattr(pipeline_class, method_name)
+                if not callable(method):
+                    return False, f"Method {method_name} is not callable"
+            
+            # Проверяем что execute - async метод
+            execute_method = getattr(pipeline_class, 'execute')
+            if not asyncio.iscoroutinefunction(execute_method):
+                return False, "execute method must be async"
+            
+            return True, "Valid interface"
+            
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+    
     def _load_technique_pipelines(self, technique_dir: Path) -> bool:
         """
         Загрузка пайплайнов для конкретной техники
@@ -199,6 +247,12 @@ class PipelineManager:
             loaded_any = False
             for pipeline_class in pipeline_classes:
                 try:
+                    # Валидация интерфейса
+                    is_valid, error_msg = self._validate_pipeline_interface(pipeline_class)
+                    if not is_valid:
+                        logger.error(f"❌ Pipeline {pipeline_class.__name__} invalid: {error_msg}")
+                        continue
+                    
                     # Получаем конфигурацию для этой техники
                     config = self.pipeline_configs.get(technique_name, {})
                     
@@ -206,17 +260,20 @@ class PipelineManager:
                     pipeline = pipeline_class()
                     
                     # Инициализируем с конфигурацией
-                    if pipeline.initialize(config):
+                    init_success = pipeline.initialize(config)
+                    pipeline._mark_initialized(init_success)  # Отмечаем статус инициализации
+                    
+                    if init_success:
                         self.loaded_pipelines[pipeline.name] = pipeline
                         self.pipeline_classes[pipeline.name] = pipeline_class
                         
-                        logger.info(f"Загружен пайплайн: {pipeline.name}")
+                        logger.info(f"✅ Загружен пайплайн: {pipeline.name}")
                         loaded_any = True
                     else:
-                        logger.warning(f"Не удалось инициализировать пайплайн: {pipeline.name}")
+                        logger.warning(f"❌ Не удалось инициализировать пайплайн: {pipeline.name}")
                         
                 except Exception as e:
-                    logger.error(f"Ошибка создания пайплайна {pipeline_class.__name__}: {e}")
+                    logger.error(f"💥 Ошибка создания пайплайна {pipeline_class.__name__}: {e}")
             
             return loaded_any
             
@@ -357,7 +414,10 @@ class PipelineManager:
                 
                 new_pipeline = pipeline_class()
                 
-                if new_pipeline.initialize(config):
+                init_success = new_pipeline.initialize(config)
+                new_pipeline._mark_initialized(init_success)
+                
+                if init_success:
                     self.loaded_pipelines[name] = new_pipeline
                     logger.info(f"✅ Пайплайн {name} перезагружен")
                     return True

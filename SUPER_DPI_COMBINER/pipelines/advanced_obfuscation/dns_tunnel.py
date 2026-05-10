@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class DNSTunnelPipeline(BasePipeline):
     """Пайплайн для DNS туннелирования"""
     
     def __init__(self):
-        super().__init__("DNSTunnel", BypassTechnique.PROTOCOL_OBFUSCATION, priority=21)
+        super().__init__("DNSTunnel", BypassTechnique.PROTOCOL_OBFUSCATION, priority=21, execution_status=PipelineExecutionStatus.SIMULATION)
         self.dns_servers = []
         self.domain = ""
         self.encoding_type = "base32"

@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
 class CustomHeadersPipeline(BasePipeline):
     """Пайплайн для обфускации HTTP заголовков"""
     
     def __init__(self):
-        super().__init__("CustomHeaders", BypassTechnique.PROTOCOL_OBFUSCATION, priority=2)
+        super().__init__("CustomHeaders", BypassTechnique.PROTOCOL_OBFUSCATION, priority=2, execution_status=PipelineExecutionStatus.REAL)
         self.custom_headers = []
         self.random_order = True
         self.http_client = HTTPClient(timeout=15.0)

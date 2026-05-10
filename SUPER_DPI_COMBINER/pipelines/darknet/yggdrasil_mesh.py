@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class YggdrasilMeshPipeline(BasePipeline):
     """Пайплайн для Mesh сети Yggdrasil"""
     
     def __init__(self):
-        super().__init__("YggdrasilMesh", BypassTechnique.TOR_INTEGRATION, priority=12)
+        super().__init__("YggdrasilMesh", BypassTechnique.TOR_INTEGRATION, priority=12, execution_status=PipelineExecutionStatus.SIMULATION)
         self.yggdrasil_peers = []
         self.mesh_nodes = []
         self.ipv6_address = ""

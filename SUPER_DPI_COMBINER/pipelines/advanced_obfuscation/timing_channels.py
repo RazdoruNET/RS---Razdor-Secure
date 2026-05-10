@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class TimingChannelsPipeline(BasePipeline):
     """Пайплайн для временных каналов"""
     
     def __init__(self):
-        super().__init__("TimingChannels", BypassTechnique.PROTOCOL_OBFUSCATION, priority=23)
+        super().__init__("TimingChannels", BypassTechnique.PROTOCOL_OBFUSCATION, priority=23, execution_status=PipelineExecutionStatus.SIMULATION)
         self.timing_servers = []
         self.encoding_method = "inter_arrival"
         self.base_delay = 0.001

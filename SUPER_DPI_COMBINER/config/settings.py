@@ -4,78 +4,79 @@
 
 import json
 import os
+import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Union
+
+from .config_validator import SafeConfigLoader
+
+logger = logging.getLogger(__name__)
 
 class Settings:
-    """Класс для управления настройками"""
+    """Класс для управления настройками с валидацией"""
     
     def __init__(self, config_file: str = "settings.json"):
         self.config_file = Path(config_file)
-        self.settings = self._load_default_settings()
+        self.loader = SafeConfigLoader()
+        self.settings = {}
+        self.validation_report = {}
+        self._load_settings()
     
-    def _load_default_settings(self) -> Dict[str, Any]:
-        """Загрузка настроек по умолчанию"""
-        return {
-            "engine": {
-                "max_workers": 20,
-                "mode": "adaptive",
-                "auto_optimization": True,
-                "optimization_interval": 300
-            },
-            "pipelines": {
-                "directory": "pipelines",
-                "auto_generation": True,
-                "max_generations": 5,
-                "templates_per_technique": 50
-            },
-            "llm": {
-                "enabled": True,
-                "url": "http://localhost:11434",
-                "model": "llama2",
-                "auto_analysis": True,
-                "optimization_requests": True
-            },
-            "targets": {
-                "default_urls": [
-                    "https://www.youtube.com",
-                    "https://m.youtube.com",
-                    "https://youtu.be"
-                ],
-                "test_interval": 60,
-                "timeout": 30
-            },
-            "logging": {
-                "level": "INFO",
-                "file": "logs/combiner.log",
-                "max_file_size": "100MB"
+    def _load_settings(self):
+        """Загрузка и валидация настроек"""
+        try:
+            success, config, validation_report = self.loader.load_config(self.config_file)
+            self.settings = config
+            self.validation_report = validation_report
+            
+            if success:
+                logger.info("Конфигурация успешно загружена и провалидирована")
+            else:
+                logger.warning("Использована безопасная конфигурация из-за ошибок валидации")
+                
+        except Exception as e:
+            logger.error(f"Критическая ошибка при загрузке настроек: {e}")
+            self.settings = self.loader.safe_config
+            self.validation_report = {
+                "is_valid": False,
+                "errors_count": 1,
+                "warnings_count": 0,
+                "errors": [{"path": "root", "message": f"Critical loading error: {e}", "severity": "error"}],
+                "warnings": [],
+                "timestamp": "unknown"
             }
-        }
     
-    def load(self) -> Dict[str, Any]:
-        """Загрузка настроек из файла"""
-        if self.config_file.exists():
-            try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
-                    loaded_settings = json.load(f)
-                    # Объединяем с настройками по умолчанию
-                    return self._merge_settings(self.settings, loaded_settings)
-            except Exception as e:
-                print(f"Ошибка загрузки настроек: {e}")
-                return self.settings
-        else:
-            return self.settings
+    def reload(self) -> bool:
+        """Перезагрузка настроек с валидацией"""
+        try:
+            self._load_settings()
+            return self.validation_report.get("is_valid", False)
+        except Exception as e:
+            logger.error(f"Ошибка перезагрузки настроек: {e}")
+            return False
     
-    def save(self, settings: Dict[str, Any]) -> bool:
-        """Сохранение настроек в файл"""
+    def save(self, settings: Optional[Dict[str, Any]] = None) -> bool:
+        """Сохранение настроек в файл с валидацией"""
+        if settings is None:
+            settings = self.settings
+        
+        # Валидируем перед сохранением
+        is_valid, validated_settings = self.loader.validator.validate_config(settings)
+        
+        if not is_valid:
+            logger.error("Невозможно сохранить невалидную конфигурацию")
+            return False
+        
         try:
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
             
             with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(settings, f, indent=2, ensure_ascii=False)
+                json.dump(validated_settings, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Конфигурация сохранена в {self.config_file}")
             return True
         except Exception as e:
-            print(f"Ошибка сохранения настроек: {e}")
+            logger.error(f"Ошибка сохранения настроек: {e}")
             return False
     
     def _merge_settings(self, default: Dict[str, Any], loaded: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,27 +93,86 @@ class Settings:
         return merge_dict(default, loaded)
     
     def get(self, key_path: str, default: Any = None) -> Any:
-        """Получение значения по пути (разделенному точками)"""
+        """Получение значения по пути (разделенному точками) с защитой от None"""
+        if not key_path or not isinstance(key_path, str):
+            logger.warning(f"Invalid key_path: {key_path}")
+            return default
+        
         keys = key_path.split('.')
         value = self.settings
         
-        for key in keys:
-            if isinstance(value, dict) and key in value:
-                value = value[key]
-            else:
-                return default
-        
-        return value
+        try:
+            for key in keys:
+                if isinstance(value, dict) and key in value and value[key] is not None:
+                    value = value[key]
+                else:
+                    return default
+            
+            return value
+        except Exception as e:
+            logger.error(f"Error getting value for {key_path}: {e}")
+            return default
     
     def set(self, key_path: str, value: Any) -> bool:
-        """Установка значения по пути (разделенному точками)"""
+        """Установка значения по пути (разделенному точками) с валидацией"""
+        if not key_path or not isinstance(key_path, str):
+            logger.error(f"Invalid key_path: {key_path}")
+            return False
+        
+        if value is None:
+            logger.warning(f"Attempting to set None value for {key_path}")
+            return False
+        
         keys = key_path.split('.')
         current = self.settings
         
-        for key in keys[:-1]:
-            if key not in current:
-                current[key] = {}
-            current = current[key]
-        
-        current[keys[-1]] = value
-        return True
+        try:
+            # Создаем путь если нужно
+            for key in keys[:-1]:
+                if key not in current:
+                    current[key] = {}
+                elif not isinstance(current[key], dict):
+                    logger.error(f"Path conflict: {key_path} (expected dict at {key})")
+                    return False
+                current = current[key]
+            
+            # Устанавливаем значение
+            final_key = keys[-1]
+            old_value = current.get(final_key)
+            current[final_key] = value
+            
+            # Валидируем изменения
+            temp_config = self.settings.copy()
+            is_valid, _ = self.loader.validator.validate_config(temp_config)
+            
+            if not is_valid:
+                # Откатываем изменения если невалидно
+                if old_value is not None:
+                    current[final_key] = old_value
+                else:
+                    current.pop(final_key, None)
+                logger.error(f"Invalid value for {key_path}, changes reverted")
+                return False
+            
+            logger.debug(f"Set {key_path} = {value}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error setting value for {key_path}: {e}")
+            return False
+    
+    def get_validation_report(self) -> Dict[str, Any]:
+        """Получить отчет валидации"""
+        return self.validation_report
+    
+    def is_valid(self) -> bool:
+        """Проверить валидность текущей конфигурации"""
+        return self.validation_report.get("is_valid", False)
+    
+    def get_errors(self) -> List[Dict[str, Any]]:
+        """Получить список ошибок"""
+        return self.validation_report.get("errors", [])
+    
+    def get_warnings(self) -> List[Dict[str, Any]]:
+        """Получить список предупреждений"""
+        return self.validation_report.get("warnings", [])

@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .base_pipeline import BasePipeline, BypassRequest, BypassResponse, PipelineStatus
+from .base_pipeline import BasePipeline, BypassRequest, BypassResponse, PipelineStatus, PipelineExecutionStatus
 from .pipeline_generator import PipelineGenerator
 
 # Импорт логгера с корректным путем
@@ -132,7 +132,8 @@ class MultiThreadEngine:
             generations=3
         )
         
-        # Создаем лучшие пайплайны
+        # Создаем лучшие пайплайны, фильтруя SIMULATION
+        real_pipelines_count = 0
         for pipeline_data in best_pipelines:
             pipeline_name = pipeline_data['template'].name
             pipeline = self.pipeline_generator.create_pipeline_from_template(
@@ -140,15 +141,20 @@ class MultiThreadEngine:
             )
             
             if pipeline:
-                self.pipelines[pipeline_name] = pipeline
-                self.pipeline_scores[pipeline_name] = pipeline_data['performance_score']
-                
-                logger.info(f"Добавлен пайплайн: {pipeline_name} (score: {pipeline_data['performance_score']:.3f})")
+                # Проверяем execution status
+                if pipeline.execution_status != PipelineExecutionStatus.SIMULATION:
+                    self.pipelines[pipeline_name] = pipeline
+                    self.pipeline_scores[pipeline_name] = pipeline_data['performance_score']
+                    real_pipelines_count += 1
+                    
+                    logger.info(f"Добавлен REAL пайплайн: {pipeline_name} (score: {pipeline_data['performance_score']:.3f})")
+                else:
+                    logger.info(f"Пропущен SIMULATION пайплайн: {pipeline_name}")
         
         if not self.pipelines:
-            raise Exception("Не удалось создать ни одного пайплайна")
+            raise Exception("Не удалось создать ни одного REAL/PARTIAL пайплайна")
         
-        logger.info(f"Инициализировано {len(self.pipelines)} пайплайнов")
+        logger.info(f"Инициализировано {len(self.pipelines)} REAL/PARTIAL пайплайнов (пропущено SIMULATION)")
     
     async def _start_worker_threads(self):
         """Запуск рабочих потоков"""
@@ -217,8 +223,11 @@ class MultiThreadEngine:
         logger.info("Монитор производительности запущен")
     
     async def _main_loop(self):
-        """Основной цикл обработки запросов"""
+        """Основной цикл обработки запросов с полной изоляцией"""
         logger.info("Этап 4: Запуск основного цикла...")
+        
+        consecutive_errors = 0
+        max_consecutive_errors = 10
         
         while self.running:
             try:
@@ -228,6 +237,7 @@ class MultiThreadEngine:
                         self.request_queue.get(),
                         timeout=1.0
                     )
+                    consecutive_errors = 0  # Сброс счетчика ошибок
                 except asyncio.TimeoutError:
                     continue
                 
@@ -237,21 +247,62 @@ class MultiThreadEngine:
                 if pipeline_name and pipeline_name in self.workers:
                     worker = self.workers[pipeline_name]
                     
-                    # Отправляем запрос работнику
-                    response = await self._execute_request(worker, request_data)
-                    
-                    # Отправляем ответ
-                    await self.response_queue.put(response)
-                    
-                    # Обновляем статистику
-                    self._update_worker_stats(worker, response.success)
+                    try:
+                        # Отправляем запрос работнику с таймаутом
+                        response = await asyncio.wait_for(
+                            self._execute_request(worker, request_data),
+                            timeout=request_data.get('timeout', 30.0) + 5.0
+                        )
+                        
+                        # Отправляем ответ
+                        await self.response_queue.put(response)
+                        
+                        # Обновляем статистику
+                        self._update_worker_stats(worker, response.success)
+                        
+                    except asyncio.TimeoutError:
+                        # Таймаут выполнения запроса
+                        error_response = BypassResponse(
+                            success=False,
+                            error=f"Request execution timeout for {pipeline_name}",
+                            response_time=0.0
+                        )
+                        await self.response_queue.put(error_response)
+                        self._update_worker_stats(worker, False)
+                        
+                    except Exception as e:
+                        # Любая другая ошибка - не должна крашить движок
+                        logger.error(f"Request execution error: {e}")
+                        error_response = BypassResponse(
+                            success=False,
+                            error=f"Execution error: {str(e)}",
+                            response_time=0.0
+                        )
+                        await self.response_queue.put(error_response)
+                        self._update_worker_stats(worker, False)
+                else:
+                    # Нет доступных пайплайнов
+                    error_response = BypassResponse(
+                        success=False,
+                        error="No available pipelines",
+                        response_time=0.0
+                    )
+                    await self.response_queue.put(error_response)
                 
             except Exception as e:
-                logger.error(f"Ошибка в основном цикле: {e}")
-                await asyncio.sleep(0.1)
+                consecutive_errors += 1
+                logger.error(f"Main loop error #{consecutive_errors}: {e}")
+                
+                # Защита от бесконечных ошибок
+                if consecutive_errors >= max_consecutive_errors:
+                    logger.critical(f"Too many consecutive errors ({max_consecutive_errors}), pausing main loop")
+                    await asyncio.sleep(1.0)
+                    consecutive_errors = 0
+                else:
+                    await asyncio.sleep(0.1)
     
     def _worker_loop(self, worker: PipelineWorker):
-        """Цикл рабочего потока"""
+        """Цикл рабочего потока с защитой от ошибок"""
         logger.info(f"Рабочий поток {worker.pipeline.name} запущен")
         
         while worker.active and self.running:
@@ -262,12 +313,13 @@ class MultiThreadEngine:
                 
             except Exception as e:
                 logger.error(f"Ошибка в рабочем потоке {worker.pipeline.name}: {e}")
+                # Защита от падения потока
                 time.sleep(1)
         
         logger.info(f"Рабочий поток {worker.pipeline.name} остановлен")
     
     async def _execute_request(self, worker: PipelineWorker, request_data: Dict[str, Any]) -> BypassResponse:
-        """Выполнение запроса через работника"""
+        """Выполнение запроса через работника с полной изоляцией ошибок"""
         start_time = time.time()
         
         try:
@@ -281,18 +333,17 @@ class MultiThreadEngine:
                 timeout=request_data.get('timeout', 30.0)
             )
             
-            # Выполняем через пайплайн
-            response = await worker.pipeline.execute(request)
-            
-            # Обновляем время отклика
-            response.response_time = time.time() - start_time
+            # Используем безопасное выполнение с таймаутом
+            timeout = request_data.get('timeout', 30.0)
+            response = await worker.pipeline.safe_execute(request, timeout)
             
             return response
             
         except Exception as e:
+            # Последняя линия обороны - никогда не должно достигаться
             return BypassResponse(
                 success=False,
-                error=str(e),
+                error=f"Engine critical error: {str(e)}",
                 response_time=time.time() - start_time
             )
     
@@ -302,31 +353,45 @@ class MultiThreadEngine:
             return None
         
         with self.lock:
+            # Фильтруем пайплайны - исключаем SIMULATION
+            real_pipelines = []
+            for name in self.active_pipelines:
+                if name in self.pipelines:
+                    pipeline = self.pipelines[name]
+                    # Включаем только REAL и PARTIAL пайплайны
+                    if pipeline.execution_status != PipelineExecutionStatus.SIMULATION:
+                        real_pipelines.append(name)
+            
+            # Если нет реальных пайплайнов, возвращаем None
+            if not real_pipelines:
+                logger.warning("Нет доступных REAL/PARTIAL пайплайнов для выполнения")
+                return None
+            
             if self.mode == EngineMode.PERFORMANCE:
                 # Выбираем самый быстрый
                 best_name = min(
-                    self.active_pipelines,
+                    real_pipelines,
                     key=lambda name: self.workers[name].avg_response_time
                 )
                 
             elif self.mode == EngineMode.RELIABILITY:
                 # Выбираем самый надежный
                 best_name = max(
-                    self.active_pipelines,
+                    real_pipelines,
                     key=lambda name: self.workers[name].success_rate
                 )
                 
             elif self.mode == EngineMode.ADAPTIVE:
                 # Адаптивный выбор на основе производительности
                 best_name = max(
-                    self.active_pipelines,
+                    real_pipelines,
                     key=lambda name: self.pipeline_scores.get(name, 0.0)
                 )
                 
             else:  # AUTO_SELECT
                 # Сбалансированный выбор
                 best_name = max(
-                    self.active_pipelines,
+                    real_pipelines,
                     key=lambda name: (
                         self.workers[name].success_rate * 0.6 +
                         (1.0 - min(self.workers[name].avg_response_time / 30.0, 1.0)) * 0.4

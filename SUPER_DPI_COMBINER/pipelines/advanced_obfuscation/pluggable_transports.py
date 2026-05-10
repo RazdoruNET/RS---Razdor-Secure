@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class PluggableTransportsPipeline(BasePipeline):
     """Пайплайн для pluggable transports"""
     
     def __init__(self):
-        super().__init__("PluggableTransports", BypassTechnique.PROTOCOL_OBFUSCATION, priority=24)
+        super().__init__("PluggableTransports", BypassTechnique.PROTOCOL_OBFUSCATION, priority=24, execution_status=PipelineExecutionStatus.SIMULATION)
         self.transport_types = []
         self.selected_transport = ""
         self.obfuscation_level = 0

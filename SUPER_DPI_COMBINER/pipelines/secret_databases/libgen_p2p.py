@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class LibGenP2PPipeline(BasePipeline):
     """Пайплайн для P2P доступа к Library Genesis"""
     
     def __init__(self):
-        super().__init__("LibGenP2P", BypassTechnique.TOR_INTEGRATION, priority=16)
+        super().__init__("LibGenP2P", BypassTechnique.TOR_INTEGRATION, priority=16, execution_status=PipelineExecutionStatus.SIMULATION)
         self.p2p_nodes = []
         self.magnet_links = []
         self.dht_peers = []

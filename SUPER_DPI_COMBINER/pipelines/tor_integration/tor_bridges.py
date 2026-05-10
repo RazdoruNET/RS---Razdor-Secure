@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
 class TorBridgesPipeline(BasePipeline):
     """Пайплайн для использования Tor мостов"""
     
     def __init__(self):
-        super().__init__("TorBridges", BypassTechnique.TOR_INTEGRATION, priority=1)
+        super().__init__("TorBridges", BypassTechnique.TOR_INTEGRATION, priority=1, execution_status=PipelineExecutionStatus.REAL)
         self.bridge_types = []
         self.selected_bridge = ""
         self.http_client = HTTPClient(timeout=30.0)  # Tor требует больше времени
@@ -92,8 +92,8 @@ class TorBridgesPipeline(BasePipeline):
             
             return BypassResponse(
                 success=success,
+                latency=response_time,
                 status_code=status_code,
-                response_time=response_time,
                 technique_used=self.name,
                 data=response_data,
                 headers={
@@ -107,8 +107,8 @@ class TorBridgesPipeline(BasePipeline):
         except Exception as e:
             return BypassResponse(
                 success=False,
-                error=f"Tor bridges error: {str(e)}",
-                response_time=time.time() - start_time
+                latency=time.time() - start_time,
+                error_reason=f"Tor bridges error: {str(e)}"
             )
     
     def initialize(self, config: Dict[str, Any]) -> bool:
@@ -121,7 +121,8 @@ class TorBridgesPipeline(BasePipeline):
             'obfs5'
         ])
         
-        print(f"✅ TorBridges инициализирован: {len(self.bridge_types)} типов мостов")
+        self.tracer.info(f"TorBridges initialized: {len(self.bridge_types)} типов мостов")
+        self._mark_initialized(True)
         return True
     
     async def cleanup(self) -> bool:

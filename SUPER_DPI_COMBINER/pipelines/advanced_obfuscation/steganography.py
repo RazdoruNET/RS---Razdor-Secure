@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class SteganographyPipeline(BasePipeline):
     """Пайплайн для стеганографии"""
     
     def __init__(self):
-        super().__init__("Steganography", BypassTechnique.PROTOCOL_OBFUSCATION, priority=22)
+        super().__init__("Steganography", BypassTechnique.PROTOCOL_OBFUSCATION, priority=22, execution_status=PipelineExecutionStatus.SIMULATION)
         self.cover_images = []
         self.stego_method = "lsb"
         self.extraction_key = ""

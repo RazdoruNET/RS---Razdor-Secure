@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class BridgeManagerPipeline(BasePipeline):
     """Пайплайн для управления транспортными мостами"""
     
     def __init__(self):
-        super().__init__("BridgeManager", BypassTechnique.OMEGA_TRANSPORT, priority=1)
+        super().__init__("BridgeManager", BypassTechnique.OMEGA_TRANSPORT, priority=1, execution_status=PipelineExecutionStatus.SIMULATION)
         self.bridge_servers = []
         self.selected_bridge = ""
         

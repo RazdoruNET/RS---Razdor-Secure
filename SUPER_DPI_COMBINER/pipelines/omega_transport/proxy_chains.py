@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class ProxyChainsPipeline(BasePipeline):
     """Пайплайн для цепочек прокси серверов"""
     
     def __init__(self):
-        super().__init__("ProxyChains", BypassTechnique.OMEGA_TRANSPORT, priority=2)
+        super().__init__("ProxyChains", BypassTechnique.OMEGA_TRANSPORT, priority=2, execution_status=PipelineExecutionStatus.SIMULATION)
         self.proxy_servers = []
         self.chain_length = 1
         self.encryption_method = "aes256"

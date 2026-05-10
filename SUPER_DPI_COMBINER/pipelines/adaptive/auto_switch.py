@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
 class AutoSwitchPipeline(BasePipeline):
     """Пайплайн для автоматического переключения техник"""
     
     def __init__(self):
-        super().__init__("AutoSwitch", BypassTechnique.ADAPTIVE, priority=1)
+        super().__init__("AutoSwitch", BypassTechnique.ADAPTIVE, priority=1, execution_status=PipelineExecutionStatus.REAL)
         self.available_techniques = []
         self.current_technique = ""
         self.switch_threshold = 0.3
@@ -67,8 +67,8 @@ class AutoSwitchPipeline(BasePipeline):
             
             return BypassResponse(
                 success=success,
+                latency=response_time,
                 status_code=status_code,
-                response_time=response_time,
                 technique_used=self.name,
                 data=response_data,
                 headers={
@@ -82,8 +82,8 @@ class AutoSwitchPipeline(BasePipeline):
         except Exception as e:
             return BypassResponse(
                 success=False,
-                error=f"Auto switch error: {str(e)}",
-                response_time=time.time() - start_time
+                latency=time.time() - start_time,
+                error_reason=f"Auto switch error: {str(e)}"
             )
     
     def initialize(self, config: Dict[str, Any]) -> bool:
@@ -98,7 +98,8 @@ class AutoSwitchPipeline(BasePipeline):
         ])
         self.switch_threshold = config.get('switch_threshold', 0.3)
         
-        print(f"✅ AutoSwitch инициализирован: {len(self.available_techniques)} техник")
+        self.tracer.info(f"AutoSwitch initialized: {len(self.available_techniques)} техник")
+        self._mark_initialized(True)
         return True
     
     def _select_best_technique(self, request: BypassRequest) -> str:

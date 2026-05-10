@@ -13,13 +13,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class ICMTunnelPipeline(BasePipeline):
     """Пайплайн для ICMP туннелирования"""
     
     def __init__(self):
-        super().__init__("ICMTunnel", BypassTechnique.PROTOCOL_OBFUSCATION, priority=20)
+        super().__init__("ICMTunnel", BypassTechnique.PROTOCOL_OBFUSCATION, priority=20, execution_status=PipelineExecutionStatus.SIMULATION)
         self.icmp_servers = []
         self.packet_size = 1024
         self.tunnel_id = 0

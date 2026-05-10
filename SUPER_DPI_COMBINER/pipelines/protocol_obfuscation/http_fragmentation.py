@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient, TCPClient
 
 class HTTPFragmentationPipeline(BasePipeline):
     """Пайплайн для фрагментации HTTP протокола"""
     
     def __init__(self):
-        super().__init__("HTTPFragProtocol", BypassTechnique.PROTOCOL_OBFUSCATION, priority=1)
+        super().__init__("HTTPFragProtocol", BypassTechnique.PROTOCOL_OBFUSCATION, priority=1, execution_status=PipelineExecutionStatus.REAL)
         self.chunk_size = 256
         self.random_padding = True
         self.header_obfuscation = True

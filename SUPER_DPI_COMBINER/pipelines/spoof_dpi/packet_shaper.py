@@ -13,14 +13,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import TCPClient
 
 class PacketShaperPipeline(BasePipeline):
     """Пайплайн для TCP сегментации и манипуляции пакетами"""
     
     def __init__(self):
-        super().__init__("PacketShaper", BypassTechnique.SPOOF_DPI, priority=1)
+        super().__init__("PacketShaper", BypassTechnique.SPOOF_DPI, priority=1, execution_status=PipelineExecutionStatus.REAL)
         self.segment_size = 1
         self.fake_ttl = 64
         self.delay_between_segments = 0.001
@@ -65,8 +65,8 @@ class PacketShaperPipeline(BasePipeline):
             
             return BypassResponse(
                 success=success,
+                latency=response_time,
                 status_code=status_code,
-                response_time=response_time,
                 technique_used=self.name,
                 data=response_data,
                 headers={
@@ -79,8 +79,8 @@ class PacketShaperPipeline(BasePipeline):
         except Exception as e:
             return BypassResponse(
                 success=False,
-                error=f"Packet shaper error: {str(e)}",
-                response_time=time.time() - start_time
+                latency=time.time() - start_time,
+                error_reason=f"Packet shaper error: {str(e)}"
             )
     
     def initialize(self, config: Dict[str, Any]) -> bool:
@@ -90,7 +90,8 @@ class PacketShaperPipeline(BasePipeline):
         self.fake_ttl = config.get('fake_ttl', 1)
         self.delay_between_segments = config.get('packet_delay', 0.001)
         
-        print(f"✅ PacketShaper инициализирован: segments={self.segment_size}, ttl={self.fake_ttl}")
+        self.tracer.info(f"PacketShaper initialized: segments={self.segment_size}, ttl={self.fake_ttl}")
+        self._mark_initialized(True)
         return True
     
     def _create_segmented_http_request(self, request: BypassRequest) -> bytes:

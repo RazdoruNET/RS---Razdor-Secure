@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class BlockchainIPFSPipeline(BasePipeline):
     """Пайплайн для IPFS интеграции с блокчейн"""
     
     def __init__(self):
-        super().__init__("BlockchainIPFS", BypassTechnique.PROTOCOL_OBFUSCATION, priority=26)
+        super().__init__("BlockchainIPFS", BypassTechnique.PROTOCOL_OBFUSCATION, priority=26, execution_status=PipelineExecutionStatus.SIMULATION)
         self.ipfs_nodes = []
         self.blockchain_verifiers = []
         self.content_hash = ""

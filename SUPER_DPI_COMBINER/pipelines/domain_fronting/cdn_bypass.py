@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
 class CDNBypassPipeline(BasePipeline):
     """Пайплайн для обхода через CDN маскировку"""
     
     def __init__(self):
-        super().__init__("CDNBypass", BypassTechnique.DOMAIN_FRONTING, priority=1)
+        super().__init__("CDNBypass", BypassTechnique.DOMAIN_FRONTING, priority=1, execution_status=PipelineExecutionStatus.SIMULATION)
         self.cdn_domains = []
         self.selected_cdn = ""
         self.http_client = HTTPClient(timeout=15.0)
@@ -51,8 +51,8 @@ class CDNBypassPipeline(BasePipeline):
             
             return BypassResponse(
                 success=bypass_success,
+                latency=response_time,
                 status_code=status_code,
-                response_time=response_time,
                 technique_used=self.name,
                 data=response_data,
                 headers={
@@ -66,8 +66,8 @@ class CDNBypassPipeline(BasePipeline):
         except Exception as e:
             return BypassResponse(
                 success=False,
-                error=f"CDN bypass error: {str(e)}",
-                response_time=time.time() - start_time
+                latency=time.time() - start_time,
+                error_reason=f"CDN bypass error: {str(e)}"
             )
     
     def _select_cdn_config(self) -> Dict[str, str]:
@@ -161,7 +161,8 @@ class CDNBypassPipeline(BasePipeline):
             'raw.githubusercontent.com'
         ])
         
-        print(f"✅ CDNBypass инициализирован: {len(self.cdn_domains)} CDN доменов")
+        self.tracer.info(f"CDNBypass initialized: {len(self.cdn_domains)} CDN доменов")
+        self._mark_initialized(True)
         return True
     
     async def cleanup(self) -> bool:

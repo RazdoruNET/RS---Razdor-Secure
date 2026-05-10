@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class SciHubMirrorsPipeline(BasePipeline):
     """Пайплайн для доступа к научным статьям через SciHub зеркала"""
     
     def __init__(self):
-        super().__init__("SciHubMirrors", BypassTechnique.TOR_INTEGRATION, priority=15)
+        super().__init__("SciHubMirrors", BypassTechnique.TOR_INTEGRATION, priority=15, execution_status=PipelineExecutionStatus.SIMULATION)
         self.mirror_domains = []
         self.api_keys = []
         self.doi_patterns = []

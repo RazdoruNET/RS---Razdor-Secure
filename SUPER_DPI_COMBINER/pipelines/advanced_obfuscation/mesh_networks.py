@@ -11,13 +11,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class MeshNetworksPipeline(BasePipeline):
     """Пайплайн для Mesh сетей"""
     
     def __init__(self):
-        super().__init__("MeshNetworks", BypassTechnique.PROTOCOL_OBFUSCATION, priority=25)
+        super().__init__("MeshNetworks", BypassTechnique.PROTOCOL_OBFUSCATION, priority=25, execution_status=PipelineExecutionStatus.SIMULATION)
         self.mesh_nodes = []
         self.routing_protocol = ""
         self.mesh_size = 0

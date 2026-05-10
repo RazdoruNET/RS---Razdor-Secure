@@ -11,14 +11,14 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
 class HostHeaderPipeline(BasePipeline):
     """Пайплайн для подмены Host заголовка"""
     
     def __init__(self):
-        super().__init__("HostHeader", BypassTechnique.DOMAIN_FRONTING, priority=2)
+        super().__init__("HostHeader", BypassTechnique.DOMAIN_FRONTING, priority=2, execution_status=PipelineExecutionStatus.REAL)
         self.host_overrides = []
         self.selected_host = ""
         self.http_client = HTTPClient(timeout=15.0)

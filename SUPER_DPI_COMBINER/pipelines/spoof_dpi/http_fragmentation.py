@@ -17,7 +17,7 @@ import json
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import TCPClient
 
 from enum import Enum
@@ -54,7 +54,7 @@ class HTTPFragmentationPipeline(BasePipeline):
     """Пайплайн для фрагментации HTTP запросов"""
     
     def __init__(self):
-        super().__init__("HTTPFragmentation", BypassTechnique.SPOOF_DPI, priority=3)
+        super().__init__("HTTPFragmentation", BypassTechnique.SPOOF_DPI, priority=3, execution_status=PipelineExecutionStatus.REAL)
         self.config = FragmentationConfig()
         self.tcp_client = TCPClient(timeout=10.0)
         
@@ -185,8 +185,8 @@ class HTTPFragmentationPipeline(BasePipeline):
             
             return BypassResponse(
                 success=success,
+                latency=response_time,
                 status_code=status_code,
-                response_time=response_time,
                 technique_used=self.name,
                 data=response_data,
                 headers={
@@ -203,8 +203,8 @@ class HTTPFragmentationPipeline(BasePipeline):
             logger.error(f"HTTP fragmentation error: {str(e)}")
             return BypassResponse(
                 success=False,
-                error=f"HTTP fragmentation error: {str(e)}",
-                response_time=time.time() - start_time
+                latency=time.time() - start_time,
+                error_reason=f"HTTP fragmentation error: {str(e)}"
             )
         finally:
             # Гарантированное закрытие соединения
@@ -372,18 +372,6 @@ class HTTPFragmentationPipeline(BasePipeline):
             for i in range(0, len(data), fragment_size):
                 fragment = data[i:i + fragment_size]
                 fragments.append(fragment)
-    elif self.config.fragment_mode == FragmentMode.RANDOM:
-        # Случайные размеры фрагментов
-        pos = 0
-        while pos < len(data):
-            size = random.randint(1, min(fragment_size, len(data) - pos))
-            fragments.append(data[pos:pos + size])
-            pos += size
-    else:  # FIXED
-        # Фиксированная фрагментация
-        for i in range(0, len(data), fragment_size):
-            fragment = data[i:i + fragment_size]
-            fragments.append(fragment)
         
         return fragments
     

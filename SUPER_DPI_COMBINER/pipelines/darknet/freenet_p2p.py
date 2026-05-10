@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class FreenetP2PPipeline(BasePipeline):
     """Пайплайн для P2P доступа через Freenet"""
     
     def __init__(self):
-        super().__init__("FreenetP2P", BypassTechnique.TOR_INTEGRATION, priority=11)
+        super().__init__("FreenetP2P", BypassTechnique.TOR_INTEGRATION, priority=11, execution_status=PipelineExecutionStatus.SIMULATION)
         self.freenet_nodes = []
         self.web_of_trust = []
         self.ssk_keys = []

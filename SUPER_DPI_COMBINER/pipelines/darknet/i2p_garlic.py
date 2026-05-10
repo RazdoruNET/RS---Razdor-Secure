@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class I2PGarlicPipeline(BasePipeline):
     """Пайплайн для Garlic Routing через I2P"""
     
     def __init__(self):
-        super().__init__("I2PGarlic", BypassTechnique.TOR_INTEGRATION, priority=10)
+        super().__init__("I2PGarlic", BypassTechnique.TOR_INTEGRATION, priority=10, execution_status=PipelineExecutionStatus.SIMULATION)
         self.i2p_routers = []
         self.garlic_cloves = 0
         self.tunnel_depth = 3

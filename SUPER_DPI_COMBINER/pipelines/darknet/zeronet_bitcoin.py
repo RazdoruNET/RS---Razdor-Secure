@@ -12,13 +12,13 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
 class ZeroNetBitcoinPipeline(BasePipeline):
     """Пайплайн для Bitcoin адресации ZeroNet"""
     
     def __init__(self):
-        super().__init__("ZeroNetBitcoin", BypassTechnique.TOR_INTEGRATION, priority=13)
+        super().__init__("ZeroNetBitcoin", BypassTechnique.TOR_INTEGRATION, priority=13, execution_status=PipelineExecutionStatus.SIMULATION)
         self.zite_keys = []
         self.trackers = []
         self.bitcoin_address = ""
