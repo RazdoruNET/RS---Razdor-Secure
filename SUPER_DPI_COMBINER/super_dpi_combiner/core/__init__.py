@@ -1,7 +1,15 @@
 """
-Super DPI Combiner - Core Module
-Универсальный комбайн для обхода DPI с LLM интеграцией
+Core module - Минимальный набор essential компонентов
 """
 
-__version__ = "1.0.0"
-__author__ = "Razdor Secure Team"
+from .base import BasePipeline, Request, Response
+from .runner import Runner
+from .http_client import TCPClient
+
+__all__ = [
+    'BasePipeline',
+    'Request', 
+    'Response',
+    'Runner',
+    'TCPClient'
+]

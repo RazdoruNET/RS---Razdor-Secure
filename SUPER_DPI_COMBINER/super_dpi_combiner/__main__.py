@@ -12,19 +12,7 @@ from pathlib import Path
 package_root = Path(__file__).parent.parent
 sys.path.insert(0, str(package_root))
 
-from super_dpi_combiner.main import SuperDPICombiner
-
-def main():
-    """Main entry point"""
-    try:
-        app = SuperDPICombiner()
-        app.run()
-    except KeyboardInterrupt:
-        print("\nShutdown requested by user")
-        sys.exit(0)
-    except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
+from super_dpi_combiner.main import main
 
 if __name__ == "__main__":
     main()

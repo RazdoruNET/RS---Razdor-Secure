@@ -1,5 +1,11 @@
 """
-Pipelines module for Super DPI Combiner
+Pipelines module - Минимальный набор рабочих пайплайнов
 """
 
-__all__ = []
+from .http_fragmentation import HTTPFragmentation
+from .echo import Echo
+
+__all__ = [
+    'HTTPFragmentation',
+    'Echo'
+]

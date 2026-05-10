@@ -1,128 +1,45 @@
 #!/usr/bin/env python3
 """
-Real HTTP Client for DPI bypass operations
+HTTP Client - Стабилизированный клиент с реальными сетевыми операциями
+Только asyncio, без внешних зависимостей
 """
 
 import asyncio
 import ssl
 import socket
-import time
-import random
-from typing import Dict, Any, Optional, Tuple
-import aiohttp
-import certifi
-from urllib.parse import urlparse
+from typing import Optional
+from .contracts import Request, Response
 
 class HTTPClient:
-    """Real HTTP client with advanced features for DPI bypass"""
+    """Минимальный HTTP клиент с реальными сетевыми операциями"""
     
-    def __init__(self, timeout: float = 30.0):
-        self.timeout = timeout
-        self.session = None
-        self.connector = None
+    def __init__(self):
+        self.reader = None
+        self.writer = None
+        self.ssl_context = ssl.create_default_context()
         
-    async def initialize(self):
-        """Initialize aiohttp session with custom settings"""
-        # Custom SSL context for certificate pinning bypass
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        
-        # Custom connector with socket options
-        self.connector = aiohttp.TCPConnector(
-            ssl=ssl_context,
-            limit=100,
-            limit_per_host=20,
-            ttl_dns_cache=300,
-            use_dns_cache=True,
-            family=socket.AF_INET,
-            enable_cleanup_closed=True
-        )
-        
-        # Session with custom headers and timeout
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
-        self.session = aiohttp.ClientSession(
-            connector=self.connector,
-            timeout=timeout,
-            headers={
-                'User-Agent': self._get_random_user_agent(),
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-            }
-        )
-        
-    def _get_random_user_agent(self) -> str:
-        """Get random user agent for fingerprint rotation"""
-        user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
-        ]
-        return random.choice(user_agents)
-    
-    async def make_request(self, 
-                          method: str, 
-                          url: str, 
-                          headers: Optional[Dict[str, str]] = None,
-                          data: Optional[bytes] = None,
-                          params: Optional[Dict[str, str]] = None,
-                          allow_redirects: bool = True,
-                          ssl_context: Optional[ssl.SSLContext] = None) -> Tuple[bool, int, Dict[str, str], bytes, float]:
-        """
-        Make HTTP request with real network operations
-        
-        Returns:
-            Tuple[success, status_code, response_headers, response_data, response_time]
-        """
-        if not self.session:
-            await self.initialize()
-            
-        start_time = time.time()
-        
+    async def connect(
+        self,
+        host: str,
+        port: int,
+        ssl_enabled: bool = False,
+        timeout: float = 10.0
+    ) -> bool:
+        """Подключиться к серверу"""
         try:
-            # Merge custom headers with default ones
-            request_headers = {}
-            if headers:
-                request_headers.update(headers)
+            target = (host, port)
             
-            # Use custom SSL context if provided, otherwise bypass SSL verification
-            ssl_param = ssl_context if ssl_context else False
-            
-            async with self.session.request(
-                method=method,
-                url=url,
-                headers=request_headers if request_headers else None,
-                data=data,
-                params=params,
-                allow_redirects=allow_redirects,
-                ssl=ssl_param
-            ) as response:
-                response_data = await response.read()
-                response_time = time.time() - start_time
+            if ssl_enabled:
+                self.reader, self.writer = await asyncio.wait_for(
+                    asyncio.open_connection(target, ssl=self.ssl_context),
+                    timeout=timeout
+                )
+            else:
+                self.reader, self.writer = await asyncio.wait_for(
+                    asyncio.open_connection(target),
+                    timeout=timeout
+                )
                 
-                # Convert headers to dict
-                response_headers = dict(response.headers)
-                
-                return True, response.status, response_headers, response_data, response_time
-                
-        except asyncio.TimeoutError:
-            response_time = time.time() - start_time
-            return False, 408, {}, b"Request timeout", response_time
-            
-        except aiohttp.ClientError as e:
-            response_time = time.time() - start_time
-            return False, 500, {}, f"Client error: {str(e)}".encode(), response_time
-            
-        except Exception as e:
-            response_time = time.time() - start_time
-            return False, 500, {}, f"Unexpected error: {str(e)}".encode(), response_time
-    
-    async def head_request(self, url: str, headers: Optional[Dict[str, str]] = None) -> Tuple[bool, int, Dict[str, str], float]:
         """Make HEAD request for connectivity testing"""
         success, status_code, response_headers, _, response_time = await self.make_request(
             'HEAD', url, headers=headers

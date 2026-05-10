@@ -1,156 +1,118 @@
 #!/usr/bin/env python3
 """
-Super DPI Combiner - Главный комбайн
-Универсальный адаптивный инструмент обхода DPI с LLM интеграцией
+Super DPI Combiner - Минимальный главный модуль
 """
 
-import asyncio
-import signal
 import sys
-import os
-import time
-import json
-import argparse
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+from .core import Runner, Request
+from .pipelines import HTTPFragmentation, Echo
 
-from super_dpi_combiner.core.registry import get_pipeline_registry
-from super_dpi_combiner.core.types import BypassRequest, BypassResponse
-from super_dpi_combiner.utils.logger import get_logger
-from super_dpi_combiner.config.settings import Settings
-
-logger = get_logger(__name__)
-
-class SuperDPICombiner:
-    """Главный комбайн для обхода DPI"""
+def main():
+    """Основная функция - реальный execution loop"""
+    print("🚀 Super DPI Combiner - Minimal Mode")
+    print("=" * 50)
     
-    def __init__(self, config_path: str = "config/settings.json"):
-        self.config_path = Path(config_path)
-        self.settings = Settings(config_path)
-        self.config = self.settings.settings
-        self.running = False
-        
-        # Registry для загрузки пайплайнов
-        self.registry = get_pipeline_registry()
-        
-        # Статистика
-        self.start_time = None
-        self.total_requests = 0
-        self.successful_requests = 0
-        
-        logger.info("Инициализация Super DPI Combiner")
+    # Создаем runner
+    runner = Runner()
     
-    def initialize(self):
-        """Инициализация всех компонентов"""
+    # Регистрируем пайплайны
+    runner.register_pipeline(HTTPFragmentation())
+    runner.register_pipeline(Echo())
+    
+    # Показываем доступные пайплайны
+    runner.list_pipelines()
+    
+    print("\n🎯 Режим реального выполнения (TRUTH MODE)")
+    print("❌ Без симуляции, без фейковых успехов")
+    print("✅ Только реальное выполнение кода")
+    
+    # Интерактивный режим
+    while True:
         try:
-            logger.info("=== Инициализация Super DPI Combiner ===")
+            print("\n" + "=" * 50)
+            print("Введите команду:")
+            print("  test <host> [port]  - тестировать запрос")
+            print("  stats               - показать статистику") 
+            print("  list                - показать пайплайны")
+            print("  quit                - выход")
+            print("=" * 50)
             
-            # Загрузка пайплайнов через registry
-            logger.info("Загрузка пайплайнов...")
-            pipelines = self.registry.load_all_pipelines()
+            command = input("→ ").strip().split()
+            if not command:
+                continue
+                
+            cmd = command[0].lower()
             
-            # Выводим отчет о загрузке
-            status_report = self.registry.get_status_report()
-            logger.info(f"Статус загрузки пайплайнов: {status_report}")
-            
-            ready_pipelines = self.registry.get_ready_pipelines()
-            logger.info(f"Готовых к работе пайплайнов: {len(ready_pipelines)}")
-            
-            if ready_pipelines:
-                logger.info("✅ Система готова к работе")
-                return True
-            else:
-                logger.warning("⚠️ Нет готовых пайплайнов, система в безопасном режиме")
-                return True  # Все равно считаем успешной инициализацией
+            if cmd == 'quit' or cmd == 'exit':
+                print("🛑 Выход...")
+                break
                 
-        except Exception as e:
-            logger.error(f"❌ Ошибка при инициализации: {e}")
-            return False
-    
-    def reload_config(self) -> bool:
-        """Перезагрузка конфигурации"""
-        try:
-            success = self.settings.reload()
-            if success:
-                self.config = self.settings.settings
-                logger.info("✅ Конфигурация успешно перезагружена")
-            else:
-                logger.error("❌ Ошибка перезагрузки конфигурации")
-            return success
-        except Exception as e:
-            logger.error(f"Критическая ошибка перезагрузки: {e}")
-            return False
-    
-    def run(self, target_url: str = None):
-        """Запуск системы"""
-        try:
-            if not self.running:
-                # Инициализация если еще не инициализирована
-                if not self.initialize():
-                    return False
-                
-                # Определение целевого URL
-                if not target_url:
-                    target_url = 'https://www.youtube.com'
-                
-                logger.info(f"🎯 Целевой URL: {target_url}")
-                
-                # Тестовый запуск одного пайплайна
-                ready_pipelines = self.registry.get_ready_pipelines()
-                if ready_pipelines:
-                    test_pipeline = ready_pipelines[0]
-                    logger.info(f"🧪 Тестовый запуск пайплайна: {test_pipeline.name}")
+            elif cmd == 'test':
+                if len(command) < 2:
+                    print("❌ Укажите host")
+                    continue
                     
-                    # Создаем тестовый запрос
-                    test_request = BypassRequest(
-                        host='www.youtube.com',
-                        port=443,
-                        method='GET'
-                    )
-                    
-                    # Выполняем тест
-                    try:
-                        response = test_pipeline.execute(test_request)
-                        logger.info(f"✅ Тестовый запуск успешен: {response.success}")
-                        logger.info(f"📊 Latency: {response.latency:.3f}s")
-                    except Exception as e:
-                        logger.error(f"❌ Ошибка тестового запуска: {e}")
+                host = command[1]
                 
-                self.running = True
-                self.start_time = time.time()
+                # Ищем опцию -p для пайплайна
+                pipeline_name = None
+                port = 80
                 
-                logger.info("✅ Super DPI Combiner успешно запущен")
-                logger.info("🛡️ Работа в безопасном режиме с базовой функциональностью")
+                i = 2
+                while i < len(command):
+                    if command[i] == '-p' and i + 1 < len(command):
+                        pipeline_name = command[i + 1]
+                    elif command[i] == '--port' and i + 1 < len(command):
+                        try:
+                            port = int(command[i + 1])
+                        except ValueError:
+                            print("❌ Неверный порт")
+                            continue
+                    i += 2
                 
-                return True
-                    
-        except Exception as e:
-            logger.error(f"Ошибка запуска: {e}")
-            return False
-    
-    def main():
-        """Основная функция для запуска приложения"""
-        try:
-            app = SuperDPICombiner()
-            if app.run():
-                logger.info("🎉 Приложение успешно запущено")
-                logger.info("Для остановки нажмите Ctrl+C")
+                request = Request(
+                    host=host,
+                    port=port,
+                    method="GET"
+                )
                 
-                # Простая блокировка для демонстрации
-                try:
-                    import time
-                    while True:
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    logger.info("🛑 Остановка приложения...")
-                    return True
+                response = runner.execute_request(request, pipeline_name)
+                
+            elif cmd == 'stats':
+                stats = runner.get_stats()
+                print(f"\n📊 Статистика:")
+                print(f"  Всего запросов: {stats['total_requests']}")
+                print(f"  Успешных: {stats['successful_requests']}")
+                print(f"  Ошибок: {stats['failed_requests']}")
+                print(f"  Success rate: {stats['success_rate']:.1f}%")
+                
+            elif cmd == 'list':
+                runner.list_pipelines()
+                
             else:
-                logger.error("❌ Не удалось запустить приложение")
-                return False
+                print(f"❌ Неизвестная команда: {cmd}")
                 
+        except KeyboardInterrupt:
+            print("\n🛑 Прерывание...")
+            break
         except Exception as e:
-            logger.error(f"Критическая ошибка: {e}")
-            return False
+            print(f"❌ Ошибка: {e}")
+    
+    # Финальная статистика
+    final_stats = runner.get_stats()
+    print(f"\n📋 Финальная статистика:")
+    print(f"  Выполнено запросов: {final_stats['total_requests']}")
+    print(f"  Успешных: {final_stats['successful_requests']}")
+    print(f"  Ошибок: {final_stats['failed_requests']}")
+    print(f"  Итоговый success rate: {final_stats['success_rate']:.1f}%")
+    
+    if final_stats['total_requests'] > 0:
+        if final_stats['success_rate'] == 100.0:
+            print("✅ Все запросы выполнены успешно")
+        elif final_stats['success_rate'] > 0:
+            print(f"⚠️ Частичный успех: {final_stats['success_rate']:.1f}%")
+        else:
+            print("❌ Все запросы завершились ошибкой")
 
 if __name__ == "__main__":
     main()
