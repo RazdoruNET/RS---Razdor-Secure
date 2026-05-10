@@ -260,6 +260,8 @@ class SOCKS5Daemon:
         total_sent = 0
         fragment_count = 0
         
+        self.logger.info(f"[SOCKS5] DEBUG: Starting fragmentation - data_size={len(data)}, chunk_size={self.chunk_size}, chunk_size_type={type(self.chunk_size)}")
+        
         for i in range(0, len(data), self.chunk_size):
             chunk = data[i:i + self.chunk_size]
             
@@ -270,7 +272,7 @@ class SOCKS5Daemon:
             fragment_count += 1
             total_sent += len(chunk)
             
-            self.logger.info(f"[SOCKS5] Sent fragment {fragment_count}: {len(chunk)} bytes")
+            self.logger.info(f"[SOCKS5] DEBUG: Sent fragment {fragment_count}: {len(chunk)} bytes (range {i}-{i+self.chunk_size})")
             
             # Принудительная задержка между чанками
             if self.chunk_delay > 0:

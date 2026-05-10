@@ -15,8 +15,8 @@ services:
     # Переменные окружения для конфигурации
     environment:
       - LISTEN_PORT=1080
-      - CHUNK_SIZE=30
-      - CHUNK_DELAY=0.005
+      - CHUNK_SIZE=250
+      - CHUNK_DELAY=0.002
       - LOG_LEVEL=INFO
     
     # Логи в stdout для docker logs
