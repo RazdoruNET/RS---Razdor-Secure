@@ -12,6 +12,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.http_client import HTTPClient
 
 class CustomHeadersPipeline(BasePipeline):
     """Пайплайн для обфускации HTTP заголовков"""
@@ -20,42 +21,71 @@ class CustomHeadersPipeline(BasePipeline):
         super().__init__("CustomHeaders", BypassTechnique.PROTOCOL_OBFUSCATION, priority=2)
         self.custom_headers = []
         self.random_order = True
+        self.http_client = HTTPClient(timeout=15.0)
         
     async def execute(self, request: BypassRequest) -> BypassResponse:
-        """Выполнение с кастомными заголовками"""
+        """Выполнение с реальными кастомными заголовками"""
         start_time = time.time()
         
         try:
+            # Инициализируем HTTP клиент
+            await self.http_client.initialize()
+            
             # Формируем кастомные заголовки
             headers_to_use = self.custom_headers.copy()
             
             if self.random_order:
                 random.shuffle(headers_to_use)
             
-            # Отправляем запрос с кастомными заголовками
-            await asyncio.sleep(0.008)  # Задержка на обработку заголовков
+            # Создаем базовые заголовки
+            headers = request.headers.copy() if request.headers else {}
             
-            response_time = time.time() - start_time
+            # Добавляем кастомные заголовки
+            for header in headers_to_use[:15]:  # Ограничиваем количество
+                headers[header['name']] = header['value']
             
-            # Вероятность успеха зависит от количества заголовков
-            success_probability = 0.3
-            if len(headers_to_use) > 5:
-                success_probability += 0.2
-            if self.random_order:
-                success_probability += 0.1
+            # Добавляем стандартные заголовки для обхода
+            headers.update({
+                'User-Agent': self._get_random_user_agent(),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'DNT': '1'
+            })
             
-            success = random.random() < success_probability
+            # Создаем URL для запроса
+            url = f"https://{request.host}:{request.port}/"
+            
+            # Выполняем запрос с кастомными заголовками
+            success, status_code, response_headers, response_data, response_time = await self.http_client.make_request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                data=request.data,
+                allow_redirects=True
+            )
+            
+            # Анализируем ответ
+            success = success and status_code in [200, 201, 202, 301, 302]
             
             # Формируем использованные заголовки для ответа
             used_headers = {}
-            for header in headers_to_use[:10]:  # Ограничиваем количество
+            for header in headers_to_use[:10]:
                 used_headers[header['name']] = header['value']
             
             return BypassResponse(
                 success=success,
-                status_code=200 if success else 403,
+                status_code=status_code,
                 response_time=response_time,
                 technique_used=self.name,
+                data=response_data,
                 headers=used_headers
             )
             
@@ -114,6 +144,19 @@ class CustomHeadersPipeline(BasePipeline):
         print(f"✅ CustomHeaders инициализирован: {len(self.custom_headers)} заголовков")
         return True
     
-    def cleanup(self) -> bool:
+    def _get_random_user_agent(self) -> str:
+        """Получение случайного User-Agent"""
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0)'
+        ]
+        return random.choice(user_agents)
+    
+    async def cleanup(self) -> bool:
         """Очистка ресурсов"""
+        if self.http_client:
+            await self.http_client.cleanup()
         return True
