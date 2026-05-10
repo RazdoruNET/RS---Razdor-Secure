@@ -583,30 +583,29 @@ class WebGuiServer:
     async def serve_status_api(self) -> str:
         """API endpoint для получения статуса"""
         try:
-            # Тестовый ответ для проверки работоспособности
-            test_response = {
-                'status': 'working',
-                'message': 'API is functional',
-                'timestamp': asyncio.get_event_loop().time()
-            }
-            
             # Получаем слепок состояния от оркестратора
-            try:
-                snapshot = await self.orchestrator.get_snapshot()
-                
-                # Добавляем дополнительную мета-информацию
-                status_data = {
-                    'timestamp': asyncio.get_event_loop().time(),
-                    'total_domains': len(snapshot.get('domains', {})),
-                    'orchestrator_enabled': self.orchestrator.enabled,
-                    'dpi_inspector_enabled': self.orchestrator.dpi_inspector.enabled,
-                    **snapshot  # Включаем domains из snapshot
-                }
-                return self.make_response(200, json.dumps(status_data, indent=2, ensure_ascii=False), 'application/json')
-            except Exception as e:
-                self.logger.error(f"Snapshot error: {e}")
-                # Возвращаем тестовый ответ если snapshot не работает
-                return self.make_response(200, json.dumps(test_response, indent=2), 'application/json')
+            snapshot = await self.orchestrator.get_snapshot()
+            
+            # Добавляем дополнительную мета-информацию
+            status_data = {
+                'timestamp': asyncio.get_event_loop().time(),
+                'total_domains': len(snapshot.get('domains', {})),
+                'orchestrator_enabled': self.orchestrator.enabled,
+                'dpi_inspector_enabled': self.orchestrator.dpi_inspector.enabled,
+                **snapshot  # Включаем domains из snapshot
+            }
+            response_json = json.dumps(status_data, indent=2, ensure_ascii=False)
+            
+            # Формируем HTTP ответ вручную как требуется
+            response = (
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: application/json; charset=utf-8\r\n"
+                f"Content-Length: {len(response_json.encode('utf-8'))}\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                f"{response_json}"
+            )
+            return response
             
         except Exception as e:
             self.logger.error(f"Status API error: {e}")

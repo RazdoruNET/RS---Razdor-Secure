@@ -91,22 +91,24 @@ class SOCKS5Daemon:
     async def handle_socks5_handshake(self, reader, writer):
         """Шаг 1: Handshake (Приветствие)"""
         try:
-            # Читаем первые 2 байта: Версия + Количество методов
-            auth_header = await reader.readexactly(2)
-            
-            # Проверяем версию (должна быть 0x05)
-            if auth_header[0] != 0x05:
-                self.logger.error(f"[SOCKS5] Unsupported SOCKS version: {auth_header[0]:02x}")
+            # Безопасное чтение стартового приветствия SOCKS5 (минимум 2 байта)
+            auth_header = await reader.read(2)
+            if len(auth_header) < 2:
+                self.logger.error(f"[SOCKS5] Handshake failed: Only {len(auth_header)} bytes read")
                 return False
-            
-            # Читаем доступные методы аутентификации
-            nmethods = auth_header[1]
+
+            version, nmethods = auth_header[0], auth_header[1]
+            if version != 0x05:
+                self.logger.error(f"[SOCKS5] Unsupported SOCKS version: {version:02x}")
+                return False
+
+            # Читаем поддерживаемые клиентом методы авторизации
             if nmethods > 0:
-                methods = await reader.readexactly(nmethods)
+                methods = await reader.read(nmethods)
                 self.logger.debug(f"[SOCKS5] Auth methods: {[hex(m) for m in methods]}")
             
-            # Отвечаем клиенту, что работаем без авторизации
-            writer.write(b'\x05\x00')  # VER=5, METHOD=0 (No auth)
+            # Отвечаем клиенту: Выбран метод 0x00 (Без авторизации)
+            writer.write(b"\x05\x00")
             await writer.drain()
             
             self.logger.info(f"[SOCKS5] Handshake successful: No auth method selected")
@@ -120,7 +122,10 @@ class SOCKS5Daemon:
         """Шаг 2: Чтение запроса и извлечение назначения (RFC 1928)"""
         try:
             # Читаем фиксированную часть заголовка запроса (4 байта)
-            req_header = await reader.readexactly(4)
+            req_header = await reader.read(4)
+            if len(req_header) < 4:
+                self.logger.error(f"[SOCKS5] Request header incomplete: Only {len(req_header)} bytes read")
+                return None, None
             
             version = req_header[0]  # Версия (0x05)
             cmd = req_header[1]      # Команда (0x01 = CONNECT)
@@ -144,28 +149,43 @@ class SOCKS5Daemon:
             
             if atyp == 0x01:  # IPv4
                 # Читаем 4 байта IP и 2 байта порта
-                raw_ip = await reader.readexactly(4)
-                raw_port = await reader.readexactly(2)
+                raw_ip = await reader.read(4)
+                raw_port = await reader.read(2)
+                if len(raw_ip) < 4 or len(raw_port) < 2:
+                    self.logger.error("[SOCKS5] IPv4 address incomplete")
+                    return None, None
                 target_host = socket.inet_ntoa(raw_ip)
                 target_port = int.from_bytes(raw_port, 'big')
                 
             elif atyp == 0x03:  # Доменное имя (самый частый случай для браузеров)
                 # Читаем 1 байт длины домена
-                len_byte = await reader.readexactly(1)
+                len_byte = await reader.read(1)
+                if not len_byte:
+                    self.logger.error("[SOCKS5] Domain length byte missing")
+                    return None, None
                 domain_len = len_byte[0]
                 
                 # Читаем сам домен
-                raw_domain = await reader.readexactly(domain_len)
+                raw_domain = await reader.read(domain_len)
+                if len(raw_domain) < domain_len:
+                    self.logger.error(f"[SOCKS5] Domain incomplete: {len(raw_domain)}/{domain_len} bytes")
+                    return None, None
                 target_host = raw_domain.decode('utf-8')
                 
                 # Читаем 2 байта порта
-                raw_port = await reader.readexactly(2)
+                raw_port = await reader.read(2)
+                if len(raw_port) < 2:
+                    self.logger.error("[SOCKS5] Port bytes missing")
+                    return None, None
                 target_port = int.from_bytes(raw_port, 'big')
                 
             elif atyp == 0x04:  # IPv6
                 # Читаем 16 байт IPv6 и 2 байта порта
-                raw_ipv6 = await reader.readexactly(16)
-                raw_port = await reader.readexactly(2)
+                raw_ipv6 = await reader.read(16)
+                raw_port = await reader.read(2)
+                if len(raw_ipv6) < 16 or len(raw_port) < 2:
+                    self.logger.error("[SOCKS5] IPv6 address incomplete")
+                    return None, None
                 target_host = socket.inet_ntop(socket.AF_INET6, raw_ipv6)
                 target_port = int.from_bytes(raw_port, 'big')
                 
@@ -217,23 +237,34 @@ class SOCKS5Daemon:
             # Открываем реальное соединение с целевым сервером
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
             try:
+                # Принудительный IPv4-резолвинг для обхода блокировки Docker Desktop на macOS
+                loop = asyncio.get_running_loop()
+                addr_info = await loop.getaddrinfo(
+                    target_host,
+                    target_port,
+                    family=socket.AF_INET,
+                    type=socket.SOCK_STREAM
+                )
+                resolved_ipv4 = addr_info[0][4][0]
+                
                 upstream_reader, upstream_writer = await asyncio.wait_for(
-                    asyncio.open_connection(target_host, target_port),
+                    asyncio.open_connection(resolved_ipv4, target_port),
                     timeout=30.0
                 )
+                
+                # Выставляем TCP_NODELAY для оптимизации
+                sock = upstream_writer.get_extra_info('socket')
+                if sock:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                    
             except asyncio.TimeoutError:
                 self.logger.error(f"[SOCKS5] Connection timeout to {target_host}:{target_port}")
                 await self.orchestrator.report_failure(domain, session.pipeline_config, "timeout")
                 return
             except Exception as e:
-                self.logger.error(f"[SOCKS5] Connection failed to {target_host}:{target_port}: {e}")
+                self.logger.error(f"[MAC DOCKER CRITICAL] Ошибка резолва/доступа в интернет для {target_host}: {e}")
                 await self.orchestrator.report_failure(domain, session.pipeline_config, "connection_error")
                 return
-            
-            # Выставляем сокету сервера TCP_NODELAY = 1
-            upstream_socket = upstream_writer.get_extra_info('socket')
-            if upstream_socket:
-                upstream_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
             
