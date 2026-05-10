@@ -17,12 +17,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
 from core.http_client import TCPClient
 
+from enum import Enum
+
+class FragmentMode(Enum):
+    """Режимы фрагментации"""
+    FIXED = "fixed"
+    RANDOM = "random"
+    HEADER_BODY_SPLIT = "header_body_split"
+    BYTE_BY_BYTE = "byte_by_byte"
+
 @dataclass
 class FragmentationConfig:
     """Конфигурация фрагментации"""
     fragment_size: int = 256
     fragment_delay: float = 0.001
     random_padding: bool = False
+    fragment_mode: FragmentMode = FragmentMode.FIXED
+    jitter_range: tuple = (0.8, 1.2)  # Random jitter для задержек
 
 logger = logging.getLogger(__name__)
 
@@ -56,32 +67,36 @@ class HTTPFragmentationPipeline(BasePipeline):
                 # HTTP - используем plain TCP
                 reader, writer = await self.tcp_client.create_connection(request.host, request.port)
             
-            # Отправляем фрагменты с задержкой и настройками TCP
+            # Устанавливаем TCP_NODELAY один раз для гарантии фрагментации
+            sock = writer.get_extra_info('socket')
+            if sock:
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            
+            # Отправляем фрагменты с задержкой и jitter
             for i, fragment in enumerate(fragments):
-                # Устанавливаем TCP_NODELAY для гарантии фрагментации
-                sock = writer.get_extra_info('socket')
-                if sock:
-                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                
                 await self.tcp_client.send_data(writer, fragment)
-                await asyncio.sleep(self.config.fragment_delay)
+                
+                # Добавляем jitter к задержке для имитации реального трафика
+                jitter_delay = random.uniform(*self.config.jitter_range)
+                actual_delay = self.config.fragment_delay * jitter_delay
+                await asyncio.sleep(actual_delay)
                 
                 # Padding отключен - ломает HTTP протокол
                 # Для реальной packet fragmentation нужны raw sockets
                 # asyncio stream не даёт контроля над packet boundaries
             
-            # Получаем ответ полностью (все чанки)
-            chunks = []
+            # Получаем ответ полностью (надежное чтение через buffer)
+            buffer = bytearray()
             while True:
                 chunk = await asyncio.wait_for(
-                    self.tcp_client.receive_data(reader, 8192),
+                    reader.read(8192),
                     timeout=30.0
                 )
                 if not chunk:
                     break
-                chunks.append(chunk)
+                buffer.extend(chunk)
             
-            response_data = b''.join(chunks)
+            response_data = bytes(buffer)
             
             response_time = time.time() - start_time
             
@@ -120,9 +135,19 @@ class HTTPFragmentationPipeline(BasePipeline):
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Инициализация с конфигурацией"""
-        self.config = FragmentationConfig(**config)
+        try:
+            self.config = FragmentationConfig(
+                fragment_size=config.get('fragment_size', 256),
+                fragment_delay=config.get('fragment_delay', 0.001),
+                random_padding=config.get('random_padding', False),
+                fragment_mode=FragmentMode(config.get('fragment_mode', 'fixed')),
+                jitter_range=config.get('jitter_range', (0.8, 1.2))
+            )
+        except Exception as e:
+            logger.error(f"Invalid config: {str(e)}")
+            return False
         
-        logger.info(f"HTTPFragmentation initialized: size={self.config.fragment_size}, delay={self.config.fragment_delay}, padding={self.config.random_padding}")
+        logger.info(f"HTTPFragmentation initialized: size={self.config.fragment_size}, delay={self.config.fragment_delay}, mode={self.config.fragment_mode.value}")
         return True
     
     def _create_fragmented_request(self, request: BypassRequest) -> bytes:
@@ -159,44 +184,67 @@ class HTTPFragmentationPipeline(BasePipeline):
         return request_bytes
     
     def _fragment_data(self, data: bytes, fragment_size: int) -> list:
-        """Разбиение данных на фрагменты"""
+        """Разбиение данных на фрагменты с учётом режима"""
         fragments = []
-        for i in range(0, len(data), fragment_size):
-            fragment = data[i:i + fragment_size]
-            fragments.append(fragment)
+        
+        if self.config.fragment_mode == FragmentMode.HEADER_BODY_SPLIT:
+            # Разделяем headers и body
+            split_pos = data.find(b'\r\n\r\n')
+            if split_pos != -1:
+                headers = data[:split_pos]
+                body = data[split_pos + 4:]
+                fragments.append(headers)
+                if body:
+                    fragments.append(body)
+            else:
+                fragments.append(data)
+        elif self.config.fragment_mode == FragmentMode.BYTE_BY_BYTE:
+            # Побайтовая фрагментация
+            for byte in data:
+                fragments.append(bytes([byte]))
+        elif self.config.fragment_mode == FragmentMode.RANDOM:
+            # Случайные размеры фрагментов
+            pos = 0
+            while pos < len(data):
+                size = random.randint(1, min(fragment_size, len(data) - pos))
+                fragments.append(data[pos:pos + size])
+                pos += size
+        else:  # FIXED
+            # Фиксированная фрагментация
+            for i in range(0, len(data), fragment_size):
+                fragment = data[i:i + fragment_size]
+                fragments.append(fragment)
+        
         return fragments
     
     def _parse_http_status(self, response_data: bytes) -> int:
-        """Корректный парсинг HTTP статуса из ответа"""
+        """Устойчивый парсинг HTTP статуса из ответа"""
         if not response_data:
             return 0
         
         try:
-            # Ищем status line
-            first_line = response_data.split(b'\r\n', 1)[0]
+            # Ищем status line в первых 10 строках (для устойчивости к garbage)
+            lines = response_data.split(b"\r\n")
             
-            # Парсим с помощью regex
-            import re
-            match = re.search(rb'HTTP/\d\.\d\s+(\d+)', first_line)
-            if match:
-                return int(match.group(1))
+            for line in lines[:10]:
+                match = re.search(rb'HTTP/\d\.\d\s+(\d+)', line)
+                if match:
+                    return int(match.group(1))
             
             # Fallback: ищем первое число после HTTP/
-            parts = first_line.split(b' ')
-            if len(parts) >= 2:
-                try:
-                    return int(parts[1])
-                except ValueError:
-                    pass
+            for line in lines[:5]:
+                parts = line.split(b' ')
+                if len(parts) >= 2 and b'HTTP/' in parts[0]:
+                    try:
+                        return int(parts[1])
+                    except ValueError:
+                        pass
             
             return 0
         except Exception:
             return 0
     
-    def _generate_padding(self, size: int) -> bytes:
-        """Генерация случайного дополнения"""
-        return bytes([random.randint(0, 255) for _ in range(size)])
-    
+        
     async def cleanup(self) -> bool:
         """Очистка ресурсов"""
         if self.tcp_client:
