@@ -31,9 +31,7 @@ class HTTPFragmentationPipeline(BasePipeline):
     
     def __init__(self):
         super().__init__("HTTPFragmentation", BypassTechnique.SPOOF_DPI, priority=3)
-        self.fragment_size = 256
-        self.fragment_delay = 0.001
-        self.random_padding = True
+        self.config = FragmentationConfig()
         self.tcp_client = TCPClient(timeout=10.0)
         
     async def execute(self, request: BypassRequest) -> BypassResponse:
@@ -48,7 +46,7 @@ class HTTPFragmentationPipeline(BasePipeline):
             http_request = self._create_fragmented_request(request)
             
             # Разбиваем на фрагменты
-            fragments = self._fragment_data(http_request, self.fragment_size)
+            fragments = self._fragment_data(http_request, self.config.fragment_size)
             
             # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS)
             if request.port == 443:
@@ -66,16 +64,24 @@ class HTTPFragmentationPipeline(BasePipeline):
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 
                 await self.tcp_client.send_data(writer, fragment)
-                await asyncio.sleep(self.fragment_delay)
+                await asyncio.sleep(self.config.fragment_delay)
                 
-                # Добавляем padding как отдельный пакет, не в HTTP
-                if self.random_padding and i == len(fragments) - 1:
-                    padding = self._generate_padding(random.randint(1, 16))
-                    await self.tcp_client.send_data(writer, padding)
-                    await asyncio.sleep(0.001)
+                # Padding отключен - ломает HTTP протокол
+                # Для реальной packet fragmentation нужны raw sockets
+                # asyncio stream не даёт контроля над packet boundaries
             
-            # Получаем ответ
-            response_data = await self.tcp_client.receive_data(reader, 8192)
+            # Получаем ответ полностью (все чанки)
+            chunks = []
+            while True:
+                chunk = await asyncio.wait_for(
+                    self.tcp_client.receive_data(reader, 8192),
+                    timeout=30.0
+                )
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            
+            response_data = b''.join(chunks)
             
             response_time = time.time() - start_time
             
@@ -91,8 +97,9 @@ class HTTPFragmentationPipeline(BasePipeline):
                 data=response_data,
                 headers={
                     'X-Fragments': str(len(fragments)),
-                    'X-Fragment-Size': str(self.fragment_size),
-                    'X-Padding': str(self.random_padding)
+                    'X-Fragment-Size': str(self.config.fragment_size),
+                    'X-Fragment-Delay': str(self.config.fragment_delay),
+                    'X-Random-Padding': str(self.config.random_padding)
                 }
             )
             
@@ -113,12 +120,9 @@ class HTTPFragmentationPipeline(BasePipeline):
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Инициализация с конфигурацией"""
-        self.config = config
-        self.fragment_size = config.get('fragment_size', 256)
-        self.fragment_delay = config.get('fragment_delay', 0.001)
-        self.random_padding = config.get('random_padding', True)
+        self.config = FragmentationConfig(**config)
         
-        print(f"✅ HTTPFragmentation инициализирован: size={self.fragment_size}, padding={self.random_padding}")
+        logger.info(f"HTTPFragmentation initialized: size={self.config.fragment_size}, delay={self.config.fragment_delay}, padding={self.config.random_padding}")
         return True
     
     def _create_fragmented_request(self, request: BypassRequest) -> bytes:
