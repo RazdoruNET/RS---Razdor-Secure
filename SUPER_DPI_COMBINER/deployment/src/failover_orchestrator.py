@@ -70,6 +70,8 @@ class SmartFailoverOrchestrator:
         
         self.logger.info(f"SmartFailoverOrchestrator initialized: enabled={self.enabled}, max_attempts={self.max_mutation_attempts}")
         self.logger.info(f"SmartFailoverOrchestrator: DPI Sandbox Inspector enabled={self.dpi_inspector.enabled}")
+        
+        # Pre-seed стратегии из внешнего URL будет вызван позже
     
     async def create_session(self, domain: str) -> SessionContext:
         """
@@ -418,6 +420,62 @@ class SmartFailoverOrchestrator:
             'module_configs': strategy.module_configs
         }
     
+    async def _preseed_strategies(self):
+        """
+        Импорт стратегий из внешнего URL при старте
+        """
+        preseed_url = os.environ.get('STRATEGY_PRESEED_URL')
+        if not preseed_url:
+            self.logger.info("[ORCHESTRATOR] No preseed URL configured")
+            return
+        
+        try:
+            self.logger.info(f"[ORCHESTRATOR] Importing strategies from: {preseed_url}")
+            
+            # Создаем HTTP клиент
+            import aiohttp
+            timeout = aiohttp.ClientTimeout(total=30)
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(preseed_url) as response:
+                    if response.status != 200:
+                        self.logger.error(f"[ORCHESTRATOR] Failed to fetch preseed: HTTP {response.status}")
+                        return
+                    
+                    # Читаем JSON
+                    data = await response.json()
+                    
+                    # Импортируем стратегии
+                    imported_count = 0
+                    for domain, strategy_data in data.items():
+                        if isinstance(strategy_data, dict):
+                            # Создаем стратегию
+                            modules = strategy_data.get('pipeline_modules', [])
+                            configs = strategy_data.get('module_configs', {})
+                            
+                            strategy = self._config_to_strategy(domain, {
+                                'pipeline_modules': modules,
+                                'module_configs': configs
+                            })
+                            
+                            # Устанавливаем статус если указан
+                            if strategy_data.get('status') == 'STABLE':
+                                strategy.success_count = 1
+                                strategy.failure_count = 0
+                            
+                            self.domain_strategies[domain] = strategy
+                            imported_count += 1
+                    
+                    self.logger.info(f"[ORCHESTRATOR] Pre-seeded {imported_count} stable domain strategies from external URL")
+                    
+                    # Экспортируем матрицу
+                    await self.dpi_inspector.export_matrix_report()
+        
+        except ImportError:
+            self.logger.warning("[ORCHESTRATOR] aiohttp not available, skipping preseed")
+        except Exception as e:
+            self.logger.error(f"[ORCHESTRATOR] Preseed import failed: {e}")
+    
     def _config_to_strategy(self, domain: str, config: Dict[str, Any]) -> DomainStrategy:
         """Преобразование конфигурации в стратегию"""
         return DomainStrategy(
@@ -427,7 +485,7 @@ class SmartFailoverOrchestrator:
     
     async def get_domain_stats(self) -> Dict[str, Dict[str, Any]]:
         """
-        Получение статистики по доменам
+        Получить статистику по доменам
         
         Returns:
             Словарь со статистикой
@@ -435,12 +493,34 @@ class SmartFailoverOrchestrator:
         async with self.strategy_lock:
             stats = {}
             for domain, strategy in self.domain_strategies.items():
+                # Определяем статус домена
+                if strategy.is_passthrough:
+                    status = 'PASSTHROUGH'
+                elif strategy.success_count > 0 and strategy.failure_count == 0:
+                    status = 'STABLE'
+                elif strategy.failure_count > 0:
+                    status = 'UNSTABLE'
+                else:
+                    status = 'MUTATING'
+                
+                # Получаем последнюю причину сброса от DPI инспектора
+                last_drop_reason = None
+                for analysis in self.dpi_inspector.completed_connections.values():
+                    if analysis.domain == domain and analysis.drop_reason.value != 'unknown':
+                        last_drop_reason = analysis.drop_reason.value
+                        break
+                
                 stats[domain] = {
+                    'status': status,
                     'success_count': strategy.success_count,
                     'failure_count': strategy.failure_count,
+                    'successful_connections': strategy.success_count,
+                    'failed_connections': strategy.failure_count,
                     'last_success': strategy.last_success,
                     'last_failure': strategy.last_failure,
                     'is_passthrough': strategy.is_passthrough,
-                    'pipeline_modules': strategy.pipeline_modules
+                    'pipeline_modules': strategy.pipeline_modules,
+                    'module_configs': strategy.module_configs,
+                    'drop_reason': last_drop_reason
                 }
             return stats

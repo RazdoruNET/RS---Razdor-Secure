@@ -12,15 +12,17 @@ import logging
 import json
 import os
 import random
+import signal
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Import pipeline manager and orchestrator
+# Import pipeline manager, orchestrator and web GUI
 from pipeline_manager import PipelineManager
 from failover_orchestrator import SmartFailoverOrchestrator
+from web_gui import WebGuiServer
 
 class SOCKS5Daemon:
     """Универсальный SOCKS5 прокси с wire fragmentation"""
@@ -358,25 +360,40 @@ class SOCKS5Daemon:
         
         return 0
 
-def main():
-    """Точка входа"""
-    daemon = SOCKS5Daemon()
-    
-    # Устанавливаем обработчики сигналов
-    import signal
-    signal.signal(signal.SIGTERM, daemon.signal_handler)
-    signal.signal(signal.SIGINT, daemon.signal_handler)
-    
+async def main():
+    """Основная функция запуска"""
     try:
-        # Запускаем сервер
-        return asyncio.run(daemon.run())
+        # Создаем и настраиваем SOCKS5 daemon
+        daemon = SOCKS5Daemon()
+        
+        # Создаем Web GUI сервер
+        web_gui = WebGuiServer(daemon.orchestrator)
+        
+        # Pre-seed стратегии из внешнего URL
+        await daemon.orchestrator._preseed_strategies()
+        
+        # Устанавливаем обработчики сигналов
+        def signal_handler(signum, frame):
+            logging.info(f"Received signal {signum}, shutting down...")
+            daemon.running = False
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # Запускаем оба сервера параллельно
+        await asyncio.gather(
+            daemon.start_server(),
+            web_gui.start(),
+            return_exceptions=True
+        )
+        
     except KeyboardInterrupt:
-        daemon.logger.info("Received interrupt, shutting down...")
+        logging.info("Received keyboard interrupt, shutting down...")
     except Exception as e:
-        daemon.logger.error(f"Daemon failed: {e}")
-        return 1
+        logging.error(f"Daemon startup failed: {e}")
+        sys.exit(1)
     
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

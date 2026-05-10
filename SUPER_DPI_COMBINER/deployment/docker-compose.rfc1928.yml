@@ -10,7 +10,8 @@ services:
     
     # Стандартный проброс портов (без host networking)
     ports:
-      - "1080:1080"
+      - "1080:1080"  # SOCKS5 Порт
+      - "8080:8080"  # Web GUI Порт
     
     # Переменные окружения для конфигурации
     environment:
@@ -23,6 +24,10 @@ services:
       # DPI Sandbox Inspector settings
       - DPI_SANDBOX_INSPECTION=true
       - MATRIX_EXPORT_PATH=/app/logs/matrix_report.json
+      # Web GUI settings
+      - WEB_GUI_ENABLED=true
+      - WEB_GUI_PORT=8080
+      - STRATEGY_PRESEED_URL=githubusercontent.com
       # Настройки для модуля fake_packet
       - FAKE_PACKET_BYTES=0x160301000500000000
       # Настройки для модуля jitter_fragmentation (breaking parameters)
