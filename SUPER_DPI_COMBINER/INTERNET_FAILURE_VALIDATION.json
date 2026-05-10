@@ -1,0 +1,60 @@
+{
+  "timestamp": 1778430034.414746,
+  "target": "httpbin.org:80",
+  "total_tests": 5,
+  "failure_results": [
+    {
+      "failure_type": "dns_failure",
+      "host": "httpbin.org",
+      "success": false,
+      "status_code": 0,
+      "error": "HTTP Fragmentation error: [Errno 8] nodename nor servname provided, or not known",
+      "latency": 0.0847160816192627,
+      "timestamp": 1778430023.8172622
+    },
+    {
+      "failure_type": "timeout_failure",
+      "host": "httpbin.org",
+      "success": false,
+      "status_code": 0,
+      "error": "HTTP Fragmentation error: timed out",
+      "latency": 0.07789421081542969,
+      "timestamp": 1778430023.895249
+    },
+    {
+      "failure_type": "connection_refused",
+      "host": "httpbin.org",
+      "success": false,
+      "status_code": 0,
+      "error": "HTTP Fragmentation error: timed out",
+      "latency": 10.00159215927124,
+      "timestamp": 1778430033.896918
+    },
+    {
+      "failure_type": "partial_recv",
+      "host": "httpbin.org",
+      "success": false,
+      "status_code": 0,
+      "error": "partial_recv_timeout",
+      "latency": 0.16879582405090332,
+      "bytes_received": 0,
+      "timestamp": 1778430034.065804
+    },
+    {
+      "failure_type": "remote_close",
+      "host": "httpbin.org",
+      "success": true,
+      "status_code": 0,
+      "error": "connection_closed_by_remote",
+      "latency": 0.3487119674682617,
+      "bytes_received": 428,
+      "timestamp": 1778430034.414609
+    }
+  ],
+  "dns_failures": 1,
+  "timeout_failures": 1,
+  "refused_failures": 1,
+  "partial_recv_failures": 1,
+  "failure_types_detected": true,
+  "validation_success": true
+}

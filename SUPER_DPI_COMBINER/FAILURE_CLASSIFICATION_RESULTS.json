@@ -1,0 +1,77 @@
+{
+  "timestamp": 1778429560.648449,
+  "test_results": [
+    {
+      "failure_type": "dns_failure",
+      "exception_type": "gaierror",
+      "error_message": "nodename nor servname provided, or not known",
+      "timestamp": 1778429560.648254,
+      "context": {
+        "operation": "dns_lookup"
+      }
+    },
+    {
+      "failure_type": "connection_refused",
+      "exception_type": "ConnectionRefusedError",
+      "error_message": "Connection refused",
+      "timestamp": 1778429560.648288,
+      "context": {
+        "operation": "connect"
+      }
+    },
+    {
+      "failure_type": "timeout_failure",
+      "exception_type": "TimeoutError",
+      "error_message": "Operation timed out",
+      "timestamp": 1778429560.648319,
+      "context": {
+        "operation": "recv",
+        "timeout": 10.0
+      }
+    },
+    {
+      "failure_type": "partial_send_failure",
+      "exception_type": "ConnectionResetError",
+      "error_message": "Connection reset by peer",
+      "timestamp": 1778429560.648344,
+      "context": {
+        "operation": "send"
+      }
+    },
+    {
+      "failure_type": "unknown_failure",
+      "exception_type": "ValueError",
+      "error_message": "Some unknown error",
+      "timestamp": 1778429560.6483688,
+      "context": {
+        "operation": "unknown"
+      }
+    }
+  ],
+  "statistics": {
+    "total_classifications": 5,
+    "failure_type_counts": {
+      "dns_failure": 1,
+      "connection_refused": 1,
+      "timeout_failure": 1,
+      "partial_send_failure": 1,
+      "unknown_failure": 1
+    },
+    "exception_type_counts": {
+      "gaierror": 1,
+      "ConnectionRefusedError": 1,
+      "TimeoutError": 1,
+      "ConnectionResetError": 1,
+      "ValueError": 1
+    },
+    "most_common_failure": [
+      "dns_failure",
+      1
+    ],
+    "most_common_exception": [
+      "gaierror",
+      1
+    ],
+    "classification_rate": 100.0
+  }
+}

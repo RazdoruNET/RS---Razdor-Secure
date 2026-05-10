@@ -1,0 +1,571 @@
+{
+  "timestamp": 1778429770.0843148,
+  "total_targets": 10,
+  "successful_targets": 1,
+  "failed_targets": 6,
+  "success_rate": 10.0,
+  "target_audits": [
+    {
+      "target": "example.com:80",
+      "results": [
+        {
+          "host": "example.com",
+          "dns_success": true,
+          "dns_ms": 88.93895149230957,
+          "resolved_ips": [
+            "104.20.23.154",
+            "172.66.147.243"
+          ],
+          "timestamp": 1778429730.145329
+        },
+        {
+          "host": "example.com",
+          "port": 80,
+          "connect_success": true,
+          "connect_ms": 53.33089828491211,
+          "timestamp": 1778429730.19881
+        },
+        {
+          "host": "example.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 404,
+          "dns_ms": -1,
+          "connect_ms": 52.491188049316406,
+          "send_ms": 1.210927963256836,
+          "recv_ms": 57.28507041931152,
+          "response_ms": 111.08088493347168,
+          "bytes_sent": 59,
+          "bytes_received": 758,
+          "fragment_count": 1,
+          "timestamp": 1778429730.3101041,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "example.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 404,
+          "dns_ms": -1,
+          "connect_ms": 71.14124298095703,
+          "send_ms": 2.443075180053711,
+          "recv_ms": 122.05314636230469,
+          "response_ms": 195.71805000305176,
+          "bytes_sent": 59,
+          "bytes_received": 758,
+          "fragment_count": 2,
+          "timestamp": 1778429730.5061262,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "example.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 404,
+          "dns_ms": -1,
+          "connect_ms": 83.27388763427734,
+          "send_ms": 7.568836212158203,
+          "recv_ms": 113.23690414428711,
+          "response_ms": 204.15306091308594,
+          "bytes_sent": 59,
+          "bytes_received": 758,
+          "fragment_count": 6,
+          "timestamp": 1778429730.710689,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "httpbin.org:80",
+      "results": [
+        {
+          "host": "httpbin.org",
+          "dns_success": true,
+          "dns_ms": 85.25490760803223,
+          "resolved_ips": [
+            "52.73.30.72",
+            "34.197.4.100",
+            "98.89.252.12",
+            "54.211.60.7",
+            "107.23.218.37",
+            "44.199.179.5",
+            "100.52.121.211",
+            "52.23.23.127"
+          ],
+          "timestamp": 1778429730.7962089
+        },
+        {
+          "host": "httpbin.org",
+          "port": 80,
+          "connect_success": true,
+          "connect_ms": 135.483980178833,
+          "timestamp": 1778429730.931898
+        },
+        {
+          "host": "httpbin.org",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": true,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 149.85322952270508,
+          "send_ms": 1.3556480407714844,
+          "recv_ms": 148.31304550170898,
+          "response_ms": 299.5941638946533,
+          "bytes_sent": 59,
+          "bytes_received": 423,
+          "fragment_count": 1,
+          "timestamp": 1778429731.23165,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "httpbin.org",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": true,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 132.02381134033203,
+          "send_ms": 2.398967742919922,
+          "recv_ms": 265.4118537902832,
+          "response_ms": 399.94287490844727,
+          "bytes_sent": 59,
+          "bytes_received": 423,
+          "fragment_count": 2,
+          "timestamp": 1778429731.631808,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "httpbin.org",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": true,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 149.60575103759766,
+          "send_ms": 7.517099380493164,
+          "recv_ms": 292.4609184265137,
+          "response_ms": 449.64098930358887,
+          "bytes_sent": 59,
+          "bytes_received": 423,
+          "fragment_count": 6,
+          "timestamp": 1778429732.081634,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "neverssl.com:80",
+      "results": [
+        {
+          "host": "neverssl.com",
+          "dns_success": true,
+          "dns_ms": 61.49792671203613,
+          "resolved_ips": [
+            "34.223.124.45"
+          ],
+          "timestamp": 1778429732.143254
+        },
+        {
+          "host": "neverssl.com",
+          "port": 80,
+          "connect_success": false,
+          "connect_ms": -1,
+          "error": "timed out",
+          "timestamp": 1778429742.145153
+        },
+        {
+          "host": "neverssl.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 0,
+          "dns_ms": -1,
+          "connect_ms": -1,
+          "send_ms": -1,
+          "recv_ms": -1,
+          "response_ms": -1,
+          "bytes_sent": 0,
+          "bytes_received": 0,
+          "fragment_count": 0,
+          "error": "timed out",
+          "timestamp": 1778429752.147668,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "neverssl.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 403,
+          "dns_ms": -1,
+          "connect_ms": 2194.4758892059326,
+          "send_ms": 2.270936965942383,
+          "recv_ms": 1648.0188369750977,
+          "response_ms": 3844.8269367218018,
+          "bytes_sent": 60,
+          "bytes_received": 413,
+          "fragment_count": 2,
+          "timestamp": 1778429755.9929202,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "neverssl.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 0,
+          "dns_ms": -1,
+          "connect_ms": -1,
+          "send_ms": -1,
+          "recv_ms": -1,
+          "response_ms": -1,
+          "bytes_sent": 0,
+          "bytes_received": 0,
+          "fragment_count": 0,
+          "error": "timed out",
+          "timestamp": 1778429765.99487,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "example.org:443",
+      "results": [
+        {
+          "host": "example.org",
+          "dns_success": true,
+          "dns_ms": 163.86103630065918,
+          "resolved_ips": [
+            "104.20.26.136",
+            "172.66.157.237"
+          ],
+          "timestamp": 1778429766.158983
+        },
+        {
+          "host": "example.org",
+          "port": 443,
+          "connect_success": true,
+          "connect_ms": 174.52383041381836,
+          "timestamp": 1778429766.333771
+        },
+        {
+          "host": "example.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 99.56765174865723,
+          "send_ms": 1.0859966278076172,
+          "recv_ms": 227.52904891967773,
+          "response_ms": 328.28688621520996,
+          "bytes_sent": 59,
+          "bytes_received": 414,
+          "fragment_count": 1,
+          "timestamp": 1778429766.6623218,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "example.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 203.12976837158203,
+          "send_ms": 2.5620460510253906,
+          "recv_ms": 319.28396224975586,
+          "response_ms": 525.0413417816162,
+          "bytes_sent": 59,
+          "bytes_received": 414,
+          "fragment_count": 2,
+          "timestamp": 1778429767.187683,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "example.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 99.67899322509766,
+          "send_ms": 7.04503059387207,
+          "recv_ms": 168.88999938964844,
+          "response_ms": 275.6948471069336,
+          "bytes_sent": 59,
+          "bytes_received": 414,
+          "fragment_count": 6,
+          "timestamp": 1778429767.4636538,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "httpbingo.org:443",
+      "results": [
+        {
+          "host": "httpbingo.org",
+          "dns_success": true,
+          "dns_ms": 220.95084190368652,
+          "resolved_ips": [
+            "66.241.125.232"
+          ],
+          "timestamp": 1778429767.684886
+        },
+        {
+          "host": "httpbingo.org",
+          "port": 443,
+          "connect_success": true,
+          "connect_ms": 129.79483604431152,
+          "timestamp": 1778429767.814965
+        },
+        {
+          "host": "httpbingo.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 119.171142578125,
+          "send_ms": 1.3430118560791016,
+          "recv_ms": 116.94812774658203,
+          "response_ms": 237.52689361572266,
+          "bytes_sent": 61,
+          "bytes_received": 0,
+          "fragment_count": 1,
+          "timestamp": 1778429768.0526981,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "httpbingo.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 52.323102951049805,
+          "send_ms": 2.3910999298095703,
+          "recv_ms": 124.90391731262207,
+          "response_ms": 179.69298362731934,
+          "bytes_sent": 61,
+          "bytes_received": 0,
+          "fragment_count": 2,
+          "timestamp": 1778429768.2326741,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "httpbingo.org",
+          "port": 443,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 59.844255447387695,
+          "send_ms": 7.871866226196289,
+          "recv_ms": 85.08896827697754,
+          "response_ms": 152.86803245544434,
+          "bytes_sent": 61,
+          "bytes_received": 0,
+          "fragment_count": 7,
+          "timestamp": 1778429768.385736,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "cloudflare.com:80",
+      "results": [
+        {
+          "host": "cloudflare.com",
+          "dns_success": true,
+          "dns_ms": 60.42218208312988,
+          "resolved_ips": [
+            "104.16.133.229",
+            "104.16.132.229"
+          ],
+          "timestamp": 1778429768.4463732
+        },
+        {
+          "host": "cloudflare.com",
+          "port": 80,
+          "connect_success": true,
+          "connect_ms": 56.68830871582031,
+          "timestamp": 1778429768.503275
+        },
+        {
+          "host": "cloudflare.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 53.83801460266113,
+          "send_ms": 1.112222671508789,
+          "recv_ms": 74.4776725769043,
+          "response_ms": 129.49705123901367,
+          "bytes_sent": 62,
+          "bytes_received": 1088,
+          "fragment_count": 1,
+          "timestamp": 1778429768.63296,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "cloudflare.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 55.67193031311035,
+          "send_ms": 2.407073974609375,
+          "recv_ms": 118.71170997619629,
+          "response_ms": 176.86986923217773,
+          "bytes_sent": 62,
+          "bytes_received": 1080,
+          "fragment_count": 2,
+          "timestamp": 1778429768.810146,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "cloudflare.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 72.06916809082031,
+          "send_ms": 8.751869201660156,
+          "recv_ms": 192.21901893615723,
+          "response_ms": 273.16927909851074,
+          "bytes_sent": 62,
+          "bytes_received": 1080,
+          "fragment_count": 7,
+          "timestamp": 1778429769.083797,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    },
+    {
+      "target": "fastly.com:80",
+      "results": [
+        {
+          "host": "fastly.com",
+          "dns_success": true,
+          "dns_ms": 204.97822761535645,
+          "resolved_ips": [
+            "151.101.193.57",
+            "151.101.65.57",
+            "151.101.1.57",
+            "151.101.129.57"
+          ],
+          "timestamp": 1778429769.289259
+        },
+        {
+          "host": "fastly.com",
+          "port": 80,
+          "connect_success": true,
+          "connect_ms": 143.84889602661133,
+          "timestamp": 1778429769.433334
+        },
+        {
+          "host": "fastly.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 1000,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 105.66186904907227,
+          "send_ms": 1.2459754943847656,
+          "recv_ms": 53.720951080322266,
+          "response_ms": 160.7048511505127,
+          "bytes_sent": 58,
+          "bytes_received": 323,
+          "fragment_count": 1,
+          "timestamp": 1778429769.5942469,
+          "scenario": "normal_request",
+          "scenario_description": "Normal HTTP request without fragmentation"
+        },
+        {
+          "host": "fastly.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 50,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 91.86983108520508,
+          "send_ms": 2.4399757385253906,
+          "recv_ms": 163.21301460266113,
+          "response_ms": 257.6000690460205,
+          "bytes_sent": 58,
+          "bytes_received": 321,
+          "fragment_count": 2,
+          "timestamp": 1778429769.8520901,
+          "scenario": "fragmented_request",
+          "scenario_description": "Fragmented HTTP request with small chunks"
+        },
+        {
+          "host": "fastly.com",
+          "port": 80,
+          "path": "/get",
+          "chunk_size": 10,
+          "http_success": false,
+          "status_code": 200,
+          "dns_ms": -1,
+          "connect_ms": 80.64913749694824,
+          "send_ms": 7.306814193725586,
+          "recv_ms": 143.5999870300293,
+          "response_ms": 231.62317276000977,
+          "bytes_sent": 58,
+          "bytes_received": 321,
+          "fragment_count": 6,
+          "timestamp": 1778429770.083987,
+          "scenario": "minimal_fragmentation",
+          "scenario_description": "Minimal chunk size for maximum fragmentation"
+        }
+      ]
+    }
+  ]
+}

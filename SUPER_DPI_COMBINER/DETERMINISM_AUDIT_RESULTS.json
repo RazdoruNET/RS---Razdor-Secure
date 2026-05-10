@@ -1,0 +1,60 @@
+{
+  "timestamp": 1778429501.321142,
+  "echo_analysis": {
+    "test_name": "Echo",
+    "iterations": 10,
+    "successful_requests": 10,
+    "failed_requests": 0,
+    "latency_stats": {
+      "mean": 0.0011853694915771485,
+      "median": 0.0011996030807495117,
+      "stdev": 9.535827857704182e-05,
+      "min": 0.0010378360748291016,
+      "max": 0.0013041496276855469,
+      "variance": 9.093201293176713e-09
+    },
+    "data_size_stats": {
+      "mean": 24,
+      "median": 24.0,
+      "stdev": 0.0,
+      "min": 24,
+      "max": 24,
+      "variance": 0
+    },
+    "fragment_stats": {},
+    "determinism_score": 99.9999909067987
+  },
+  "http_fragmentation_analysis": {
+    "test_name": "HTTPFragmentation",
+    "iterations": 10,
+    "successful_requests": 10,
+    "failed_requests": 0,
+    "latency_stats": {
+      "mean": 0.011029219627380371,
+      "median": 0.0018159151077270508,
+      "stdev": 0.0291660361379609,
+      "min": 0.0015082359313964844,
+      "max": 0.09403610229492188,
+      "variance": 0.0008506576640008411
+    },
+    "data_size_stats": {
+      "mean": 97,
+      "median": 97.0,
+      "stdev": 0.0,
+      "min": 97,
+      "max": 97,
+      "variance": 0
+    },
+    "fragment_stats": {
+      "mean_fragment_count": 2,
+      "stdev_fragment_count": 0.0,
+      "mean_fragment_size": 59,
+      "stdev_fragment_size": 0.0,
+      "mean_inter_delay": 0.001,
+      "stdev_inter_delay": 0.0
+    },
+    "determinism_score": 99.14934233599917
+  },
+  "overall_determinism_score": 99.57466662139893,
+  "determinism_level": "HIGHLY_DETERMINISTIC"
+}

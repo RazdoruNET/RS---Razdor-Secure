@@ -1,0 +1,48 @@
+{
+  "total_targets": 10,
+  "valid_targets": 10,
+  "invalid_targets": 0,
+  "valid_target_list": [
+    [
+      "example.com",
+      80
+    ],
+    [
+      "httpbin.org",
+      80
+    ],
+    [
+      "neverssl.com",
+      80
+    ],
+    [
+      "example.org",
+      443
+    ],
+    [
+      "httpbingo.org",
+      443
+    ],
+    [
+      "cloudflare.com",
+      80
+    ],
+    [
+      "fastly.com",
+      80
+    ],
+    [
+      "dns.google",
+      53
+    ],
+    [
+      "8.8.8.8",
+      53
+    ],
+    [
+      "1.1.1.1",
+      53
+    ]
+  ],
+  "invalid_target_list": []
+}

@@ -1,0 +1,60 @@
+{
+  "timestamp": 1778430187.11938,
+  "target": "httpbin.org:80",
+  "normal_mode": {
+    "mode": "normal",
+    "target": "httpbin.org:80",
+    "iterations": 20,
+    "successful": 20,
+    "failed": 0,
+    "success_rate": 100.0,
+    "latency_stats": {
+      "min": 0.2566099166870117,
+      "max": 0.5403249263763428,
+      "avg": 0.3306796669960022,
+      "median": 0.2964484691619873,
+      "p95": 0.5403249263763428,
+      "p99": 0.5403249263763428
+    },
+    "response_size_stats": {
+      "min": 423,
+      "max": 423,
+      "avg": 423
+    }
+  },
+  "fragmented_mode": {
+    "mode": "fragmented",
+    "target": "httpbin.org:80",
+    "iterations": 20,
+    "successful": 20,
+    "failed": 0,
+    "success_rate": 100.0,
+    "latency_stats": {
+      "min": 0.39987826347351074,
+      "max": 1.0138838291168213,
+      "avg": 0.5096230030059814,
+      "median": 0.4589369297027588,
+      "p95": 1.0138838291168213,
+      "p99": 1.0138838291168213
+    },
+    "response_size_stats": {
+      "min": 423,
+      "max": 423,
+      "avg": 423
+    }
+  },
+  "comparison": {
+    "success_rate_diff": 0.0,
+    "latency_comparison": {
+      "avg_diff": 0.1789433360099792,
+      "p95_diff": 0.4735589027404785,
+      "avg_ratio": 1.541138007170373,
+      "p95_ratio": 1.8764335673284098
+    },
+    "response_size_comparison": {
+      "avg_diff": 0,
+      "avg_ratio": 1.0
+    },
+    "winner": "FRAGMENTED (slower but working)"
+  }
+}

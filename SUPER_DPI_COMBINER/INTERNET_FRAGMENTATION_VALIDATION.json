@@ -1,0 +1,69 @@
+{
+  "timestamp": 1778429978.076649,
+  "target": "httpbin.org:80",
+  "scenarios": [
+    {
+      "target": "httpbin.org:80",
+      "scenario": "normal_request",
+      "chunk_size": 1000,
+      "success": true,
+      "status_code": 200,
+      "latency": 0.29485416412353516,
+      "response_size": 423,
+      "fragment_count": 1,
+      "fragmented_sent": false,
+      "remote_responsive": true,
+      "reconstruction_successful": true,
+      "fragmentation_evidence": {
+        "multiple_fragments": false,
+        "different_chunk_sizes": false,
+        "inter_chunk_delay": false,
+        "remote_reconstruction": true
+      },
+      "timestamp": 1778429975.673632
+    },
+    {
+      "target": "httpbin.org:80",
+      "scenario": "fragmented_request",
+      "chunk_size": 50,
+      "success": true,
+      "status_code": 200,
+      "latency": 0.44921398162841797,
+      "response_size": 423,
+      "fragment_count": 2,
+      "fragmented_sent": true,
+      "remote_responsive": true,
+      "reconstruction_successful": true,
+      "fragmentation_evidence": {
+        "multiple_fragments": true,
+        "different_chunk_sizes": true,
+        "inter_chunk_delay": true,
+        "remote_reconstruction": true
+      },
+      "timestamp": 1778429976.6229582
+    },
+    {
+      "target": "httpbin.org:80",
+      "scenario": "minimal_fragmentation",
+      "chunk_size": 10,
+      "success": true,
+      "status_code": 200,
+      "latency": 0.4447941780090332,
+      "response_size": 423,
+      "fragment_count": 2,
+      "fragmented_sent": true,
+      "remote_responsive": true,
+      "reconstruction_successful": true,
+      "fragmentation_evidence": {
+        "multiple_fragments": true,
+        "different_chunk_sizes": true,
+        "inter_chunk_delay": true,
+        "remote_reconstruction": true
+      },
+      "timestamp": 1778429977.572426
+    }
+  ],
+  "successful_validations": 3,
+  "fragmentation_validations": 2,
+  "validation_success": true
+}

@@ -1,0 +1,32 @@
+{
+  "fragmentation_analysis": {
+    "fragment_count": 2,
+    "fragment_sizes": [
+      50,
+      9
+    ],
+    "unique_sizes": 2,
+    "total_bytes": 59,
+    "avg_fragment_size": 29.5,
+    "avg_inter_delay": 0.0012450218200683594,
+    "fragmentation_detected": true
+  },
+  "replay_result": {
+    "success": true,
+    "status_code": 200,
+    "latency": 0.0014219284057617188,
+    "request_size": 39,
+    "response_size": 97,
+    "fragment_count": 1,
+    "target": "127.0.0.1:8080"
+  },
+  "comparison": {
+    "original_success": true,
+    "replay_success": true,
+    "original_status_code": 200,
+    "replay_status_code": 200,
+    "latency_diff": 0.00042192840576171873,
+    "structure_match": true
+  },
+  "timestamp": 1778429377.440372
+}
