@@ -7,6 +7,7 @@ import time
 import random
 import socket
 import logging
+import re
 from typing import Dict, Any
 from dataclasses import dataclass
 
@@ -140,7 +141,7 @@ class HTTPFragmentationPipeline(BasePipeline):
                 fragment_size=config.get('fragment_size', 256),
                 fragment_delay=config.get('fragment_delay', 0.001),
                 random_padding=config.get('random_padding', False),
-                fragment_mode=FragmentMode(config.get('fragment_mode', 'fixed')),
+                fragment_mode=FragmentMode[config.get('fragment_mode', 'FIXED').upper()],
                 jitter_range=config.get('jitter_range', (0.8, 1.2))
             )
         except Exception as e:
