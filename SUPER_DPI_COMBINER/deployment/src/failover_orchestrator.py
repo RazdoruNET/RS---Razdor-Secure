@@ -10,6 +10,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from enum import Enum
+from dpi_sandbox_inspector import DpiSandboxInspector, ConnectionDropReason
 
 class SessionStatus(Enum):
     """Статус сессии"""
@@ -61,10 +62,14 @@ class SmartFailoverOrchestrator:
         self.active_sessions: Dict[str, SessionContext] = {}
         self.session_lock = asyncio.Lock()
         
+        # DPI Sandbox Inspector
+        self.dpi_inspector = DpiSandboxInspector()
+        
         # Базовая конфигурация для мутаций
         self.base_pipeline = os.environ.get('PIPELINE_ORDER', 'fake_packet,jitter_fragmentation').split(',')
         
         self.logger.info(f"SmartFailoverOrchestrator initialized: enabled={self.enabled}, max_attempts={self.max_mutation_attempts}")
+        self.logger.info(f"SmartFailoverOrchestrator: DPI Sandbox Inspector enabled={self.dpi_inspector.enabled}")
     
     async def create_session(self, domain: str) -> SessionContext:
         """
@@ -84,6 +89,9 @@ class SmartFailoverOrchestrator:
                 start_time=time.time(),
                 pipeline_config=self._get_base_config()
             )
+        
+        # Начинаем анализ соединения через DPI инспектор
+        connection_id = self.dpi_inspector.start_connection_analysis(domain)
         
         async with self.strategy_lock:
             # Проверяем, есть ли кэшированная стратегия для домена
@@ -131,6 +139,9 @@ class SmartFailoverOrchestrator:
         
         session.status = SessionStatus.SUCCESS
         
+        # Завершаем анализ соединения в DPI инспекторе
+        analysis = self.dpi_inspector.finalize_connection_analysis(session.session_id)
+        
         async with self.strategy_lock:
             if session.domain not in self.domain_strategies:
                 # Создаем новую стратегию на основе успешной сессии
@@ -145,9 +156,12 @@ class SmartFailoverOrchestrator:
             if strategy.is_passthrough:
                 strategy.is_passthrough = False
                 strategy.passthrough_until = None
-                self.logger.info(f"[ORCHESTRATOR] Domain {domain} restored from passthrough mode")
+                self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} restored from passthrough mode")
             
             self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} marked as STABLE with pipeline {strategy.pipeline_modules}")
+        
+        # Экспортируем матрицу стратегий
+        await self.dpi_inspector.export_matrix_report()
     
     async def report_failure(self, domain: str, pipeline_config: Dict[str, Any], error_type: str):
         """
@@ -173,12 +187,15 @@ class SmartFailoverOrchestrator:
             strategy.failure_count += 1
             strategy.last_failure = time.time()
             
-            # Генерируем новую стратегию
-            new_strategy = await self._mutate_strategy(domain, strategy.failure_count)
+            # Генерируем новую стратегию с учетом DPI анализа
+            new_strategy = await self._mutate_strategy_with_dpi_analysis(domain, strategy.failure_count, error_type)
             self.domain_strategies[domain] = new_strategy
             
             modules_str = ", ".join(new_strategy.pipeline_modules)
             self.logger.info(f"[ORCHESTRATOR] New strategy generated for {domain}: [{modules_str}]")
+        
+        # Экспортируем матрицу стратегий
+        await self.dpi_inspector.export_matrix_report()
     
     async def _generate_strategy_for_domain(self, domain: str) -> DomainStrategy:
         """
@@ -192,6 +209,92 @@ class SmartFailoverOrchestrator:
         """
         # Для начала используем базовую конфигурацию
         return self._config_to_strategy(domain, self._get_base_config())
+    
+    async def _mutate_strategy_with_dpi_analysis(self, domain: str, failure_count: int, error_type: str) -> DomainStrategy:
+        """
+        Мутация стратегии с учетом DPI анализа
+        
+        Args:
+            domain: Целевой домен
+            failure_count: Количество неудач
+            error_type: Тип ошибки
+            
+        Returns:
+            Мутированная стратегия
+        """
+        # Получаем последнюю информацию от DPI инспектора
+        last_analysis = None
+        for analysis in self.dpi_inspector.completed_connections.values():
+            if analysis.domain == domain:
+                last_analysis = analysis
+                break
+        
+        if failure_count >= self.max_mutation_attempts:
+            # Fallback: переводим в passthrough режим
+            self.logger.warning(f"[ORCHESTRATOR] Max mutations reached for {domain}. Switching to passthrough for 5 minutes")
+            return DomainStrategy(
+                pipeline_modules=[],
+                module_configs={},
+                is_passthrough=True,
+                passthrough_until=time.time() + self.passthrough_duration
+            )
+        
+        # Интеллектуальная мутация на основе DPI анализа
+        if last_analysis and not last_analysis.server_hello_received:
+            # DPI Request Drop - приоритет на FakePacket и Jitter
+            self.logger.info(f"[ORCHESTRATOR] DPI Request Drop detected for {domain}. Prioritizing FakePacket/Jitter")
+            
+            if failure_count == 1:
+                # Сбой 1: Увеличить размер fake packet
+                modules = ['fake_packet', 'jitter_fragmentation']
+                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 1: Enhanced fake packet + jitter")
+            
+            elif failure_count == 2:
+                # Сбой 2: Добавить TLS Chameleon для SNI splitting
+                modules = ['tls_chameleon', 'jitter_fragmentation']
+                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 2: TLS Chameleon SNI splitting + jitter")
+            
+            elif failure_count == 3:
+                # Сбой 3: Агрессивная фрагментация
+                modules = ['jitter_fragmentation']
+                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 3: Aggressive jitter only")
+            
+            else:
+                modules = []
+        
+        elif last_analysis and last_analysis.server_hello_received:
+            # DPI Deep Inspect Drop - приоритет на SNI модификацию
+            self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop detected for {domain}. Prioritizing SNI modification")
+            
+            if failure_count == 1:
+                # Сбой 1: SNI case modifier
+                modules = ['sni_modifier', 'jitter_fragmentation']
+                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 1: SNI case modifier + jitter")
+            
+            elif failure_count == 2:
+                # Сбой 2: TLS Chameleon + SNI modifier
+                modules = ['tls_chameleon', 'sni_modifier']
+                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 2: TLS Chameleon + SNI modifier")
+            
+            elif failure_count == 3:
+                # Сбой 3: Все техники вместе
+                modules = ['tls_chameleon', 'sni_modifier', 'jitter_fragmentation']
+                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 3: All techniques combined")
+            
+            else:
+                modules = []
+        
+        else:
+            # Fallback к базовой мутации
+            return await self._mutate_strategy(domain, failure_count)
+        
+        # Генерируем конфигурацию для мутированных модулей
+        module_configs = self._generate_mutation_configs(modules, failure_count)
+        
+        return DomainStrategy(
+            pipeline_modules=modules,
+            module_configs=module_configs
+        )
     
     async def _mutate_strategy(self, domain: str, failure_count: int) -> DomainStrategy:
         """
@@ -284,6 +387,12 @@ class SmartFailoverOrchestrator:
             elif module == 'sni_modifier':
                 configs[module] = {
                     'CASE_MODIFY_PROBABILITY': os.environ.get('CASE_MODIFY_PROBABILITY', '0.7'),
+                }
+            
+            elif module == 'tls_chameleon':
+                configs[module] = {
+                    'SNI_SPLITTING_ENABLED': 'true',
+                    'MIN_PACKET_SIZE': os.environ.get('MIN_PACKET_SIZE', '100'),
                 }
         
         return configs

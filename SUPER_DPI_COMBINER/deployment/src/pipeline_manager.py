@@ -29,6 +29,7 @@ class PipelineManager:
             'jitter_fragmentation': 'modules.jitter_fragmentation.JitterFragmentationModule',
             'fake_packet': 'modules.fake_packet.FakePacketModule', 
             'sni_modifier': 'modules.sni_case_modifier.SniCaseModifierModule',
+            'tls_chameleon': 'modules.tls_chameleon.TlsChameleonModule',
         }
         
         self.logger.info("PipelineManager initialized")
