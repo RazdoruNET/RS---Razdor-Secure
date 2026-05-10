@@ -10,9 +10,9 @@ from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass
 import logging
 
-from .storage import get_truth_storage, create_execution_result, ExecutionResult, TruthStorage
-from .instrumentation import get_io_monitor
-from .pipeline_wrapper import ExecutionTrace, ExecutionStatus, IOValidationResult
+from core.truth.storage import get_truth_storage, create_execution_result, ExecutionResult, TruthStorage
+from core.truth.instrumentation import get_io_monitor
+from core.truth.pipeline_wrapper import ExecutionTrace, ExecutionStatus, IOValidationResult
 
 class TruthStorageInterface:
     """Интерфейс для интеграции хранилища с pipeline wrapper"""

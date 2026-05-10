@@ -14,11 +14,8 @@ from enum import Enum
 import sys
 import os
 
-# Add parent directory to path for logger import
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import get_tracer
-from .network_reality_verifier import NetworkRealityVerifier, NetworkOperation
-from .simulation_detector import get_simulation_detector
+from core.network_reality_verifier import NetworkRealityVerifier, NetworkOperation
 
 class PipelineStatus(Enum):
     """Статусы пайплайна"""
@@ -107,7 +104,8 @@ class BasePipeline(abc.ABC):
         # TASK 8.3 - Network Reality Verifier
         self.network_verifier = NetworkRealityVerifier()
         
-        # TASK 8.4 - Simulation Detector
+        # TASK 8.4 - Simulation Detector (lazy import to avoid circular dependency)
+        from core.simulation_detector import get_simulation_detector
         self.simulation_detector = get_simulation_detector()
         
     @abc.abstractmethod

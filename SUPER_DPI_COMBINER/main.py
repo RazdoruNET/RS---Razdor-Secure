@@ -14,9 +14,6 @@ import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-# Добавляем путь к модулям
-sys.path.insert(0, str(Path(__file__).parent))
-
 from core.pipeline_manager import PipelineManager
 from core.multi_thread_engine import MultiThreadEngine, EngineMode
 from core.llm_integration import LLMIntegration

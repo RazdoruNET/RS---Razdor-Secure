@@ -14,12 +14,8 @@ from typing import Dict, List, Optional, Type, Any
 from pathlib import Path
 import json
 
-from .base_pipeline import BasePipeline, BypassTechnique, PipelineStatus
+from core.base_pipeline import BasePipeline, BypassTechnique, PipelineStatus
 
-# Импорт логгера с корректным путем
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import get_logger, get_tracer
 
 logger = get_logger(__name__)

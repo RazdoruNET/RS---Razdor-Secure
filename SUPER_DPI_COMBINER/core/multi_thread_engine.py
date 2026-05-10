@@ -13,13 +13,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .base_pipeline import BasePipeline, BypassRequest, BypassResponse, PipelineStatus, PipelineExecutionStatus
-from .pipeline_generator import PipelineGenerator
+from core.base_pipeline import BasePipeline, BypassRequest, BypassResponse, PipelineStatus, PipelineExecutionStatus
+from core.pipeline_generator import PipelineGenerator
 
-# Импорт логгера с корректным путем
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

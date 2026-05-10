@@ -11,12 +11,8 @@ import time
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 
-from .base_pipeline import BasePipeline, BypassTechnique
+from core.base_pipeline import BasePipeline, BypassTechnique
 
-# Импорт логгера с корректным путем
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

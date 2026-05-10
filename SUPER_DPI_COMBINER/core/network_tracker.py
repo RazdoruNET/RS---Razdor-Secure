@@ -7,7 +7,7 @@ Provides easy integration with ExecutionTrace for network operations
 import asyncio
 import time
 from typing import Dict, Any, Optional, Tuple, Callable
-from .execution_trace import ExecutionTrace, EventType
+from core.execution_trace import ExecutionTrace, EventType
 
 class NetworkTracker:
     """

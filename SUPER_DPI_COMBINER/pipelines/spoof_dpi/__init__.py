@@ -2,9 +2,9 @@
 SpoofDPI пайплайны - техники обхода через манипуляцию пакетами
 """
 
-from .packet_shaper import PacketShaperPipeline
-from .tls_fingerprint import TLSFingerprintPipeline
-from .http_fragmentation import HTTPFragmentationPipeline
+from pipelines.spoof_dpi.packet_shaper import PacketShaperPipeline
+from pipelines.spoof_dpi.tls_fingerprint import TLSFingerprintPipeline
+from pipelines.spoof_dpi.http_fragmentation import HTTPFragmentationPipeline
 
 __all__ = [
     'PacketShaperPipeline',

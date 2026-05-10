@@ -2,8 +2,8 @@
 Domain Fronting пайплайны - техники CDN маскировки
 """
 
-from .cdn_bypass import CDNBypassPipeline
-from .host_header import HostHeaderPipeline
+from pipelines.domain_fronting.cdn_bypass import CDNBypassPipeline
+from pipelines.domain_fronting.host_header import HostHeaderPipeline
 
 __all__ = [
     'CDNBypassPipeline',

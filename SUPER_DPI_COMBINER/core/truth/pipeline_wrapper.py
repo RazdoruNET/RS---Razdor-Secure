@@ -13,14 +13,9 @@ from enum import Enum
 import threading
 from datetime import datetime
 
-# Add parent directory to path for imports
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from core.base_pipeline import BasePipeline, BypassRequest, BypassResponse
-from .instrumentation import get_io_monitor, IOOperationType, require_real_io, async_require_real_io
-from .metrics_engine import get_truth_metrics_engine
+from core.truth.instrumentation import get_io_monitor, IOOperationType, require_real_io, async_require_real_io
+from core.truth.metrics_engine import get_truth_metrics_engine
 from core.execution_trace import ExecutionTrace as CoreExecutionTrace
 
 class ExecutionStatus(Enum):
