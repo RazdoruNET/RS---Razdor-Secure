@@ -1,0 +1,27 @@
+# DPI-Evading SOCKS5 Proxy - RFC 1928 Implementation (No SO_ORIGINAL_DST)
+FROM python:3.10-slim
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем только необходимые файлы (без destination_extractor)
+COPY src/socks5_daemon_rfc1928.py /app/socks5_daemon.py
+COPY src/verification/tcp_segment_working.py /app/verification/
+
+# Создаем необходимые директории
+RUN mkdir -p /app/logs /app/data /app/config
+
+# Устанавливаем права доступа
+RUN chmod +x /app/socks5_daemon.py
+
+# Устанавливаем переменные окружения по умолчанию
+ENV LISTEN_PORT=1080
+ENV CHUNK_SIZE=30
+ENV CHUNK_DELAY=0.005
+ENV LOG_LEVEL=INFO
+
+# Открываем порт для SOCKS5
+EXPOSE 1080
+
+# Запускаем SOCKS5 daemon
+CMD ["python3", "/app/socks5_daemon.py"]
