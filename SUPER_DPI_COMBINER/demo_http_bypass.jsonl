@@ -1,0 +1,1 @@
+{"execution_id": "demo_001", "pipeline": "http_bypass", "success": true, "network_verified": true, "simulation_flag": false, "timestamp": 1778421016.607424, "metadata": {"target": "example.com", "technique": "domain_fronting", "response_time": 1.2}, "io_operations_count": 8, "execution_duration": 2.5, "error_message": null}

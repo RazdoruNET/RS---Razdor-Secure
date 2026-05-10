@@ -15,6 +15,26 @@ from .instrumentation import (
     SystemCallRecord
 )
 
+from .pipeline_wrapper import (
+    ExecutionTrace,
+    ExecutionStatus,
+    ValidationLevel,
+    PipelineValidator,
+    execute_with_truth,
+    TruthWrapperRegistry,
+    get_truth_registry,
+    wrap_pipeline,
+    IOValidationResult
+)
+
+from .metrics_engine import (
+    TruthMetricsEngine,
+    get_truth_metrics_engine,
+    PipelineRunMetrics,
+    SystemTruthMetrics,
+    RunStatus
+)
+
 __all__ = [
     'IOMonitor',
     'get_io_monitor', 
@@ -24,5 +44,19 @@ __all__ = [
     'async_require_real_io',
     'IOOperationType',
     'IOOperationRecord',
-    'SystemCallRecord'
+    'SystemCallRecord',
+    'ExecutionTrace',
+    'ExecutionStatus',
+    'ValidationLevel',
+    'PipelineValidator',
+    'execute_with_truth',
+    'TruthWrapperRegistry',
+    'get_truth_registry',
+    'wrap_pipeline',
+    'IOValidationResult',
+    'TruthMetricsEngine',
+    'get_truth_metrics_engine',
+    'PipelineRunMetrics',
+    'SystemTruthMetrics',
+    'RunStatus'
 ]
