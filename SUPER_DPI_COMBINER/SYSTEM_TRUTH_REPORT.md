@@ -1,17 +1,17 @@
 # System Truth Report
 
-Generated: 2026-05-10 13:50:56 UTC
+Generated: 2026-05-10 14:01:35 UTC
 
 ## 🎯 System Overview
 
 **REALITY_SCORE**: 0.0%
-**SIMULATION_RATIO**: 0.000
+**SIMULATION_RATIO**: 1.000
 
 ### Execution Statistics
-- **Total Runs**: 10
+- **Total Runs**: 3
 - **Network Verified**: 0
-- **Simulation Detected**: 0
-- **Failed**: 10
+- **Simulation Detected**: 3
+- **Failed**: 0
 
 ### Success Rate Real
 0.0%
@@ -20,43 +20,32 @@ Generated: 2026-05-10 13:50:56 UTC
 
 ## 📊 Pipeline Breakdown
 
-### HTTPFragmentation
-
-**Executed**: 5
-**Network Verified**: 0
-**Simulation Detected**: 0
-**Reality Score**: 0.0%
-**Simulation Ratio**: 0.000
-
 ### DNS_Tunnel
 
-**Executed**: 5
+**Executed**: 2
 **Network Verified**: 0
-**Simulation Detected**: 0
+**Simulation Detected**: 2
 **Reality Score**: 0.0%
-**Simulation Ratio**: 0.000
+**Simulation Ratio**: 1.000
+
+### HTTPFragmentation
+
+**Executed**: 1
+**Network Verified**: 0
+**Simulation Detected**: 1
+**Reality Score**: 0.0%
+**Simulation Ratio**: 1.000
 
 ## 🕐 Recent Runs (Last 10)
 
-❌ **HTTPFragmentation** - failed (0.000s)
+🎭 **HTTPFragmentation** - simulation_detected (0.001s)
+   Reason: no network syscall observed
 
-❌ **DNS_Tunnel** - failed (0.000s)
+🎭 **DNS_Tunnel** - simulation_detected (0.000s)
+   Reason: no network syscall observed
 
-❌ **HTTPFragmentation** - failed (0.000s)
-
-❌ **DNS_Tunnel** - failed (0.000s)
-
-❌ **HTTPFragmentation** - failed (0.000s)
-
-❌ **DNS_Tunnel** - failed (0.000s)
-
-❌ **HTTPFragmentation** - failed (0.000s)
-
-❌ **DNS_Tunnel** - failed (0.000s)
-
-❌ **DNS_Tunnel** - failed (0.000s)
-
-❌ **HTTPFragmentation** - failed (0.000s)
+🎭 **DNS_Tunnel** - simulation_detected (0.000s)
+   Reason: no network syscall observed
 
 
 ---

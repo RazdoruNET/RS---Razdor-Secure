@@ -16,7 +16,7 @@ from .instrumentation import (
 )
 
 from .pipeline_wrapper import (
-    ExecutionTrace,
+    PipelineExecutionTrace,
     ExecutionStatus,
     ValidationLevel,
     PipelineValidator,
@@ -45,7 +45,7 @@ __all__ = [
     'IOOperationType',
     'IOOperationRecord',
     'SystemCallRecord',
-    'ExecutionTrace',
+    'PipelineExecutionTrace',
     'ExecutionStatus',
     'ValidationLevel',
     'PipelineValidator',

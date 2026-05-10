@@ -285,7 +285,7 @@ async def execute_with_truth(pipeline: BasePipeline,
         timeout: Таймаут выполнения
         
     Returns:
-        Tuple[BypassResponse, ExecutionTrace]: Результат и трассировка
+        Tuple[BypassResponse, PipelineExecutionTrace]: Результат и трассировка
     """
     
     # Создаем трассировку
@@ -504,7 +504,7 @@ def wrap_pipeline(pipeline: BasePipeline,
             """Очистка ресурсов"""
             return self.original_pipeline.cleanup()
         
-        def get_last_trace(self) -> Optional[ExecutionTrace]:
+        def get_last_trace(self) -> Optional[PipelineExecutionTrace]:
             """Получить последнюю трассировку"""
             history = get_truth_registry().get_execution_history(self.name, 1)
             return history[0] if history else None

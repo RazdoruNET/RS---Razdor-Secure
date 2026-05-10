@@ -1,0 +1,384 @@
+{
+  "execution_id": "1af0199c-eee4-4480-bf4d-838ee2ff056c",
+  "pipeline_name": "ComplexScenario",
+  "start_time": 1778421652.929335,
+  "end_time": 1778421652.950277,
+  "duration": 0.020941972732543945,
+  "events": [
+    {
+      "timestamp": 1778421652.929343,
+      "event_type": "pipeline_start",
+      "details": {
+        "pipeline_name": "ComplexScenario",
+        "execution_id": "1af0199c-eee4-4480-bf4d-838ee2ff056c"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.929377,
+      "event_type": "connection_attempt",
+      "details": {
+        "host": "api.example.com",
+        "port": 443,
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.929409,
+      "event_type": "connection_success",
+      "details": {
+        "host": "api.example.com",
+        "port": 443,
+        "connection_time": 0.05
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.929423,
+      "event_type": "network_send",
+      "details": {
+        "host": "api.example.com",
+        "port": 443,
+        "data_size": 512,
+        "request_type": "API_CALL"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9396749,
+      "event_type": "network_receive",
+      "details": {
+        "host": "api.example.com",
+        "port": 443,
+        "data_size": 1024,
+        "response_type": "JSON"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939692,
+      "event_type": "connection_attempt",
+      "details": {
+        "host": "cdn.example.com",
+        "port": 443,
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 2
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9397042,
+      "event_type": "connection_failure",
+      "details": {
+        "host": "cdn.example.com",
+        "port": 443,
+        "error": "Connection refused"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939712,
+      "event_type": "error",
+      "details": {
+        "error_type": "CONNECTION_FAILURE",
+        "error_message": "Failed to connect to cdn.example.com:443: Connection refused",
+        "context": {}
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939722,
+      "event_type": "retry_attempt",
+      "details": {
+        "operation": "connection",
+        "attempt_number": 1,
+        "max_attempts": 3,
+        "reason": "Connection refused",
+        "total_retries": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.93973,
+      "event_type": "connection_attempt",
+      "details": {
+        "host": "auth.example.com",
+        "port": 443,
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 3
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939739,
+      "event_type": "connection_success",
+      "details": {
+        "host": "auth.example.com",
+        "port": 443,
+        "connection_time": 0.09
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939745,
+      "event_type": "network_send",
+      "details": {
+        "host": "auth.example.com",
+        "port": 443,
+        "data_size": 512,
+        "request_type": "API_CALL"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.950183,
+      "event_type": "timeout",
+      "details": {
+        "timestamp": 1778421652.950171,
+        "operation": "response_wait",
+        "timeout_duration": 3.0
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.95022,
+      "event_type": "error",
+      "details": {
+        "error_type": "TIMEOUT",
+        "error_message": "Operation 'response_wait' timed out after 3.0s",
+        "context": {}
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.950262,
+      "event_type": "error",
+      "details": {
+        "error_type": "VALIDATION_ERROR",
+        "error_message": "Invalid response format",
+        "context": {
+          "host": "api.example.com",
+          "expected": "JSON",
+          "received": "HTML"
+        }
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.950273,
+      "event_type": "error",
+      "details": {
+        "error_type": "RATE_LIMIT_ERROR",
+        "error_message": "Rate limit exceeded",
+        "context": {
+          "host": "cdn.example.com",
+          "limit": 100,
+          "current": 101
+        }
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.95029,
+      "event_type": "pipeline_end",
+      "details": {
+        "pipeline_name": "ComplexScenario",
+        "execution_id": "1af0199c-eee4-4480-bf4d-838ee2ff056c",
+        "success": false,
+        "final_status": "partial_failure",
+        "duration": 0.020941972732543945,
+        "total_events": 16,
+        "total_network_events": 9,
+        "total_errors": 4,
+        "connection_attempts": 3,
+        "successful_connections": 2,
+        "total_bytes_sent": 1024,
+        "total_bytes_received": 1024
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "network_events": [
+    {
+      "timestamp": 1778421652.9293592,
+      "event_type": "connect_attempt",
+      "host": "api.example.com",
+      "port": 443,
+      "details": {
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.929394,
+      "event_type": "connect_success",
+      "host": "api.example.com",
+      "port": 443,
+      "details": {
+        "connection_time": 0.05
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.929416,
+      "event_type": "send_data",
+      "host": "api.example.com",
+      "port": 443,
+      "details": {
+        "data_size": 512,
+        "total_bytes_sent": 512,
+        "request_type": "API_CALL"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9396539,
+      "event_type": "receive_data",
+      "host": "api.example.com",
+      "port": 443,
+      "details": {
+        "data_size": 1024,
+        "total_bytes_received": 1024,
+        "response_type": "JSON"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9396842,
+      "event_type": "connect_attempt",
+      "host": "cdn.example.com",
+      "port": 443,
+      "details": {
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 2
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9396968,
+      "event_type": "connect_failure",
+      "host": "cdn.example.com",
+      "port": 443,
+      "details": {
+        "error": "Connection refused"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9397252,
+      "event_type": "connect_attempt",
+      "host": "auth.example.com",
+      "port": 443,
+      "details": {
+        "method": "TLS",
+        "attempt_number": 1,
+        "attempt": 3
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.939734,
+      "event_type": "connect_success",
+      "host": "auth.example.com",
+      "port": 443,
+      "details": {
+        "connection_time": 0.09
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9397418,
+      "event_type": "send_data",
+      "host": "auth.example.com",
+      "port": 443,
+      "details": {
+        "data_size": 512,
+        "total_bytes_sent": 1024,
+        "request_type": "API_CALL"
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "errors": [
+    {
+      "timestamp": 1778421652.9397068,
+      "error_type": "CONNECTION_FAILURE",
+      "error_message": "Failed to connect to cdn.example.com:443: Connection refused",
+      "stack_trace": null,
+      "context": {},
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.950208,
+      "error_type": "TIMEOUT",
+      "error_message": "Operation 'response_wait' timed out after 3.0s",
+      "stack_trace": null,
+      "context": {},
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.950235,
+      "error_type": "VALIDATION_ERROR",
+      "error_message": "Invalid response format",
+      "stack_trace": null,
+      "context": {
+        "host": "api.example.com",
+        "expected": "JSON",
+        "received": "HTML"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.95027,
+      "error_type": "RATE_LIMIT_ERROR",
+      "error_message": "Rate limit exceeded",
+      "stack_trace": null,
+      "context": {
+        "host": "cdn.example.com",
+        "limit": 100,
+        "current": 101
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "connection_statistics": {
+    "total_attempts": 3,
+    "successful_connections": 2,
+    "failed_connections": 1,
+    "success_rate": 0.6666666666666666,
+    "unique_hosts": 3,
+    "total_retries": 1,
+    "total_timeouts": 1,
+    "total_bytes_sent": 1024,
+    "total_bytes_received": 1024
+  },
+  "connection_attempts": {
+    "api.example.com:443": [
+      1778421652.9293592
+    ],
+    "cdn.example.com:443": [
+      1778421652.9396842
+    ],
+    "auth.example.com:443": [
+      1778421652.9397252
+    ]
+  },
+  "retry_attempts": {
+    "connection_4540516304": 1
+  },
+  "timeout_events": [
+    {
+      "timestamp": 1778421652.950171,
+      "operation": "response_wait",
+      "timeout_duration": 3.0
+    }
+  ]
+}

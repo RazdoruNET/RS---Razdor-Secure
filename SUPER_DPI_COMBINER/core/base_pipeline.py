@@ -147,7 +147,7 @@ class BasePipeline(abc.ABC):
         
         # Create execution trace for this run
         trace = self.create_execution_trace()
-        trace.start_execution()
+        await trace.start_execution()
         
         # Start pipeline trace
         trace_id = self.tracer.start_pipeline(
@@ -162,9 +162,9 @@ class BasePipeline(abc.ABC):
         # Проверка инициализации
         if not self._validate_initialized():
             error_msg = f"Pipeline {self.name} not initialized"
-            trace.add_error("PIPELINE_NOT_INITIALIZED", error_msg)
+            await trace.add_error("PIPELINE_NOT_INITIALIZED", error_msg)
             self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
-            trace.end_execution(success=False, final_status="not_initialized")
+            await trace.end_execution(success=False, final_status="not_initialized")
             return BypassResponse(
                 success=False,
                 latency=time.time() - start_time,
@@ -179,7 +179,9 @@ class BasePipeline(abc.ABC):
             # Убеждаемся что ответ валидный
             if not isinstance(response, BypassResponse):
                 error_msg = f"Invalid response type from {self.name}"
+                await trace.add_error("INVALID_RESPONSE_TYPE", error_msg)
                 self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
+                await trace.end_execution(success=False, final_status="invalid_response")
                 return BypassResponse(
                     success=False,
                     latency=time.time() - start_time,
@@ -208,15 +210,15 @@ class BasePipeline(abc.ABC):
             
             # End execution trace
             final_status = "success" if response.success else "failed"
-            trace.end_execution(success=response.success, final_status=final_status)
+            await trace.end_execution(success=response.success, final_status=final_status)
             
             return response
             
         except asyncio.TimeoutError:
             error_msg = f"Pipeline {self.name} execution timeout ({timeout}s)"
-            trace.add_timeout("pipeline_execution", timeout)
+            await trace.add_timeout("pipeline_execution", timeout)
             self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
-            trace.end_execution(success=False, final_status="timeout")
+            await trace.end_execution(success=False, final_status="timeout")
             return BypassResponse(
                 success=False,
                 latency=time.time() - start_time,
@@ -225,12 +227,12 @@ class BasePipeline(abc.ABC):
             )
         except Exception as e:
             error_msg = f"Pipeline {self.name} execution error: {str(e)}"
-            trace.add_error("PIPELINE_EXECUTION_ERROR", error_msg, {
+            await trace.add_error("PIPELINE_EXECUTION_ERROR", error_msg, {
                 'exception_type': type(e).__name__,
                 'exception_args': str(e.args)
             })
             self.tracer.finish_pipeline(trace_id, "fail", error=error_msg)
-            trace.end_execution(success=False, final_status="error")
+            await trace.end_execution(success=False, final_status="error")
             return BypassResponse(
                 success=False,
                 latency=time.time() - start_time,

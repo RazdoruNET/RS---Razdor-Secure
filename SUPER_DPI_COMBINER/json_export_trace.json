@@ -1,0 +1,161 @@
+{
+  "execution_id": "891bb723-6098-4cb9-8084-a809200209e6",
+  "pipeline_name": "JSONExportTest",
+  "start_time": 1778421652.954153,
+  "end_time": 1778421652.954231,
+  "duration": 7.796287536621094e-05,
+  "events": [
+    {
+      "timestamp": 1778421652.954159,
+      "event_type": "pipeline_start",
+      "details": {
+        "pipeline_name": "JSONExportTest",
+        "execution_id": "891bb723-6098-4cb9-8084-a809200209e6"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9541812,
+      "event_type": "connection_attempt",
+      "details": {
+        "host": "export.test.com",
+        "port": 443,
+        "method": "TLS",
+        "attempt_number": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.954197,
+      "event_type": "connection_success",
+      "details": {
+        "host": "export.test.com",
+        "port": 443,
+        "connection_time": 1.6927719116210938e-05
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.954208,
+      "event_type": "network_send",
+      "details": {
+        "host": "export.test.com",
+        "port": 443,
+        "data_size": 512
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.954217,
+      "event_type": "network_receive",
+      "details": {
+        "host": "export.test.com",
+        "port": 443,
+        "data_size": 1024
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.954227,
+      "event_type": "error",
+      "details": {
+        "error_type": "TEST_ERROR",
+        "error_message": "Test error for export",
+        "context": {}
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9542358,
+      "event_type": "pipeline_end",
+      "details": {
+        "pipeline_name": "JSONExportTest",
+        "execution_id": "891bb723-6098-4cb9-8084-a809200209e6",
+        "success": true,
+        "final_status": "completed",
+        "duration": 7.796287536621094e-05,
+        "total_events": 6,
+        "total_network_events": 4,
+        "total_errors": 1,
+        "connection_attempts": 1,
+        "successful_connections": 1,
+        "total_bytes_sent": 512,
+        "total_bytes_received": 1024
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "network_events": [
+    {
+      "timestamp": 1778421652.954169,
+      "event_type": "connect_attempt",
+      "host": "export.test.com",
+      "port": 443,
+      "details": {
+        "method": "TLS",
+        "attempt_number": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.954186,
+      "event_type": "connect_success",
+      "host": "export.test.com",
+      "port": 443,
+      "details": {
+        "connection_time": 1.6927719116210938e-05
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9542022,
+      "event_type": "send_data",
+      "host": "export.test.com",
+      "port": 443,
+      "details": {
+        "data_size": 512,
+        "total_bytes_sent": 512
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9542122,
+      "event_type": "receive_data",
+      "host": "export.test.com",
+      "port": 443,
+      "details": {
+        "data_size": 1024,
+        "total_bytes_received": 1024
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "errors": [
+    {
+      "timestamp": 1778421652.954221,
+      "error_type": "TEST_ERROR",
+      "error_message": "Test error for export",
+      "stack_trace": null,
+      "context": {},
+      "task_id": 4540516304
+    }
+  ],
+  "connection_statistics": {
+    "total_attempts": 1,
+    "successful_connections": 1,
+    "failed_connections": 0,
+    "success_rate": 1.0,
+    "unique_hosts": 1,
+    "total_retries": 0,
+    "total_timeouts": 0,
+    "total_bytes_sent": 512,
+    "total_bytes_received": 1024
+  },
+  "connection_attempts": {
+    "export.test.com:443": [
+      1778421652.954169
+    ]
+  },
+  "retry_attempts": {},
+  "timeout_events": []
+}

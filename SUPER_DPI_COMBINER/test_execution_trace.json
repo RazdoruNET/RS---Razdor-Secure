@@ -1,0 +1,217 @@
+{
+  "execution_id": "c332828a-87b6-45b1-a8fb-98b840d703c7",
+  "pipeline_name": "TestPipeline",
+  "start_time": 1778421652.927514,
+  "end_time": 1778421652.927687,
+  "duration": 0.0001728534698486328,
+  "events": [
+    {
+      "timestamp": 1778421652.927521,
+      "event_type": "pipeline_start",
+      "details": {
+        "pipeline_name": "TestPipeline",
+        "execution_id": "c332828a-87b6-45b1-a8fb-98b840d703c7"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9275572,
+      "event_type": "connection_attempt",
+      "details": {
+        "host": "example.com",
+        "port": 443,
+        "method": "TLS",
+        "attempt_number": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927582,
+      "event_type": "connection_success",
+      "details": {
+        "host": "example.com",
+        "port": 443,
+        "connection_time": 0.1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927597,
+      "event_type": "network_send",
+      "details": {
+        "host": "example.com",
+        "port": 443,
+        "data_size": 256,
+        "data_type": "HTTP_REQUEST"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9276102,
+      "event_type": "network_receive",
+      "details": {
+        "host": "example.com",
+        "port": 443,
+        "data_size": 1024,
+        "data_type": "HTTP_RESPONSE"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9276218,
+      "event_type": "retry_attempt",
+      "details": {
+        "operation": "connection",
+        "attempt_number": 1,
+        "max_attempts": 3,
+        "reason": "Initial timeout",
+        "total_retries": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.9276302,
+      "event_type": "timeout",
+      "details": {
+        "timestamp": 1778421652.927626,
+        "operation": "response_wait",
+        "timeout_duration": 5.0
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927661,
+      "event_type": "error",
+      "details": {
+        "error_type": "TIMEOUT",
+        "error_message": "Operation 'response_wait' timed out after 5.0s",
+        "context": {}
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927676,
+      "event_type": "error",
+      "details": {
+        "error_type": "TEST_ERROR",
+        "error_message": "This is a test error",
+        "context": {
+          "test": true
+        }
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927695,
+      "event_type": "pipeline_end",
+      "details": {
+        "pipeline_name": "TestPipeline",
+        "execution_id": "c332828a-87b6-45b1-a8fb-98b840d703c7",
+        "success": true,
+        "final_status": "completed",
+        "duration": 0.0001728534698486328,
+        "total_events": 9,
+        "total_network_events": 4,
+        "total_errors": 2,
+        "connection_attempts": 1,
+        "successful_connections": 1,
+        "total_bytes_sent": 256,
+        "total_bytes_received": 1024
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "network_events": [
+    {
+      "timestamp": 1778421652.927536,
+      "event_type": "connect_attempt",
+      "host": "example.com",
+      "port": 443,
+      "details": {
+        "method": "TLS",
+        "attempt_number": 1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927567,
+      "event_type": "connect_success",
+      "host": "example.com",
+      "port": 443,
+      "details": {
+        "connection_time": 0.1
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.92759,
+      "event_type": "send_data",
+      "host": "example.com",
+      "port": 443,
+      "details": {
+        "data_size": 256,
+        "total_bytes_sent": 256,
+        "data_type": "HTTP_REQUEST"
+      },
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927603,
+      "event_type": "receive_data",
+      "host": "example.com",
+      "port": 443,
+      "details": {
+        "data_size": 1024,
+        "total_bytes_received": 1024,
+        "data_type": "HTTP_RESPONSE"
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "errors": [
+    {
+      "timestamp": 1778421652.9276512,
+      "error_type": "TIMEOUT",
+      "error_message": "Operation 'response_wait' timed out after 5.0s",
+      "stack_trace": null,
+      "context": {},
+      "task_id": 4540516304
+    },
+    {
+      "timestamp": 1778421652.927667,
+      "error_type": "TEST_ERROR",
+      "error_message": "This is a test error",
+      "stack_trace": null,
+      "context": {
+        "test": true
+      },
+      "task_id": 4540516304
+    }
+  ],
+  "connection_statistics": {
+    "total_attempts": 1,
+    "successful_connections": 1,
+    "failed_connections": 0,
+    "success_rate": 1.0,
+    "unique_hosts": 1,
+    "total_retries": 1,
+    "total_timeouts": 1,
+    "total_bytes_sent": 256,
+    "total_bytes_received": 1024
+  },
+  "connection_attempts": {
+    "example.com:443": [
+      1778421652.927536
+    ]
+  },
+  "retry_attempts": {
+    "connection_4540516304": 1
+  },
+  "timeout_events": [
+    {
+      "timestamp": 1778421652.927626,
+      "operation": "response_wait",
+      "timeout_duration": 5.0
+    }
+  ]
+}

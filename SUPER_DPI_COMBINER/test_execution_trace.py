@@ -136,22 +136,22 @@ async def test_basic_execution_trace():
     trace = ExecutionTrace("TestPipeline")
     
     # Start execution
-    trace.start_execution()
+    await trace.start_execution()
     
     # Add various events
-    trace.add_connection_attempt("example.com", 443, "TLS")
-    trace.add_connection_success("example.com", 443, {"connection_time": 0.1})
+    await trace.add_connection_attempt("example.com", 443, "TLS")
+    await trace.add_connection_success("example.com", 443, {"connection_time": 0.1})
     
-    trace.add_network_send("example.com", 443, 256, {"data_type": "HTTP_REQUEST"})
-    trace.add_network_receive("example.com", 443, 1024, {"data_type": "HTTP_RESPONSE"})
+    await trace.add_network_send("example.com", 443, 256, {"data_type": "HTTP_REQUEST"})
+    await trace.add_network_receive("example.com", 443, 1024, {"data_type": "HTTP_RESPONSE"})
     
-    trace.add_retry_attempt("connection", 1, 3, "Initial timeout")
-    trace.add_timeout("response_wait", 5.0)
+    await trace.add_retry_attempt("connection", 1, 3, "Initial timeout")
+    await trace.add_timeout("response_wait", 5.0)
     
-    trace.add_error("TEST_ERROR", "This is a test error", {"test": True})
+    await trace.add_error("TEST_ERROR", "This is a test error", {"test": True})
     
     # End execution
-    trace.end_execution(success=True, final_status="completed")
+    await trace.end_execution(success=True, final_status="completed")
     
     # Display results
     print(f"✅ Execution ID: {trace.execution_id}")
@@ -162,13 +162,13 @@ async def test_basic_execution_trace():
     print(f"✅ Errors: {len(trace.errors)}")
     
     # Show connection statistics
-    conn_stats = trace.get_connection_statistics()
+    conn_stats = await trace.get_connection_statistics()
     print(f"✅ Connection Statistics:")
     for key, value in conn_stats.items():
         print(f"   - {key}: {value}")
     
     # Show critical events
-    critical = trace.get_critical_events()
+    critical = await trace.get_critical_events()
     print(f"✅ Critical Events: {len(critical)}")
     for event in critical:
         print(f"   - {event['event_type']}: {event.get('error_message', event.get('details', {}))}")
@@ -209,11 +209,11 @@ async def test_pipeline_integration():
         print(f"   - Errors: {len(trace.errors)}")
         
         # Show timeline
-        timeline = trace.get_timeline_summary()
+        timeline = await trace.get_timeline_summary()
         print(f"   - Timeline Events: {len(timeline)}")
         
         # Save trace to file
-        trace.save_to_file("test_execution_trace.json")
+        await trace.save_to_file("test_execution_trace.json")
         print(f"   - Saved to: test_execution_trace.json")
         
         return trace
@@ -272,8 +272,8 @@ async def test_network_tracker():
     print(f"✅ Network Tracker Results:")
     print(f"   - Total Events: {len(trace.events)}")
     print(f"   - Network Events: {len(trace.network_events)}")
-    print(f"   - Connection Attempts: {trace.get_connection_statistics()['total_attempts']}")
-    print(f"   - Retries: {trace.get_connection_statistics()['total_retries']}")
+    print(f"   - Connection Attempts: {(await trace.get_connection_statistics())['total_attempts']}")
+    print(f"   - Retries: {(await trace.get_connection_statistics())['total_retries']}")
     
     return trace
 
@@ -291,45 +291,45 @@ async def demonstrate_trace_analysis():
     
     for i, host in enumerate(hosts):
         # Connection attempts
-        trace.add_connection_attempt(host, 443, "TLS", {"attempt": i+1})
+        await trace.add_connection_attempt(host, 443, "TLS", {"attempt": i+1})
         
         if i == 1:  # Simulate failure on second host
-            trace.add_connection_failure(host, 443, "Connection refused")
-            trace.add_retry_attempt("connection", 1, 3, "Connection refused")
+            await trace.add_connection_failure(host, 443, "Connection refused")
+            await trace.add_retry_attempt("connection", 1, 3, "Connection refused")
             continue
         
-        trace.add_connection_success(host, 443, {"connection_time": 0.05 + i*0.02})
+        await trace.add_connection_success(host, 443, {"connection_time": 0.05 + i*0.02})
         
         # Data transfer
-        trace.add_network_send(host, 443, 512, {"request_type": "API_CALL"})
+        await trace.add_network_send(host, 443, 512, {"request_type": "API_CALL"})
         await asyncio.sleep(0.01)
         
         if i == 2:  # Simulate timeout on third host
-            trace.add_timeout("response_wait", 3.0)
+            await trace.add_timeout("response_wait", 3.0)
             continue
             
-        trace.add_network_receive(host, 443, 1024, {"response_type": "JSON"})
+        await trace.add_network_receive(host, 443, 1024, {"response_type": "JSON"})
     
     # Add some errors
-    trace.add_error("VALIDATION_ERROR", "Invalid response format", {
+    await trace.add_error("VALIDATION_ERROR", "Invalid response format", {
         "host": hosts[0],
         "expected": "JSON",
         "received": "HTML"
     })
     
-    trace.add_error("RATE_LIMIT_ERROR", "Rate limit exceeded", {
+    await trace.add_error("RATE_LIMIT_ERROR", "Rate limit exceeded", {
         "host": hosts[1],
         "limit": 100,
         "current": 101
     })
     
-    trace.end_execution(success=False, final_status="partial_failure")
+    await trace.end_execution(success=False, final_status="partial_failure")
     
     # Analysis
     print("📊 Trace Analysis Results:")
     
     # Basic statistics
-    stats = trace.get_connection_statistics()
+    stats = await trace.get_connection_statistics()
     print(f"   - Total Connection Attempts: {stats['total_attempts']}")
     print(f"   - Successful Connections: {stats['successful_connections']}")
     print(f"   - Failed Connections: {stats['failed_connections']}")
@@ -340,7 +340,7 @@ async def demonstrate_trace_analysis():
     print(f"   - Data Received: {stats['total_bytes_received']} bytes")
     
     # Critical events analysis
-    critical = trace.get_critical_events()
+    critical = await trace.get_critical_events()
     print(f"   - Critical Events: {len(critical)}")
     
     error_types = {}
@@ -353,11 +353,11 @@ async def demonstrate_trace_analysis():
         print(f"     * {error_type}: {count}")
     
     # Timeline analysis
-    timeline = trace.get_timeline_summary()
+    timeline = await trace.get_timeline_summary()
     print(f"   - Timeline Events: {len(timeline)}")
     
     # Save detailed trace
-    trace.save_to_file("analysis_demo_trace.json")
+    await trace.save_to_file("analysis_demo_trace.json")
     print(f"   - Detailed trace saved to: analysis_demo_trace.json")
     
     return trace
@@ -391,7 +391,7 @@ async def main():
         # Show sample JSON output
         if trace1:
             print(f"\n📄 Sample JSON Output (first 500 chars):")
-            json_output = trace1.to_json()
+            json_output = await trace1.to_json()
             print(json_output[:500] + "..." if len(json_output) > 500 else json_output)
         
         print(f"\n🎉 All tests completed successfully!")
