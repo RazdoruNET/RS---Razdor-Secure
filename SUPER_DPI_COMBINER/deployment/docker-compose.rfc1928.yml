@@ -15,8 +15,17 @@ services:
     # Переменные окружения для конфигурации
     environment:
       - LISTEN_PORT=1080
-      - CHUNK_SIZE=250
-      - CHUNK_DELAY=0.002
+      - PIPELINE_ORDER=fake_packet,jitter_fragmentation
+      - SELECTIVE_THRESHOLD=3000
+      # Настройки для модуля fake_packet
+      - FAKE_PACKET_BYTES=0x160301000500000000
+      # Настройки для модуля jitter_fragmentation
+      - MIN_CHUNK_SIZE=40
+      - MAX_CHUNK_SIZE=150
+      - MIN_CHUNK_DELAY=0.001
+      - MAX_CHUNK_DELAY=0.003
+      # Настройки для модуля sni_modifier
+      - CASE_MODIFY_PROBABILITY=0.7
       - LOG_LEVEL=INFO
     
     # Логи в stdout для docker logs

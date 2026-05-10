@@ -11,28 +11,28 @@ import struct
 import logging
 import json
 import os
+import random
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Import existing fragmentation runtime
-from verification.tcp_segment_working import TCPSegmentAnalyzer
+# Import pipeline manager
+from pipeline_manager import PipelineManager
 
 class SOCKS5Daemon:
     """Универсальный SOCKS5 прокси с wire fragmentation"""
     
-    def __init__(self, listen_port=1080, chunk_size=30, chunk_delay=0.005):
+    def __init__(self, listen_port=1080):
         # Read from environment variables
         self.listen_port = int(os.environ.get('LISTEN_PORT', str(listen_port)))
-        self.chunk_size = int(os.environ.get('CHUNK_SIZE', str(chunk_size)))
-        self.chunk_delay = float(os.environ.get('CHUNK_DELAY', str(chunk_delay)))
+        
         self.running = False
         self.connections = {}
         
-        # Используем существующий fragment analyzer
-        self.segment_analyzer = TCPSegmentAnalyzer()
+        # Initialize Pipeline Manager
+        self.pipeline_manager = PipelineManager()
         
         # Configure logging to stdout only (for docker logs)
         log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
@@ -45,7 +45,14 @@ class SOCKS5Daemon:
         )
         
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"SOCKS5 daemon initialized: port={self.listen_port}, chunk_size={self.chunk_size}, chunk_delay={self.chunk_delay}")
+        self.logger.info(f"SOCKS5 daemon initialized: port={self.listen_port}")
+        
+        # Load pipeline configuration
+        if self.pipeline_manager.load_pipeline_config():
+            self.logger.info(f"Pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
+        else:
+            self.logger.error("Failed to load pipeline configuration")
+            raise RuntimeError("Pipeline configuration failed")
     
     async def handle_client(self, reader, writer):
         """Handle SOCKS5 client connection with wire fragmentation"""
@@ -186,7 +193,7 @@ class SOCKS5Daemon:
             return False
     
     async def proxy_connection(self, client_reader, client_writer, target_host, target_port):
-        """Шаг 4: Трансляция и фрагментация данных"""
+        """Шаг 4: Трансляция и фрагментация данных через Pipeline Manager"""
         try:
             # Открываем реальное соединение с целевым сервером
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
@@ -209,7 +216,10 @@ class SOCKS5Daemon:
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
             
-            # Передаем управление WIRE_LEVEL_VERIFIED_FRAGMENTATION_RUNTIME
+            # Сбрасываем состояние конвейера для новой сессии
+            self.pipeline_manager.reset_session()
+            
+            # Передаем управление Pipeline Manager
             await asyncio.gather(
                 self.forward_client_to_upstream(client_reader, upstream_writer),
                 self.forward_upstream_to_client(upstream_reader, client_writer),
@@ -219,7 +229,7 @@ class SOCKS5Daemon:
             self.logger.error(f"[SOCKS5] Proxy connection failed: {e}")
     
     async def forward_client_to_upstream(self, client_reader, upstream_writer):
-        """Пересылка данных от клиента к серверу с фрагментацией"""
+        """Пересылка данных от клиента к серверу через Pipeline Manager"""
         try:
             while True:
                 data = await client_reader.read(4096)
@@ -228,8 +238,12 @@ class SOCKS5Daemon:
                 
                 self.logger.info(f"[SOCKS5] Received {len(data)} bytes from client")
                 
-                # Отправляем с wire-level фрагментацией
-                await self.send_with_fragmentation(upstream_writer, data)
+                # Обрабатываем данные через конвейер модулей
+                success = await self.pipeline_manager.process_data(data, upstream_writer)
+                
+                if not success:
+                    self.logger.error("[SOCKS5] Pipeline processing failed")
+                    break
                 
         except Exception as e:
             self.logger.error(f"[SOCKS5] Client->Upstream error: {e}")
@@ -255,31 +269,7 @@ class SOCKS5Daemon:
         finally:
             client_writer.close()
     
-    async def send_with_fragmentation(self, writer, data):
-        """Отправка данных с wire-level фрагментацией"""
-        total_sent = 0
-        fragment_count = 0
         
-        self.logger.info(f"[SOCKS5] DEBUG: Starting fragmentation - data_size={len(data)}, chunk_size={self.chunk_size}, chunk_size_type={type(self.chunk_size)}")
-        
-        for i in range(0, len(data), self.chunk_size):
-            chunk = data[i:i + self.chunk_size]
-            
-            # Отправляем чанк
-            writer.write(chunk)
-            await writer.drain()
-            
-            fragment_count += 1
-            total_sent += len(chunk)
-            
-            self.logger.info(f"[SOCKS5] DEBUG: Sent fragment {fragment_count}: {len(chunk)} bytes (range {i}-{i+self.chunk_size})")
-            
-            # Принудительная задержка между чанками
-            if self.chunk_delay > 0:
-                await asyncio.sleep(self.chunk_delay)
-        
-        self.logger.info(f"[SOCKS5] Fragmentation complete: {fragment_count} fragments, {total_sent} bytes")
-    
     async def start_server(self):
         """Запуск SOCKS5 сервера"""
         self.logger.info(f"Starting SOCKS5 server on port {self.listen_port}")
