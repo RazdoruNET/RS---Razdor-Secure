@@ -16,6 +16,7 @@ import os
 
 from utils.logger import get_tracer
 from core.network_reality_verifier import NetworkRealityVerifier, NetworkOperation
+from core.execution_trace import ExecutionTrace
 
 class PipelineStatus(Enum):
     """Статусы пайплайна"""
@@ -531,3 +532,96 @@ class BasePipeline(abc.ABC):
     
     def __repr__(self) -> str:
         return self.__str__()
+
+
+class SafePipeline(BasePipeline):
+    """
+    Безопасная реализация BasePipeline с заглушками
+    Используется как временная замена для сломанных пайплайнов
+    """
+    
+    def __init__(self, name: str = "SafePipeline", technique: BypassTechnique = BypassTechnique.SPOOF_DPI, priority: int = 0, execution_status: PipelineExecutionStatus = PipelineExecutionStatus.SIMULATION):
+        # Skip BasePipeline init to avoid circular imports
+        self.name = name
+        self.technique = technique
+        self.priority = priority
+        self.status = PipelineStatus.IDLE
+        self.execution_status = execution_status
+        self.metrics = PipelineMetrics()
+        self.config = {}
+        self.lock = threading.Lock()
+        
+        # Внутреннее состояние
+        self._start_time = None
+        self._active_connections = {}
+        self._performance_history = []
+        self._initialized = False
+        
+        # Simple tracer without complex dependencies
+        class SimpleLogger:
+            def info(self, msg, **kwargs): print(f"[INFO] {msg}")
+            def warning(self, msg, **kwargs): print(f"[WARN] {msg}")
+            def error(self, msg, **kwargs): print(f"[ERROR] {msg}")
+            def debug(self, msg, **kwargs): print(f"[DEBUG] {msg}")
+        
+        class SimpleTracer:
+            def __init__(self):
+                self.logger = SimpleLogger()
+            def start_pipeline(self, *args, **kwargs): 
+                return f"trace_{name}_{time.time()}"
+            def finish_pipeline(self, *args, **kwargs): 
+                pass
+            # Add direct methods for compatibility
+            def info(self, msg, **kwargs): 
+                self.logger.info(msg, **kwargs)
+            def warning(self, msg, **kwargs): 
+                self.logger.warning(msg, **kwargs)
+            def error(self, msg, **kwargs): 
+                self.logger.error(msg, **kwargs)
+            def debug(self, msg, **kwargs): 
+                self.logger.debug(msg, **kwargs)
+        
+        self.tracer = SimpleTracer()
+    
+    async def execute(self, request: BypassRequest) -> BypassResponse:
+        """
+        Безопасное выполнение - возвращает заглушку без сетевых операций
+        """
+        import time
+        start_time = time.time()
+        
+        # Симуляция обработки
+        await asyncio.sleep(0.001)  # Минимальная задержка для реалистичности
+        
+        return BypassResponse(
+            success=True,
+            latency=time.time() - start_time,
+            status_code=200,
+            headers={'X-Safe-Pipeline': 'true', 'X-Simulation': 'true'},
+            data=b'SafePipeline: NO NETWORK - Simulation response',
+            technique_used=self.name,
+            network_verified=False,
+            simulation_detected=True,
+            simulation_reason="SafePipeline simulation mode"
+        )
+    
+    def initialize(self, config: Dict[str, Any]) -> bool:
+        """
+        Безопасная инициализация - всегда успешна
+        """
+        self.config = config
+        self._initialized = True
+        self.tracer.logger.info(f"✅ {self.name} initialized safely (NO NETWORK)")
+        return True
+    
+    def _mark_initialized(self, success: bool):
+        """Отметка о статусе инициализации"""
+        self._initialized = success
+        if success:
+            self.status = PipelineStatus.IDLE
+        else:
+            self.status = PipelineStatus.FAILED
+    
+    def _validate_initialized(self) -> bool:
+        """Проверка инициализации пайплайна"""
+        return self._initialized

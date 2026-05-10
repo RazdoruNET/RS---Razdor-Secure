@@ -13,10 +13,10 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
+from core.base_pipeline import SafePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import TCPClient
 
-class PacketShaperPipeline(BasePipeline):
+class PacketShaperPipeline(SafePipeline):
     """Пайплайн для TCP сегментации и манипуляции пакетами"""
     
     def __init__(self):

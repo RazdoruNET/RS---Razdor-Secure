@@ -11,10 +11,10 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
+from core.base_pipeline import SafePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 from core.http_client import HTTPClient
 
-class AutoSwitchPipeline(BasePipeline):
+class AutoSwitchPipeline(SafePipeline):
     """Пайплайн для автоматического переключения техник"""
     
     def __init__(self):

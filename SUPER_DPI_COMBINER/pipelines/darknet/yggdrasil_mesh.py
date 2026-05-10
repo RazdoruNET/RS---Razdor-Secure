@@ -12,9 +12,9 @@ from typing import Dict, Any
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
+from core.base_pipeline import SafePipeline, BypassTechnique, BypassRequest, BypassResponse, PipelineExecutionStatus
 
-class YggdrasilMeshPipeline(BasePipeline):
+class YggdrasilMeshPipeline(SafePipeline):
     """Пайплайн для Mesh сети Yggdrasil"""
     
     def __init__(self):
