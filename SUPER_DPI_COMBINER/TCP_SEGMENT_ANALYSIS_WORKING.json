@@ -1,0 +1,67 @@
+{
+  "1000": {
+    "result": {
+      "success": true,
+      "connect_time": 0.3027980327606201,
+      "send_time": 0.010389089584350586,
+      "recv_time": 0.12218976020812988,
+      "fragment_count": 1,
+      "bytes_sent": 59,
+      "bytes_received": 423,
+      "segments": []
+    },
+    "analysis": null
+  },
+  "100": {
+    "result": {
+      "success": true,
+      "connect_time": 0.1662430763244629,
+      "send_time": 0.011159896850585938,
+      "recv_time": 0.13892388343811035,
+      "fragment_count": 1,
+      "bytes_sent": 59,
+      "bytes_received": 423,
+      "segments": []
+    },
+    "analysis": null
+  },
+  "50": {
+    "result": {
+      "success": true,
+      "connect_time": 0.14858388900756836,
+      "send_time": 0.02219104766845703,
+      "recv_time": 0.2430250644683838,
+      "fragment_count": 2,
+      "bytes_sent": 59,
+      "bytes_received": 423,
+      "segments": []
+    },
+    "analysis": null
+  },
+  "30": {
+    "result": {
+      "success": true,
+      "connect_time": 0.13741803169250488,
+      "send_time": 0.02103400230407715,
+      "recv_time": 0.1274423599243164,
+      "fragment_count": 2,
+      "bytes_sent": 59,
+      "bytes_received": 423,
+      "segments": []
+    },
+    "analysis": null
+  },
+  "10": {
+    "result": {
+      "success": true,
+      "connect_time": 0.14732718467712402,
+      "send_time": 0.06414675712585449,
+      "recv_time": 0.13596892356872559,
+      "fragment_count": 6,
+      "bytes_sent": 59,
+      "bytes_received": 423,
+      "segments": []
+    },
+    "analysis": null
+  }
+}
