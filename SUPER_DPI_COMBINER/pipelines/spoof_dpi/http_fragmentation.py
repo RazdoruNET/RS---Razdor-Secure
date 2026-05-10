@@ -5,7 +5,10 @@ HTTP Fragmentation Pipeline - Фрагментация HTTP запросов
 import asyncio
 import time
 import random
+import socket
+import logging
 from typing import Dict, Any
+from dataclasses import dataclass
 
 # Импорт с корректным путем
 import sys
@@ -13,6 +16,15 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
 from core.http_client import TCPClient
+
+@dataclass
+class FragmentationConfig:
+    """Конфигурация фрагментации"""
+    fragment_size: int = 256
+    fragment_delay: float = 0.001
+    random_padding: bool = False
+
+logger = logging.getLogger(__name__)
 
 class HTTPFragmentationPipeline(BasePipeline):
     """Пайплайн для фрагментации HTTP запросов"""
@@ -28,6 +40,9 @@ class HTTPFragmentationPipeline(BasePipeline):
         """Выполнение реальной HTTP фрагментации"""
         start_time = time.time()
         
+        writer = None
+        reader = None
+        
         try:
             # Создаем HTTP запрос для фрагментации
             http_request = self._create_fragmented_request(request)
@@ -35,30 +50,38 @@ class HTTPFragmentationPipeline(BasePipeline):
             # Разбиваем на фрагменты
             fragments = self._fragment_data(http_request, self.fragment_size)
             
-            # Устанавливаем TCP соединение
-            reader, writer = await self.tcp_client.create_connection(request.host, request.port)
+            # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS)
+            if request.port == 443:
+                # HTTPS - используем TLS
+                reader, writer = await self.tcp_client.create_tls_connection(request.host, request.port)
+            else:
+                # HTTP - используем plain TCP
+                reader, writer = await self.tcp_client.create_connection(request.host, request.port)
             
-            # Отправляем фрагменты с задержкой
+            # Отправляем фрагменты с задержкой и настройками TCP
             for i, fragment in enumerate(fragments):
-                # Добавляем случайное дополнение если включено
-                if self.random_padding:
-                    padding = self._generate_padding(random.randint(1, 16))
-                    fragment += padding
+                # Устанавливаем TCP_NODELAY для гарантии фрагментации
+                sock = writer.get_extra_info('socket')
+                if sock:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 
                 await self.tcp_client.send_data(writer, fragment)
                 await asyncio.sleep(self.fragment_delay)
+                
+                # Добавляем padding как отдельный пакет, не в HTTP
+                if self.random_padding and i == len(fragments) - 1:
+                    padding = self._generate_padding(random.randint(1, 16))
+                    await self.tcp_client.send_data(writer, padding)
+                    await asyncio.sleep(0.001)
             
             # Получаем ответ
             response_data = await self.tcp_client.receive_data(reader, 8192)
             
-            # Закрываем соединение
-            await self.tcp_client.close_connection(writer)
-            
             response_time = time.time() - start_time
             
-            # Анализируем ответ
-            success = len(response_data) > 0 and b'200' in response_data[:100]
-            status_code = 200 if success else 403
+            # Анализируем ответ с корректным парсингом status line
+            status_code = self._parse_http_status(response_data)
+            success = 200 <= status_code < 400
             
             return BypassResponse(
                 success=success,
@@ -74,11 +97,19 @@ class HTTPFragmentationPipeline(BasePipeline):
             )
             
         except Exception as e:
+            logger.error(f"HTTP fragmentation error: {str(e)}")
             return BypassResponse(
                 success=False,
                 error=f"HTTP fragmentation error: {str(e)}",
                 response_time=time.time() - start_time
             )
+        finally:
+            # Гарантированное закрытие соединения
+            if writer:
+                try:
+                    await self.tcp_client.close_connection(writer)
+                except Exception as e:
+                    logger.error(f"Error closing connection: {str(e)}")
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Инициализация с конфигурацией"""
@@ -93,25 +124,35 @@ class HTTPFragmentationPipeline(BasePipeline):
     def _create_fragmented_request(self, request: BypassRequest) -> bytes:
         """Создание HTTP запроса для фрагментации"""
         headers = request.headers or {}
+        path = getattr(request, 'path', '/')
         
-        # Формируем HTTP запрос
-        http_lines = [
-            f"{request.method} / HTTP/1.1",
-            f"Host: {request.host}",
-            f"Connection: close",
-            f"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        ]
+        # Формируем базовые заголовки
+        request_headers = {
+            "Host": request.host,
+            "Connection": "close",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            **headers
+        }
         
-        # Добавляем дополнительные заголовки
-        for key, value in headers.items():
-            http_lines.append(f"{key}: {value}")
+        # Добавляем Content-Length если есть тело
+        body = request.data or b""
+        if body:
+            request_headers["Content-Length"] = str(len(body))
+            if "Content-Type" not in request_headers:
+                request_headers["Content-Type"] = "application/octet-stream"
         
-        # Добавляем пустую строку и тело запроса
-        http_lines.append("")
-        if request.data:
-            http_lines.append(request.data.decode('utf-8', errors='ignore'))
+        # Собираем HTTP запрос как bytes
+        lines = [f"{request.method} {path} HTTP/1.1".encode()]
         
-        return "\r\n".join(http_lines).encode('utf-8')
+        for key, value in request_headers.items():
+            lines.append(f"{key}: {value}".encode())
+        
+        lines.append(b"")  # Пустая строка перед телом
+        
+        # Собираем полный запрос
+        request_bytes = b"\r\n".join(lines) + b"\r\n" + body
+        
+        return request_bytes
     
     def _fragment_data(self, data: bytes, fragment_size: int) -> list:
         """Разбиение данных на фрагменты"""
@@ -120,6 +161,33 @@ class HTTPFragmentationPipeline(BasePipeline):
             fragment = data[i:i + fragment_size]
             fragments.append(fragment)
         return fragments
+    
+    def _parse_http_status(self, response_data: bytes) -> int:
+        """Корректный парсинг HTTP статуса из ответа"""
+        if not response_data:
+            return 0
+        
+        try:
+            # Ищем status line
+            first_line = response_data.split(b'\r\n', 1)[0]
+            
+            # Парсим с помощью regex
+            import re
+            match = re.search(rb'HTTP/\d\.\d\s+(\d+)', first_line)
+            if match:
+                return int(match.group(1))
+            
+            # Fallback: ищем первое число после HTTP/
+            parts = first_line.split(b' ')
+            if len(parts) >= 2:
+                try:
+                    return int(parts[1])
+                except ValueError:
+                    pass
+            
+            return 0
+        except Exception:
+            return 0
     
     def _generate_padding(self, size: int) -> bytes:
         """Генерация случайного дополнения"""
