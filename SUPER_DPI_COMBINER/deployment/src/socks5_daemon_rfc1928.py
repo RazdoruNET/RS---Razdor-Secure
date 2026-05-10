@@ -345,7 +345,7 @@ class SOCKS5Daemon:
     async def run(self):
         """Запуск SOCKS5 демона"""
         try:
-            # Запускаем сервер
+            # Запускаем SOCKS5 сервер
             self.server = await self.start_server()
             
             # Работаем до остановки
@@ -363,15 +363,31 @@ class SOCKS5Daemon:
 async def main():
     """Основная функция запуска"""
     try:
-        # Создаем и настраиваем SOCKS5 daemon
-        daemon = SOCKS5Daemon()
-        
-        # Создаем Web GUI сервер
-        web_gui = WebGuiServer(daemon.orchestrator)
+        # 1. Инициализируем общие stateless компоненты
+        orchestrator = SmartFailoverOrchestrator()
         
         # Pre-seed стратегии из внешнего URL
-        await daemon.orchestrator._preseed_strategies()
+        await orchestrator._preseed_strategies()
         
+        # 2. Формируем список конкурентных задач
+        tasks = []
+        
+        # Добавляем задачу SOCKS5-прокси (всегда активна)
+        daemon = SOCKS5Daemon()
+        tasks.append(daemon.run())
+        print("[INIT] SOCKS5 Server added to event loop.")
+        
+        # 3. Правильное приведение строки из Docker-окружения к Boolean
+        WEB_GUI_ENABLED = os.getenv('WEB_GUI_ENABLED', 'false').lower() in ('true', '1', 'yes')
+        
+        # Добавляем задачу Web GUI (строго по условию)
+        if WEB_GUI_ENABLED:
+            web_server = WebGuiServer(orchestrator)
+            tasks.append(web_server.start())
+            print("[INIT] Web GUI Server added to event loop.")
+        else:
+            print("[INIT] Web GUI is explicitly DISABLED via environment.")
+
         # Устанавливаем обработчики сигналов
         def signal_handler(signum, frame):
             logging.info(f"Received signal {signum}, shutting down...")
@@ -379,13 +395,9 @@ async def main():
         
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
-        
-        # Запускаем оба сервера параллельно
-        await asyncio.gather(
-            daemon.start_server(),
-            web_gui.start(),
-            return_exceptions=True
-        )
+
+        # 4. Запускаем оба сервера параллельно в одном Event Loop без блокировок
+        await asyncio.gather(*tasks)
         
     except KeyboardInterrupt:
         logging.info("Received keyboard interrupt, shutting down...")

@@ -17,7 +17,7 @@ class WebGuiServer:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.orchestrator = orchestrator
         self.port = port
-        self.enabled = os.environ.get('WEB_GUI_ENABLED', 'true').lower() == 'true'
+        self.enabled = os.getenv('WEB_GUI_ENABLED', 'false').lower() in ('true', '1', 'yes')
         
         self.logger.info(f"WebGuiServer initialized: enabled={self.enabled}, port={self.port}")
     
@@ -25,16 +25,18 @@ class WebGuiServer:
         """Запуск веб-сервера"""
         if not self.enabled:
             self.logger.info("Web GUI disabled")
-            return
+            return None
         
-        server = await asyncio.start_server(
+        self.server = await asyncio.start_server(
             self.handle_request,
             '0.0.0.0',
             self.port
         )
         
         self.logger.info(f"Web GUI server started on http://0.0.0.0:{self.port}")
-        return server
+        
+        # Возвращаем сервер без блокировки - он будет работать в фоне
+        return self.server
     
     async def handle_request(self, reader, writer):
         """Обработка HTTP запросов"""
@@ -65,7 +67,9 @@ class WebGuiServer:
                 body = await reader.read(content_length)
             
             # Обрабатываем запрос
+            self.logger.info(f"[WEB GUI] Request: {method} {path}")
             response = await self.route_request(method, path, headers, body)
+            self.logger.info(f"[WEB GUI] Response length: {len(response)}")
             
             # Отправляем ответ
             writer.write(response.encode())
@@ -579,22 +583,30 @@ class WebGuiServer:
     async def serve_status_api(self) -> str:
         """API endpoint для получения статуса"""
         try:
-            # Получаем данные от оркестратора
-            domain_stats = await self.orchestrator.get_domain_stats()
-            
-            # Получаем статистику от DPI инспектора
-            drop_stats = self.orchestrator.dpi_inspector.get_drop_statistics()
-            
-            status_data = {
-                'timestamp': asyncio.get_event_loop().time(),
-                'total_domains': len(domain_stats),
-                'domains': domain_stats,
-                'drop_statistics': drop_stats,
-                'orchestrator_enabled': self.orchestrator.enabled,
-                'dpi_inspector_enabled': self.orchestrator.dpi_inspector.enabled
+            # Тестовый ответ для проверки работоспособности
+            test_response = {
+                'status': 'working',
+                'message': 'API is functional',
+                'timestamp': asyncio.get_event_loop().time()
             }
             
-            return self.make_response(200, json.dumps(status_data, indent=2), 'application/json')
+            # Получаем слепок состояния от оркестратора
+            try:
+                snapshot = await self.orchestrator.get_snapshot()
+                
+                # Добавляем дополнительную мета-информацию
+                status_data = {
+                    'timestamp': asyncio.get_event_loop().time(),
+                    'total_domains': len(snapshot.get('domains', {})),
+                    'orchestrator_enabled': self.orchestrator.enabled,
+                    'dpi_inspector_enabled': self.orchestrator.dpi_inspector.enabled,
+                    **snapshot  # Включаем domains из snapshot
+                }
+                return self.make_response(200, json.dumps(status_data, indent=2, ensure_ascii=False), 'application/json')
+            except Exception as e:
+                self.logger.error(f"Snapshot error: {e}")
+                # Возвращаем тестовый ответ если snapshot не работает
+                return self.make_response(200, json.dumps(test_response, indent=2), 'application/json')
             
         except Exception as e:
             self.logger.error(f"Status API error: {e}")

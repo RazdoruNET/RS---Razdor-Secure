@@ -483,6 +483,44 @@ class SmartFailoverOrchestrator:
             module_configs=config.get('module_configs', {})
         )
     
+    async def get_snapshot(self) -> dict:
+        """
+        Получить потокобезопасный слепок состояния кэша доменов для Web GUI
+        
+        Returns:
+            Словарь с текущим состоянием стратегий
+        """
+        async with self.strategy_lock:
+            return {
+                "domains": {
+                    domain: {
+                        "status": self._get_domain_status(strategy),
+                        "active_pipeline": strategy.pipeline_modules,
+                        "failures": strategy.failure_count,
+                        "last_drop_reason": self._get_last_drop_reason(domain)
+                    }
+                    for domain, strategy in self.domain_strategies.items()
+                }
+            }
+    
+    def _get_domain_status(self, strategy) -> str:
+        """Определить статус домена"""
+        if strategy.is_passthrough:
+            return 'PASSTHROUGH'
+        elif strategy.success_count > 0 and strategy.failure_count == 0:
+            return 'STABLE'
+        elif strategy.failure_count > 0:
+            return 'UNSTABLE'
+        else:
+            return 'MUTATING'
+    
+    def _get_last_drop_reason(self, domain: str) -> str:
+        """Получить последнюю причину сброса от DPI инспектора"""
+        for analysis in self.dpi_inspector.completed_connections.values():
+            if analysis.domain == domain and analysis.drop_reason.value != 'unknown':
+                return analysis.drop_reason.value
+        return 'N/A'
+    
     async def get_domain_stats(self) -> Dict[str, Dict[str, Any]]:
         """
         Получить статистику по доменам

@@ -24,7 +24,7 @@ services:
       # DPI Sandbox Inspector settings
       - DPI_SANDBOX_INSPECTION=true
       - MATRIX_EXPORT_PATH=/app/logs/matrix_report.json
-      # Web GUI settings
+      # Web GUI settings (enabled for full-scale test)
       - WEB_GUI_ENABLED=true
       - WEB_GUI_PORT=8080
       - STRATEGY_PRESEED_URL=githubusercontent.com
