@@ -1,0 +1,9 @@
+{"ts": 1778428593.849716, "event": "trace_start"}
+{"ts": 1778428593.849937, "event": "pipeline_start", "pipeline": "HTTPFragmentation"}
+{"ts": 1778428594.043464, "event": "socket_connect", "bytes": 0, "pipeline": "HTTPFragmentation", "remote_host": "httpbin.org", "remote_port": 80}
+{"ts": 1778428594.043535, "event": "socket_send", "bytes": 50, "pipeline": "HTTPFragmentation", "data_preview": "474554202f67657420485454502f312e310d0a486f73743a206874747062696e"}
+{"ts": 1778428594.04478, "event": "socket_send", "bytes": 9, "pipeline": "HTTPFragmentation", "data_preview": "636c6f73650d0a0d0a"}
+{"ts": 1778428594.328491, "event": "socket_recv", "bytes": 423, "pipeline": "HTTPFragmentation", "data_preview": "485454502f312e3120323030204f4b0d0a446174653a2053756e2c203130204d"}
+{"ts": 1778428594.328574, "event": "socket_close", "bytes": 0, "pipeline": "HTTPFragmentation"}
+{"ts": 1778428594.3286688, "event": "pipeline_finish", "pipeline": "HTTPFragmentation", "success": true, "status_code": 200}
+{"ts": 1778428594.3286772, "event": "trace_end"}

@@ -8,6 +8,7 @@ import asyncio
 import socket
 import time
 from ..core.contracts import BasePipeline, Request, Response
+from ..core.packet_capture import get_packet_capture_layer
 
 class HTTPFragmentation(BasePipeline):
     """Пайплайн реальной фрагментации HTTP запросов"""
@@ -27,6 +28,7 @@ class HTTPFragmentation(BasePipeline):
             
             # Подключаемся
             sock.connect((request.host, request.port))
+            get_packet_capture_layer().log_connect((request.host, request.port))
             
             # Формируем HTTP запрос
             http_request = f"{request.method} {request.path} HTTP/1.1\r\n"
@@ -40,6 +42,7 @@ class HTTPFragmentation(BasePipeline):
             for i in range(0, len(request_bytes), self.chunk_size):
                 chunk = request_bytes[i:i + self.chunk_size]
                 sock.send(chunk)
+                get_packet_capture_layer().log_send(chunk, chunk_index=i//self.chunk_size)
                 time.sleep(0.001)  # Реальная задержка между чанками
             
             # Получаем ответ
@@ -49,9 +52,11 @@ class HTTPFragmentation(BasePipeline):
                 if not chunk:
                     break
                 response_data += chunk
+                get_packet_capture_layer().log_recv(chunk)
             
+            # Закрываем сокет
             sock.close()
-            
+            get_packet_capture_layer().log_close()
             # Парсим HTTP ответ
             if response_data:
                 response_text = response_data.decode('utf-8', errors='ignore')

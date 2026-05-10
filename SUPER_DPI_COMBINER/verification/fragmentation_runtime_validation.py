@@ -13,7 +13,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from super_dpi_combiner.core.packet_capture import get_packet_capture_layer, enable_packet_capture, clear_capture_events
+from super_dpi_combiner.core.packet_capture import get_packet_capture_layer, enable_packet_capture, disable_packet_capture, clear_capture_events
 from super_dpi_combiner.pipelines.http_fragmentation import HTTPFragmentation
 from super_dpi_combiner.core.contracts import Request
 
