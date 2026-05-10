@@ -296,20 +296,33 @@ def instrument_socket_send(original_send: Callable) -> Callable:
 def instrument_socket_recv(original_recv: Callable) -> Callable:
     """Обертка для socket.recv"""
     @functools.wraps(original_recv)
-    def wrapped_recv(self, bufsize: int, *args, **kwargs) -> bytes:
+    def wrapped_recv(self, bufsize: int, *args, **kwargs):
         start_time = time.time()
         
         try:
             result = original_recv(self, bufsize, *args, **kwargs)
             
+            # Обрабатываем разные типы возврата (bytes для recv, int для recv_into)
+            if isinstance(result, bytes):
+                data_bytes = result
+                received_bytes = len(result)
+            elif isinstance(result, int):
+                # Для recv_into возвращается количество полученных байт
+                data_bytes = result.to_bytes(1, 'big') if result > 0 else b""
+                received_bytes = result
+            else:
+                data_bytes = b""
+                received_bytes = 0
+            
             # Записываем операцию
             _io_monitor.record_operation(
                 operation_type=IOOperationType.SOCKET_RECV,
-                data=result,
+                data=data_bytes,
                 success=True,
                 metadata={
                     'requested_bytes': bufsize,
-                    'received_bytes': len(result),
+                    'received_bytes': received_bytes,
+                    'return_type': type(result).__name__,
                     'args_count': len(args),
                     'kwargs_keys': list(kwargs.keys()),
                     'duration': time.time() - start_time
