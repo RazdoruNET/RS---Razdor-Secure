@@ -1,0 +1,143 @@
+{
+  "system": {
+    "mode": "production",
+    "debug": false,
+    "log_level": "INFO",
+    "max_workers": 50,
+    "timeout": 30.0
+  },
+  "pipelines": {
+    "directory": "pipelines",
+    "auto_load": true,
+    "enabled": [
+      "spoof_dpi/packet_shaper",
+      "domain_fronting/cdn_bypass", 
+      "domain_fronting/host_header",
+      "protocol_obfuscation/http_fragmentation",
+      "protocol_obfuscation/custom_headers",
+      "adaptive/ml_detection",
+      "adaptive/auto_switch"
+    ]
+  },
+  "network": {
+    "dns_servers": [
+      "8.8.8.8",
+      "8.8.4.4",
+      "1.1.1.1",
+      "1.0.0.1"
+    ],
+    "user_agents": [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0"
+    ],
+    "proxy": {
+      "enabled": false,
+      "http_proxy": "",
+      "https_proxy": "",
+      "socks_proxy": ""
+    }
+  },
+  "cdn": {
+    "domains": [
+      "cdn.jsdelivr.net",
+      "ajax.googleapis.com",
+      "cdnjs.cloudflare.com",
+      "unpkg.com",
+      "raw.githubusercontent.com",
+      "code.jquery.com",
+      "stackpath.bootstrapcdn.com",
+      "fonts.googleapis.com",
+      "fonts.gstatic.com"
+    ],
+    "fronting_techniques": [
+      "host_header",
+      "sni_spoofing",
+      "path_based",
+      "header_override"
+    ]
+  },
+  "tcp_segmentation": {
+    "enabled": true,
+    "segment_sizes": [1, 2, 4, 8, 16],
+    "ttl_values": [32, 64, 128],
+    "delays": [0.001, 0.005, 0.01, 0.02]
+  },
+  "http_fragmentation": {
+    "enabled": true,
+    "chunk_sizes": [64, 128, 256, 512, 1024],
+    "random_padding": true,
+    "header_obfuscation": true,
+    "chunk_encoding": ["chunked", "identity"]
+  },
+  "domain_fronting": {
+    "enabled": true,
+    "cdn_providers": {
+      "cloudflare": {
+        "domains": ["cdnjs.cloudflare.com", "ajax.cloudflare.com"],
+        "techniques": ["host_header", "sni_spoofing"]
+      },
+      "google": {
+        "domains": ["ajax.googleapis.com", "fonts.googleapis.com"],
+        "techniques": ["path_based", "header_override"]
+      },
+      "jsdelivr": {
+        "domains": ["cdn.jsdelivr.net"],
+        "techniques": ["host_header", "path_based"]
+      }
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "prometheus": {
+      "enabled": true,
+      "port": 9090,
+      "endpoint": "/metrics"
+    },
+    "elasticsearch": {
+      "enabled": true,
+      "host": "elasticsearch",
+      "port": 9200,
+      "index": "dpi-logs"
+    }
+  },
+  "cache": {
+    "enabled": true,
+    "redis": {
+      "host": "redis",
+      "port": 6379,
+      "db": 0,
+      "ttl": 3600
+    }
+  },
+  "llm": {
+    "enabled": false,
+    "url": "http://ollama:11434",
+    "model": "llama2",
+    "timeout": 30.0
+  },
+  "security": {
+    "max_concurrent_requests": 100,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 60,
+      "burst_size": 10
+    },
+    "allowed_hosts": [
+      "localhost",
+      "127.0.0.1"
+    ]
+  },
+  "testing": {
+    "target_urls": [
+      "https://httpbin.org/ip",
+      "https://api.ipify.org",
+      "https://ifconfig.me/ip",
+      "https://icanhazip.com"
+    ],
+    "timeout": 10.0,
+    "retries": 3
+  }
+}

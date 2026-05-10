@@ -1,0 +1,72 @@
+# Requirements for Super DPI Combiner
+# Real network functionality for DPI bypass
+
+# Core async HTTP client
+aiohttp>=3.8.0
+certifi>=2022.12.7
+
+# SSL/TLS handling
+cryptography>=3.4.8
+pyopenssl>=22.0.0
+
+# Network utilities
+dnspython>=2.2.1
+requests>=2.28.0
+urllib3>=1.26.0
+
+# Async utilities
+asyncio-throttle>=1.0.2
+aiofiles>=0.8.0
+
+# Data processing
+numpy>=1.21.0
+pandas>=1.4.0
+
+# Logging and monitoring
+structlog>=22.1.0
+colorama>=0.4.4
+
+# Configuration handling
+pyyaml>=6.0
+python-dotenv>=0.19.0
+
+# JSON handling
+ujson>=5.6.0
+
+# Time utilities
+python-dateutil>=2.8.2
+
+# System utilities
+psutil>=5.9.0
+
+# Development dependencies (optional)
+pytest>=7.0.0
+pytest-asyncio>=0.20.0
+black>=22.0.0
+flake8>=4.0.0
+
+# LLM integration (optional)
+openai>=0.27.0
+tiktoken>=0.3.0
+
+# Network analysis
+scapy>=2.4.5
+netifaces>=0.11.0
+
+# Proxy support
+pysocks>=1.7.1
+
+# DNS resolution
+aiodns>=3.0.0
+
+# HTTP/2 support
+h2>=4.1.0
+
+# WebSocket support
+websockets>=10.4
+
+# Compression
+zstandard>=0.18.0
+
+# Hashing and encryption
+bcrypt>=3.2.0

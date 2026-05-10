@@ -5,6 +5,8 @@ Packet Shaper Pipeline - TCP сегментация и манипуляция п
 import asyncio
 import time
 import random
+import socket
+import ssl
 from typing import Dict, Any
 
 # Импорт с корректным путем
@@ -12,6 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.base_pipeline import BasePipeline, BypassTechnique, BypassRequest, BypassResponse
+from core.http_client import TCPClient
 
 class PacketShaperPipeline(BasePipeline):
     """Пайплайн для TCP сегментации и манипуляции пакетами"""
@@ -19,39 +22,58 @@ class PacketShaperPipeline(BasePipeline):
     def __init__(self):
         super().__init__("PacketShaper", BypassTechnique.SPOOF_DPI, priority=1)
         self.segment_size = 1
-        self.fake_ttl = 1
+        self.fake_ttl = 64
         self.delay_between_segments = 0.001
+        self.tcp_client = TCPClient(timeout=10.0)
         
     async def execute(self, request: BypassRequest) -> BypassResponse:
-        """Выполнение TCP сегментации"""
+        """Выполнение реальной TCP сегментации"""
         start_time = time.time()
         
         try:
-            # Имитация TCP сегментации
-            segments_needed = self.segment_size
+            # Создаем HTTP запрос для сегментации
+            http_request = self._create_segmented_http_request(request)
+            
+            # Разбиваем запрос на сегменты
+            segments = self._segment_request(http_request, self.segment_size)
+            
+            # Устанавливаем TCP соединение
+            reader, writer = await self.tcp_client.create_connection(request.host, request.port)
             
             # Отправляем сегменты с задержкой
-            for i in range(segments_needed):
-                # Имитация отправки сегмента
+            for i, segment in enumerate(segments):
+                await self.tcp_client.send_data(writer, segment)
                 await asyncio.sleep(self.delay_between_segments)
                 
-                # Фейковый TTL для обхода DPI
-                if self.fake_ttl > 1:
-                    await asyncio.sleep(0.001)  # Имитация TTL манипуляции // TODO 
+                # Манипуляция TTL через опции сокета
+                if self.fake_ttl != 64:
+                    sock = writer.get_extra_info('socket')
+                    if sock:
+                        sock.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, self.fake_ttl)
             
-            # Имитация успешного ответа
+            # Получаем ответ
+            response_data = await self.tcp_client.receive_data(reader, 8192)
+            
+            # Закрываем соединение
+            await self.tcp_client.close_connection(writer)
+            
             response_time = time.time() - start_time
             
-            # Вероятность успеха зависит от параметров
-            success_probability = 0.4 + (self.segment_size * 0.1) + (self.fake_ttl * 0.05)
-            success = random.random() < success_probability // TODO 
+            # Анализируем ответ
+            success = len(response_data) > 0 and b'200' in response_data[:100]
+            status_code = 200 if success else 403
             
             return BypassResponse(
                 success=success,
-                status_code=200 if success else 403,
+                status_code=status_code,
                 response_time=response_time,
                 technique_used=self.name,
-                headers={'X-Segments': str(segments_needed)}
+                data=response_data,
+                headers={
+                    'X-Segments': str(len(segments)),
+                    'X-Segment-Size': str(self.segment_size),
+                    'X-TTL': str(self.fake_ttl)
+                }
             )
             
         except Exception as e:
@@ -70,6 +92,41 @@ class PacketShaperPipeline(BasePipeline):
         
         print(f"✅ PacketShaper инициализирован: segments={self.segment_size}, ttl={self.fake_ttl}")
         return True
+    
+    def _create_segmented_http_request(self, request: BypassRequest) -> bytes:
+        """Создание HTTP запроса для сегментации"""
+        headers = request.headers or {}
+        
+        # Формируем HTTP запрос
+        http_lines = [
+            f"{request.method} / HTTP/1.1",
+            f"Host: {request.host}",
+            f"Connection: close",
+            f"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        ]
+        
+        # Добавляем дополнительные заголовки
+        for key, value in headers.items():
+            http_lines.append(f"{key}: {value}")
+        
+        # Добавляем пустую строку и тело запроса
+        http_lines.append("")
+        if request.data:
+            http_lines.append(request.data.decode('utf-8', errors='ignore'))
+        
+        return "\r\n".join(http_lines).encode('utf-8')
+    
+    def _segment_request(self, data: bytes, segment_size: int) -> list:
+        """Разбиение данных на сегменты"""
+        if segment_size <= 1:
+            return [data]
+        
+        segments = []
+        for i in range(0, len(data), segment_size):
+            segment = data[i:i + segment_size]
+            segments.append(segment)
+        
+        return segments
     
     def cleanup(self) -> bool:
         """Очистка ресурсов"""
