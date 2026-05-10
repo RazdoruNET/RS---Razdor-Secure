@@ -58,7 +58,8 @@ class HTTPFragmentationPipeline(BasePipeline):
         self.config = FragmentationConfig()
         self.tcp_client = TCPClient(timeout=10.0)
         
-        # Performance tracking с защитой от memory leaks
+        # Performance tracking с защитой от memory leaks и thread safety
+        self._performance_lock = asyncio.Lock()
         self.performance_history = deque(maxlen=1000)  # Ring buffer с ограничением
         self.total_requests = 0
         self.successful_requests = 0
@@ -79,8 +80,8 @@ class HTTPFragmentationPipeline(BasePipeline):
                 fragments = self._fragment_data(http_request, self.config.fragment_size)
             except Exception as e:
                 logger.error(f"Fragmentation failed: {str(e)}")
-                # Fallback на минимальную фрагментацию при ошибках
-                fragments = [http_request[i:i+1024] for i in range(0, len(http_request), 1024)]
+                # Fallback на фрагментацию с текущим конфигом при ошибках
+                fragments = [http_request[i:i+self.config.fragment_size] for i in range(0, len(http_request), self.config.fragment_size)]
             
             # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS) с валидацией
             try:
@@ -106,8 +107,12 @@ class HTTPFragmentationPipeline(BasePipeline):
             if sock is not None:
                 try:
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                    logger.debug("TCP_NODELAY set successfully")
                 except (AttributeError, OSError) as e:
                     logger.warning(f"Failed to set TCP_NODELAY: {str(e)}")
+                    logger.debug(f"Socket type: {type(sock)}, transport: {type(writer)}")
+            else:
+                logger.warning("Socket is None, cannot set TCP_NODELAY")
             
             # Отправляем фрагменты с задержкой и jitter
             for i, fragment in enumerate(fragments):
@@ -202,20 +207,12 @@ class HTTPFragmentationPipeline(BasePipeline):
                 response_time=time.time() - start_time
             )
         finally:
-            # Гарантированное закрытие соединения и reader
+            # Гарантированное закрытие соединения
             if writer:
                 try:
                     await self.tcp_client.close_connection(writer)
                 except Exception as e:
                     logger.error(f"Error closing connection: {str(e)}")
-            
-            # Дополнительная очистка reader
-            if reader:
-                try:
-                    if hasattr(reader, 'close'):
-                        reader.close()
-                except Exception as e:
-                    logger.warning(f"Error closing reader: {str(e)}")
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Инициализация с конфигурацией и валидацией диапазонов"""
@@ -276,6 +273,18 @@ class HTTPFragmentationPipeline(BasePipeline):
             raise ValueError("Request method is required")
         if not hasattr(request, 'host') or not request.host:
             raise ValueError("Request host is required")
+        
+        # Валидация метода HTTP
+        allowed_methods = {'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'}
+        if request.method not in allowed_methods:
+            logger.warning(f"Unsupported method: {request.method}, allowing but may cause issues")
+        
+        # Валидация host
+        if not isinstance(request.host, str) or len(request.host.strip()) == 0:
+            raise ValueError("Host must be non-empty string")
+        if len(request.host) > 253:  # RFC 1034
+            logger.warning(f"Host too long: {len(request.host)}, truncating")
+            request.host = request.host[:253]
         
         # Валидируем и формируем базовые заголовки
         request_headers = {
@@ -342,8 +351,15 @@ class HTTPFragmentationPipeline(BasePipeline):
                         fragment = data[i:i + self.config.fragment_size]
                         fragments.append(fragment)
                 else:
-                    for byte in data:
-                        fragments.append(bytes([byte]))
+                    # Защита от слишком большого количества фрагментов
+                    max_fragments = 512  # Hard cap для защиты от CPU spikes
+                    fragment_count = 0
+                    for i in range(len(data)):
+                        if fragment_count >= max_fragments:
+                            logger.warning(f"Too many fragments ({fragment_count}), stopping BYTE_BY_BYTE mode")
+                            break
+                        fragments.append(bytes([data[i]]))
+                        fragment_count += 1
         elif self.config.fragment_mode == FragmentMode.RANDOM:
             # Случайные размеры фрагментов
             pos = 0
@@ -356,12 +372,25 @@ class HTTPFragmentationPipeline(BasePipeline):
             for i in range(0, len(data), fragment_size):
                 fragment = data[i:i + fragment_size]
                 fragments.append(fragment)
+    elif self.config.fragment_mode == FragmentMode.RANDOM:
+        # Случайные размеры фрагментов
+        pos = 0
+        while pos < len(data):
+            size = random.randint(1, min(fragment_size, len(data) - pos))
+            fragments.append(data[pos:pos + size])
+            pos += size
+    else:  # FIXED
+        # Фиксированная фрагментация
+        for i in range(0, len(data), fragment_size):
+            fragment = data[i:i + fragment_size]
+            fragments.append(fragment)
         
         return fragments
     
     def _parse_http_status(self, response_data: bytes) -> int:
         """Устойчивый парсинг HTTP статуса из ответа"""
         if not response_data:
+            logger.debug("Empty response data")
             return 0
         
         try:
@@ -382,8 +411,15 @@ class HTTPFragmentationPipeline(BasePipeline):
                     except ValueError:
                         pass
             
+            # Если статус не найден, логируем причину
+            if len(response_data) > 0:
+                logger.warning(f"Could not parse HTTP status from response, first 100 bytes: {response_data[:100]}")
+            else:
+                logger.warning("Empty response, cannot parse HTTP status")
+            
             return 0
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error parsing HTTP status: {str(e)}")
             return 0
     
         
@@ -509,22 +545,26 @@ class HTTPFragmentationPipeline(BasePipeline):
         return True
     
     def _record_performance(self, response_time: float, success: bool, status_code: int, 
-                         chunk_count: int, bytes_sent: int, bytes_received: int):
-        """Записываем performance metrics в ring buffer"""
+                         fragment_count: int, bytes_sent: int, bytes_received: int):
+        """Записываем performance metrics в ring buffer с thread-safety"""
         record = PerformanceRecord(
             timestamp=time.time(),
             response_time=response_time,
             success=success,
             status_code=status_code,
-            chunk_count=chunk_count,
+            fragment_count=fragment_count,
             bytes_sent=bytes_sent,
             bytes_received=bytes_received
         )
         
-        self.performance_history.append(record)
-        self.total_requests += 1
-        if success:
-            self.successful_requests += 1
+        # Используем try/except для thread-safety без async
+        try:
+            self.performance_history.append(record)
+            self.total_requests += 1
+            if success:
+                self.successful_requests += 1
+        except Exception as e:
+            logger.warning(f"Failed to record performance metrics: {str(e)}")
     
     def _get_success_rate(self) -> float:
         """Расчет success rate"""
