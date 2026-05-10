@@ -1,15 +1,20 @@
 """
-Core module - Минимальный набор essential компонентов
+Core module - Стабилизированные essential компоненты
 """
 
-from .base import BasePipeline, Request, Response
+from .contracts import BasePipeline, Request, Response, PipelineStatus
 from .runner import Runner
-from .http_client import TCPClient
+from .http_client import HTTPClient
+from .logging import get_logger
+from .shutdown import get_shutdown_manager
 
 __all__ = [
     'BasePipeline',
     'Request', 
     'Response',
+    'PipelineStatus',
     'Runner',
-    'TCPClient'
+    'HTTPClient',
+    'get_logger',
+    'get_shutdown_manager'
 ]

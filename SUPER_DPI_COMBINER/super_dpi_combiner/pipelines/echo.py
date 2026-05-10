@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Echo Pipeline - Эталонный пайплайн для тестирования
+Только contracts, никаких зависимостей
 """
 
 import time
-from ..core.base import BasePipeline, Request, Response
+from ..core.contracts import BasePipeline, Request, Response
 
 class Echo(BasePipeline):
     """Эталонный echo пайплайн"""
@@ -28,5 +29,6 @@ class Echo(BasePipeline):
             success=True,
             status_code=200,
             data=echo_data,
-            latency=latency
+            latency=latency,
+            pipeline=self.name
         )

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-Pipeline Runner - Минимальный исполнитель
+Pipeline Runner - Стабилизированный исполнитель
+Только contracts, никаких magic
 """
 
+import asyncio
 import time
-from typing import Dict, List, Optional
-from .base import BasePipeline, Request, Response
+from typing import Dict, Optional
+from .contracts import BasePipeline, Request, Response
+from .logging import get_logger
 
 class Runner:
     """Минимальный runner для выполнения пайплайнов"""
@@ -17,55 +20,78 @@ class Runner:
             'successful_requests': 0,
             'failed_requests': 0
         }
-    
+        self.logger = get_logger("Runner")
+        
     def register_pipeline(self, pipeline: BasePipeline):
         """Зарегистрировать пайплайн"""
         self.pipelines[pipeline.name] = pipeline
-        print(f"✓ Зарегистрирован пайплайн: {pipeline.name}")
-    
-    def execute_request(self, request: Request, pipeline_name: Optional[str] = None) -> Response:
-        """Выполнить запрос"""
+        self.logger.info(f"Зарегистрирован пайплайн: {pipeline.name}")
+        
+    async def run(
+        self,
+        pipeline: BasePipeline,
+        request: Request
+    ) -> Response:
+        """Запустить пайплайн с таймаутом"""
         self.stats['total_requests'] += 1
+        pipeline.set_status(pipeline.status.RUNNING)
         
-        # Выбираем пайплайн
-        if pipeline_name and pipeline_name in self.pipelines:
-            pipeline = self.pipelines[pipeline_name]
-        elif self.pipelines:
-            pipeline = list(self.pipelines.values())[0]  # Первый доступный
-        else:
-            return Response(
-                success=False,
-                error="Нет доступных пайплайнов"
-            )
-        
-        print(f"→ Выполнение запроса через {pipeline.name}")
-        print(f"  Host: {request.host}:{request.port}")
+        start_time = time.time()
         
         try:
-            start_time = time.time()
-            response = pipeline.execute(request)
+            # Выполняем с таймаутом
+            response = await asyncio.wait_for(
+                pipeline.execute(request),
+                timeout=request.timeout
+            )
+            
             latency = time.time() - start_time
+            response.latency = latency
+            response.pipeline = pipeline.name
             
-            # Обновляем статистику пайплайна
-            pipeline.last_latency = latency
-            
-            # Обновляем общую статистику
+            # Обновляем статистику
             if response.success:
                 self.stats['successful_requests'] += 1
-                print(f"✅ Успех: {response.status_code} ({latency:.3f}s)")
+                pipeline.set_status(pipeline.status.COMPLETED)
+                self.logger.success(
+                    f"Успешное выполнение: {response.status_code}",
+                    pipeline=pipeline.name,
+                    latency=latency
+                )
             else:
                 self.stats['failed_requests'] += 1
-                print(f"❌ Ошибка: {response.error}")
+                pipeline.set_status(pipeline.status.FAILED)
+                self.logger.error(
+                    f"Ошибка выполнения: {response.error}",
+                    pipeline=pipeline.name
+                )
                 
-            response.latency = latency
             return response
+            
+        except asyncio.TimeoutError:
+            self.stats['failed_requests'] += 1
+            pipeline.set_status(pipeline.status.FAILED)
+            self.logger.error(
+                f"Таймаут выполнения ({request.timeout}s)",
+                pipeline=pipeline.name
+            )
+            return Response(
+                success=False,
+                error=f"Timeout after {request.timeout}s",
+                pipeline=pipeline.name
+            )
             
         except Exception as e:
             self.stats['failed_requests'] += 1
-            print(f"❌ Исключение: {e}")
+            pipeline.set_status(pipeline.status.FAILED)
+            self.logger.error(
+                f"Исключение при выполнении: {e}",
+                pipeline=pipeline.name
+            )
             return Response(
                 success=False,
-                error=str(e)
+                error=f"Runner exception: {e}",
+                pipeline=pipeline.name
             )
     
     def get_stats(self) -> Dict:
@@ -82,7 +108,7 @@ class Runner:
     
     def list_pipelines(self):
         """Показать доступные пайплайны"""
-        print("\n📋 Доступные пайплайны:")
+        self.logger.info("Доступные пайплайны:")
         for name, pipeline in self.pipelines.items():
-            stats = pipeline.get_stats()
-            print(f"  • {name} (latency: {stats.get('last_latency', 0):.3f}s)")
+            status = pipeline.get_status().value
+            self.logger.info(f"  • {name} (status: {status})")

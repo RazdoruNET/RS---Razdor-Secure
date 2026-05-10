@@ -1,5 +1,5 @@
 """
-Pipelines module - Минимальный набор рабочих пайплайнов
+Pipelines module - Изолированные пайплайны без зависимостей
 """
 
 from .http_fragmentation import HTTPFragmentation

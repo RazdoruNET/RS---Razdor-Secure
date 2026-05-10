@@ -31,7 +31,7 @@ class Request:
 class Response:
     """Immutable Response contract"""
     success: bool
-    status: int = 0
+    status_code: int = 0
     latency: float = 0.0
     pipeline: str = ""
     error: Optional[str] = None

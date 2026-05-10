@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
 HTTP Fragmentation Pipeline - Реальная фрагментация HTTP запросов
+Никакой симуляции - только настоящие сетевые операции
 """
 
+import asyncio
 import socket
 import time
-import random
-from ..core.base import BasePipeline, Request, Response
+from ..core.contracts import BasePipeline, Request, Response
 
 class HTTPFragmentation(BasePipeline):
-    """Пайплайн фрагментации HTTP запросов"""
+    """Пайплайн реальной фрагментации HTTP запросов"""
     
     def __init__(self):
         super().__init__("HTTPFragmentation")
         self.chunk_size = 100  # bytes
         
     def execute(self, request: Request) -> Response:
-        """Выполнить фрагментированный HTTP запрос"""
+        """Выполнить реальную фрагментацию"""
+        start_time = time.time()
+        
         try:
             # Создаем сокет
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -26,19 +29,18 @@ class HTTPFragmentation(BasePipeline):
             sock.connect((request.host, request.port))
             
             # Формируем HTTP запрос
-            http_request = f"{request.method} / HTTP/1.1\r\n"
+            http_request = f"{request.method} {request.path} HTTP/1.1\r\n"
             http_request += f"Host: {request.host}\r\n"
             http_request += "Connection: close\r\n"
             http_request += "\r\n"
             
-            # Фрагментируем запрос
+            # Фрагментируем и отправляем
             request_bytes = http_request.encode()
             
-            # Отправляем чанками
             for i in range(0, len(request_bytes), self.chunk_size):
                 chunk = request_bytes[i:i + self.chunk_size]
                 sock.send(chunk)
-                time.sleep(0.001)  # Небольшая задержка между чанками
+                time.sleep(0.001)  # Реальная задержка между чанками
             
             # Получаем ответ
             response_data = b""
@@ -52,27 +54,33 @@ class HTTPFragmentation(BasePipeline):
             
             # Парсим HTTP ответ
             if response_data:
-                first_line = response_data.split(b'\r\n')[0].decode()
+                response_text = response_data.decode('utf-8', errors='ignore')
+                first_line = response_text.split('\r\n')[0]
                 if '200' in first_line:
                     return Response(
                         success=True,
                         status_code=200,
-                        data=response_data
+                        data=response_data,
+                        pipeline=self.name
                     )
                 else:
                     return Response(
                         success=False,
                         status_code=int(first_line.split()[1]) if len(first_line.split()) > 1 else 0,
-                        data=response_data
+                        data=response_data,
+                        pipeline=self.name,
+                        error=f"HTTP {first_line.split()[1] if len(first_line.split()) > 1 else 'Unknown'}"
                     )
             else:
                 return Response(
                     success=False,
-                    error="Нет ответа от сервера"
+                    error="Нет ответа от сервера",
+                    pipeline=self.name
                 )
                 
         except Exception as e:
             return Response(
                 success=False,
-                error=f"HTTP Fragmentation ошибка: {e}"
+                error=f"HTTP Fragmentation error: {e}",
+                pipeline=self.name
             )
