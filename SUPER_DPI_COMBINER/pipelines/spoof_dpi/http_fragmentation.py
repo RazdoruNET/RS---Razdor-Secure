@@ -60,13 +60,24 @@ class HTTPFragmentationPipeline(BasePipeline):
             # Разбиваем на фрагменты
             fragments = self._fragment_data(http_request, self.config.fragment_size)
             
-            # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS)
-            if request.port == 443:
-                # HTTPS - используем TLS
-                reader, writer = await self.tcp_client.create_tls_connection(request.host, request.port)
-            else:
-                # HTTP - используем plain TCP
-                reader, writer = await self.tcp_client.create_connection(request.host, request.port)
+            # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS) с валидацией
+            try:
+                if request.port == 443:
+                    # HTTPS - используем TLS
+                    connection_result = await self.tcp_client.create_tls_connection(request.host, request.port)
+                else:
+                    # HTTP - используем plain TCP
+                    connection_result = await self.tcp_client.create_connection(request.host, request.port)
+                
+                # Валидируем результат соединения
+                if not isinstance(connection_result, tuple) or len(connection_result) != 2:
+                    raise ConnectionError(f"Invalid connection result: {connection_result}")
+                
+                reader, writer = connection_result
+                
+            except Exception as e:
+                logger.error(f"Connection failed: {str(e)}")
+                raise
             
             # Устанавливаем TCP_NODELAY один раз для гарантии фрагментации
             sock = writer.get_extra_info('socket')
@@ -86,16 +97,35 @@ class HTTPFragmentationPipeline(BasePipeline):
                 # Для реальной packet fragmentation нужны raw sockets
                 # asyncio stream не даёт контроля над packet boundaries
             
-            # Получаем ответ полностью (надежное чтение через buffer)
+            # Получаем ответ полностью (надежное чтение с защитой от бесконечного цикла)
             buffer = bytearray()
+            max_response_size = 10 * 1024 * 1024  # 10MB лимит
+            start_read_time = time.time()
+            max_read_time = 60.0  # 60 секунд максимум на чтение
+            
             while True:
-                chunk = await asyncio.wait_for(
-                    reader.read(8192),
-                    timeout=30.0
-                )
-                if not chunk:
+                # Проверяем таймаут чтения
+                elapsed = time.time() - start_read_time
+                if elapsed > max_read_time:
+                    logger.warning(f"Response read timeout after {elapsed:.1f}s")
                     break
-                buffer.extend(chunk)
+                
+                # Проверяем размер буфера
+                if len(buffer) > max_response_size:
+                    logger.warning(f"Response too large: {len(buffer)} bytes, truncating")
+                    break
+                
+                try:
+                    chunk = await asyncio.wait_for(
+                        reader.read(8192),
+                        timeout=5.0  # Таймаут на каждый chunk
+                    )
+                    if not chunk:
+                        break
+                    buffer.extend(chunk)
+                except asyncio.TimeoutError:
+                    logger.warning("Chunk read timeout, ending response read")
+                    break
             
             response_data = bytes(buffer)
             
@@ -141,7 +171,13 @@ class HTTPFragmentationPipeline(BasePipeline):
                 fragment_size=config.get('fragment_size', 256),
                 fragment_delay=config.get('fragment_delay', 0.001),
                 random_padding=config.get('random_padding', False),
-                fragment_mode=FragmentMode[config.get('fragment_mode', 'FIXED').upper()],
+                # Безопасный парсинг FragmentMode с fallback
+                mode_str = config.get('fragment_mode', 'FIXED').upper()
+                try:
+                    fragment_mode = FragmentMode[mode_str]
+                except KeyError:
+                    logger.warning(f"Unknown fragment mode '{mode_str}', falling back to FIXED")
+                    fragment_mode = FragmentMode.FIXED
                 jitter_range=config.get('jitter_range', (0.8, 1.2))
             )
         except Exception as e:
@@ -200,9 +236,16 @@ class HTTPFragmentationPipeline(BasePipeline):
             else:
                 fragments.append(data)
         elif self.config.fragment_mode == FragmentMode.BYTE_BY_BYTE:
-            # Побайтовая фрагментация
-            for byte in data:
-                fragments.append(bytes([byte]))
+            # Побайтовая фрагментация с защитой от перегрузки
+            if len(data) > 4096:  # Защита от перегрузки event loop
+                logger.warning(f"Data too large for BYTE_BY_BYTE mode: {len(data)} bytes, falling back to FIXED")
+                # Fallback на FIXED режим
+                for i in range(0, len(data), self.config.fragment_size):
+                    fragment = data[i:i + self.config.fragment_size]
+                    fragments.append(fragment)
+            else:
+                for byte in data:
+                    fragments.append(bytes([byte]))
         elif self.config.fragment_mode == FragmentMode.RANDOM:
             # Случайные размеры фрагментов
             pos = 0
