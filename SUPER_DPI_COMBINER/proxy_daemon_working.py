@@ -24,27 +24,29 @@ class WorkingProxyDaemon:
     """Рабочая версия прозрачного прокси с wire fragmentation"""
     
     def __init__(self, listen_port=1080, chunk_size=30, chunk_delay=0.005):
-        self.listen_port = listen_port
-        self.chunk_size = chunk_size
-        self.chunk_delay = chunk_delay
+        # Read from environment variables
+        import os
+        self.listen_port = int(os.environ.get('LISTEN_PORT', str(listen_port)))
+        self.chunk_size = int(os.environ.get('CHUNK_SIZE', str(chunk_size)))
+        self.chunk_delay = float(os.environ.get('CHUNK_DELAY', str(chunk_delay)))
         self.running = False
         self.connections = {}
         
         # Используем существующий fragment analyzer
         self.segment_analyzer = TCPSegmentAnalyzer()
         
-        # Configure logging
+        # Configure logging to stdout only (for docker logs)
+        log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
         logging.basicConfig(
-            level=logging.INFO,
+            level=getattr(logging, log_level),
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('proxy_daemon.log'),
-                logging.StreamHandler()
+                logging.StreamHandler(sys.stdout)
             ]
         )
         
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Working proxy daemon initialized: port={listen_port}, chunk_size={chunk_size}, chunk_delay={chunk_delay}")
+        self.logger.info(f"Working proxy daemon initialized: port={self.listen_port}, chunk_size={self.chunk_size}, chunk_delay={self.chunk_delay}")
     
     async def handle_client(self, reader, writer):
         """Handle client connection with wire fragmentation"""

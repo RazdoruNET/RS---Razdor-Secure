@@ -2,7 +2,7 @@
 # Dockerfile for Super DPI Combiner
 # Real DPI bypass system with network functionality
 
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -12,46 +12,45 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for TPROXY
 RUN apt-get update && apt-get install -y \
+    iptables \
+    iproute2 \
+    net-tools \
+    curl \
+    netcat-openbsd \
     gcc \
     g++ \
     libffi-dev \
     libssl-dev \
     libpcap-dev \
     tcpdump \
-    netcat-openbsd \
-    curl \
-    wget \
     dnsutils \
-    iproute2 \
-    iptables \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash dpi && \
-    chown -R dpi:dpi /app
-USER dpi
+# Copy stage 3 components
+COPY proxy_daemon_working.py /app/
+COPY destination_extractor_final.py /app/
+COPY verification/ /app/verification/
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/data /app/config
 
-# Expose ports for different services
-EXPOSE 8080 8443 3128 1080
+# Set permissions
+RUN chmod +x /app/proxy_daemon_working.py
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)" || exit 1
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-# Default command
-CMD ["python", "main.py", "--config", "config/settings.json", "--mode", "production"]
+# Set environment variables
+ENV CHUNK_SIZE=30
+ENV CHUNK_DELAY=0.005
+ENV LISTEN_PORT=1080
+ENV LOG_LEVEL=INFO
+
+# Expose proxy port
+EXPOSE 1080
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
