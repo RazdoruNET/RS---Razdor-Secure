@@ -69,11 +69,15 @@ class HTTPFragmentationPipeline(BasePipeline):
                     # HTTP - используем plain TCP
                     connection_result = await self.tcp_client.create_connection(request.host, request.port)
                 
-                # Валидируем результат соединения
+                # Валидируем результат соединения с безопасной проверкой
                 if not isinstance(connection_result, tuple) or len(connection_result) != 2:
                     raise ConnectionError(f"Invalid connection result: {connection_result}")
                 
                 reader, writer = connection_result
+                
+                # Дополнительная проверка на None значения
+                if reader is None or writer is None:
+                    raise ConnectionError("Connection returned None reader or writer")
                 
             except Exception as e:
                 logger.error(f"Connection failed: {str(e)}")
@@ -100,6 +104,7 @@ class HTTPFragmentationPipeline(BasePipeline):
             # Получаем ответ полностью (надежное чтение с защитой от бесконечного цикла)
             buffer = bytearray()
             max_response_size = 10 * 1024 * 1024  # 10MB лимит
+            max_chunks = 1000  # Максимальное количество чанков для защиты от memory overflow
             start_read_time = time.time()
             max_read_time = 60.0  # 60 секунд максимум на чтение
             
@@ -110,9 +115,13 @@ class HTTPFragmentationPipeline(BasePipeline):
                     logger.warning(f"Response read timeout after {elapsed:.1f}s")
                     break
                 
-                # Проверяем размер буфера
+                # Проверяем размер буфера и количество чанков
                 if len(buffer) > max_response_size:
                     logger.warning(f"Response too large: {len(buffer)} bytes, truncating")
+                    break
+                
+                if len(buffer) // 8192 > max_chunks:  # Защита от memory overflow
+                    logger.warning(f"Too many chunks: {len(buffer) // 8192}, stopping read")
                     break
                 
                 try:
@@ -126,8 +135,18 @@ class HTTPFragmentationPipeline(BasePipeline):
                 except asyncio.TimeoutError:
                     logger.warning("Chunk read timeout, ending response read")
                     break
+                except Exception as e:
+                    logger.error(f"Error reading chunk: {str(e)}")
+                    break
             
             response_data = bytes(buffer)
+            
+            # Корректное закрытие reader
+            try:
+                if hasattr(reader, 'close'):
+                    reader.close()
+            except Exception as e:
+                logger.warning(f"Error closing reader: {str(e)}")
             
             response_time = time.time() - start_time
             
@@ -157,27 +176,37 @@ class HTTPFragmentationPipeline(BasePipeline):
                 response_time=time.time() - start_time
             )
         finally:
-            # Гарантированное закрытие соединения
+            # Гарантированное закрытие соединения и reader
             if writer:
                 try:
                     await self.tcp_client.close_connection(writer)
                 except Exception as e:
                     logger.error(f"Error closing connection: {str(e)}")
+            
+            # Дополнительная очистка reader
+            if reader:
+                try:
+                    if hasattr(reader, 'close'):
+                        reader.close()
+                except Exception as e:
+                    logger.warning(f"Error closing reader: {str(e)}")
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Инициализация с конфигурацией"""
         try:
+            # Безопасный парсинг FragmentMode с fallback
+            mode_str = config.get('fragment_mode', 'FIXED').upper()
+            try:
+                fragment_mode = FragmentMode[mode_str]
+            except KeyError:
+                logger.warning(f"Unknown fragment mode '{mode_str}', falling back to FIXED")
+                fragment_mode = FragmentMode.FIXED
+            
             self.config = FragmentationConfig(
                 fragment_size=config.get('fragment_size', 256),
                 fragment_delay=config.get('fragment_delay', 0.001),
                 random_padding=config.get('random_padding', False),
-                # Безопасный парсинг FragmentMode с fallback
-                mode_str = config.get('fragment_mode', 'FIXED').upper()
-                try:
-                    fragment_mode = FragmentMode[mode_str]
-                except KeyError:
-                    logger.warning(f"Unknown fragment mode '{mode_str}', falling back to FIXED")
-                    fragment_mode = FragmentMode.FIXED
+                fragment_mode=fragment_mode,
                 jitter_range=config.get('jitter_range', (0.8, 1.2))
             )
         except Exception as e:
@@ -191,6 +220,12 @@ class HTTPFragmentationPipeline(BasePipeline):
         """Создание HTTP запроса для фрагментации"""
         headers = request.headers or {}
         path = getattr(request, 'path', '/')
+        
+        # Валидируем обязательные поля request
+        if not hasattr(request, 'method') or not request.method:
+            raise ValueError("Request method is required")
+        if not hasattr(request, 'host') or not request.host:
+            raise ValueError("Request host is required")
         
         # Формируем базовые заголовки
         request_headers = {
