@@ -1,27 +1,192 @@
-# SUPER_DPI_COMBINER
+# 🧭 ROADMAP — SUPER_DPI_COMBINER (реальное состояние)
 
-**Исследовательский прототип техник обхода DPI с модульной архитектурой**
+## 📌 База оценки
 
-## 📋 Что это на самом деле
+**Система: 35% prototype**
+- Core частично живой
+- Большинство "техник" — симуляции
+- Единственный реально полезный слой: HTTP + async engine + web UI
 
-SUPER_DPI_COMBINER - это **исследовательский прототип**, который реализует фреймворк для тестирования различных техник обхода DPI. Это **НЕ** готовый к продакшену инструмент для обхода цензуры.
+## 🧱 ЭТАП 0 — СТАБИЛИЗАЦИЯ ПРОТОТИПА (СЕЙЧАС)
 
-**Текущий статус: 35% готовности - Исследовательский прототип**
+### 🎯 Цель:
+Сделать систему не разваливающейся при нагрузке и ошибках
 
-### Что реально работает:
-- ✅ **HTTP фрагментация**: Базовая сегментация TCP пакетов реализована
-- ✅ **Многопоточность**: Параллельная обработка запросов работает
-- ✅ **Веб-интерфейс**: Базовый мониторинг и управление на порту 8080
-- ✅ **Архитектура пайплайнов**: Модульный дизайн для добавления техник
-- ✅ **Управление конфигурацией**: Система настроек на основе JSON
+### 🔴 Критично исправить:
+- убрать все mock/simulated "network bypass" как реальные компоненты
+- привести pipeline API к единому контракту (input/output)
+- стабилизировать asyncio (убрать race conditions с threading)
+- привести lifecycle: init → execute → cleanup (везде одинаково)
 
-### Что не работает (сейчас):
-- ❌ **Domain Fronting**: Только симуляция, нет реальных CDN запросов
-- ❌ **DNS туннелирование**: Нет реальной передачи DNS пакетов
-- ❌ **Интеграция с даркнетом**: Все P2P сети симулированы
-- ❌ **LLM интеграция**: Требует внешний Ollama, нет fallback
-- ❌ **Доступ к секретным базам данных**: Нет реального доступа к академическим базам
-- ❌ **Продвинутая обфускация**: ICMP/timing каналы симулированы
+### 🧠 Core fixes:
+**Pipeline Manager:**
+- запрет silent fail при загрузке модулей
+
+**Multi-thread Engine:**
+- исключить смешивание потоков и async без контроля
+
+**HTTP Client:**
+- добавить connection reuse (минимальный pooling)
+
+### 📊 Результат этапа:
+- система не падает при 100+ запросах
+- исчезают "phantom pipelines"
+- поведение становится предсказуемым
+
+## 🧱 ЭТАП 1 — ПРИВЕДЕНИЕ ПАЙПЛАЙНОВ К РЕАЛЬНОСТИ
+
+### 🎯 Цель:
+разделить:
+- реально работающие компоненты
+- симуляции
+- мертвый код
+
+### 🔴 Убрать или явно пометить:
+- **Domain Fronting** → SIMULATION ONLY
+- **DNS Tunnel** → SIMULATION ONLY
+- **Darknet / P2P** → MOCK ONLY
+- **LLM integration** → OPTIONAL DEPENDENCY, NOT CORE
+
+### 🟡 Привести к единому виду:
+**HTTP Fragmentation:**
+- оставить как единственный "real transport modification experiment"
+
+**Auto Switch:**
+- превратить в scheduler без магии
+
+### 📊 Результат этапа:
+- больше нет "фейковых техник как будто рабочих"
+- честная архитектура: REAL / PARTIAL / SIMULATED
+
+## 🧱 ЭТАП 2 — CORE ENGINE HARDENING
+
+### 🎯 Цель:
+сделать ядро стабильным execution engine
+
+### 🔧 Обязательные изменения:
+
+**1. Pipeline lifecycle enforcement**
+- запрет execute без initialize
+- обязательный cleanup hook
+
+**2. Error isolation**
+- падение одного pipeline НЕ должно ломать engine
+
+**3. Timeout control**
+каждый pipeline:
+- max execution time
+- max memory usage (soft cap)
+
+**4. Logging normalization**
+- убрать print полностью
+- структурированные события:
+  - pipeline_start
+  - pipeline_fail
+  - pipeline_fallback
+
+### 📊 Результат:
+система становится "engine", а не набор скриптов
+
+## 🧱 ЭТАП 3 — УДАЛЕНИЕ СИМУЛЯЦИОННОГО ШУМА
+
+### 🎯 Цель:
+очистить систему от иллюзий функциональности
+
+### ❌ Удалить или демаркировать:
+- fake DNS packets logic
+- fake CDN routing
+- fake darknet routing
+- fake obfuscation layers
+
+### 🧠 Важно:
+оставить только:
+- network real I/O
+- deterministic transformations
+- measurable behavior
+
+### 📊 Результат:
+- README больше не "фантастика"
+- архитектура становится честной
+
+## 🧱 ЭТАП 4 — НАБЛЮДАЕМОСТЬ И МЕТРИКИ
+
+### 🎯 Цель:
+система должна объяснять своё поведение
+
+### Добавить:
+**per-pipeline metrics:**
+- latency
+- success/fail
+- error reason
+
+**global engine stats**
+- structured logs (JSON)
+
+### 📊 Результат:
+можно понять, что реально работает
+
+## 🧱 ЭТАП 5 — ТЕСТОВАЯ БАЗА (МИНИМАЛЬНАЯ)
+
+### 🎯 Цель:
+убрать "магическое мышление"
+
+### Обязательное:
+**unit tests:**
+- pipeline init
+- pipeline execute
+- failure cases
+
+**integration test:**
+- 10–20 запросов end-to-end
+
+### 📊 Результат:
+можно проверить систему без ручного запуска
+
+## 🧱 ЭТАП 6 — НОВАЯ РЕАЛЬНАЯ АРХИТЕКТУРА
+
+### 🎯 Итоговая структура:
+```
+CORE ENGINE (stable)
+├── PipelineManager (robust)
+├── ExecutionEngine (async-safe)
+├── HTTPClient (real network only)
+└── MetricsCollector
+
+PIPELINES
+├── HTTPFragmentation (REAL / experimental)
+├── AutoSwitch (scheduler)
+└── Others (MARKED as SIMULATION or DISABLED)
+
+OBSERVABILITY
+├── logs (structured)
+├── stats API
+└── debug tracing
+```
+
+## 📊 ИТОГОВАЯ ЦЕЛЕВАЯ ГОТОВНОСТЬ
+
+После roadmap:
+
+| Layer | Target |
+|--------|--------|
+| Core engine | 80–90% stable |
+| Pipelines | 20–60% honest status |
+| System overall | 55–65% real usability |
+
+## 🚫 ЧТО ЭТО НЕ ДЕЛАЕТ
+
+- не делает систему "production DPI bypass tool"
+- не улучшает обходные техники
+- не добавляет скрытые возможности
+- не маскирует симуляции
+
+## 🧠 СУТЬ РЕФАКТОРА
+
+**Сейчас система:**
+"выглядит как платформа обхода DPI, но внутри — исследовательский симулятор"
+
+**После roadmap:**
+"честный исследовательский networking framework с измеряемыми экспериментами"
 
 ## 🏗️ Архитектура системы
 
