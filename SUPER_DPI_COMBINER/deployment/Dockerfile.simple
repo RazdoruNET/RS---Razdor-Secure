@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-# Dockerfile for Super DPI Combiner
-# Real DPI bypass system with network functionality
+# Simplified Dockerfile for testing proxy daemon functionality
 
 FROM python:3.10-slim
 
@@ -12,20 +11,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies for TPROXY
+# Install basic dependencies
 RUN apt-get update && apt-get install -y \
-    iptables \
-    iproute2 \
     net-tools \
     curl \
-    netcat-openbsd \
-    gcc \
-    g++ \
-    libffi-dev \
-    libssl-dev \
-    libpcap-dev \
-    tcpdump \
-    dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy stage 3 components from local directories
@@ -39,8 +28,8 @@ RUN mkdir -p /app/logs /app/data /app/config
 # Set permissions
 RUN chmod +x /app/proxy_daemon_working.py
 
-# Copy fixed TPROXY entrypoint script
-COPY entrypoint_tproxy_fixed.sh /app/entrypoint.sh
+# Copy simplified entrypoint script
+COPY entrypoint_simple.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Set environment variables

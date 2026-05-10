@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # DPI-Evading Transparent Proxy service - simplified for testing
+  dpi-proxy-simple:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: dpi-evading-proxy-simple
+    network_mode: "host"
+    privileged: true
+    environment:
+      - CHUNK_SIZE=30
+      - CHUNK_DELAY=0.005
+      - LISTEN_PORT=1080
+      - LOG_LEVEL=INFO
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
