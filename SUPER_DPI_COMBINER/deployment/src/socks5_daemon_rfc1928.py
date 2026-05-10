@@ -18,8 +18,9 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Import pipeline manager
+# Import pipeline manager and orchestrator
 from pipeline_manager import PipelineManager
+from failover_orchestrator import SmartFailoverOrchestrator
 
 class SOCKS5Daemon:
     """Универсальный SOCKS5 прокси с wire fragmentation"""
@@ -31,8 +32,9 @@ class SOCKS5Daemon:
         self.running = False
         self.connections = {}
         
-        # Initialize Pipeline Manager
+        # Initialize Pipeline Manager and Orchestrator
         self.pipeline_manager = PipelineManager()
+        self.orchestrator = SmartFailoverOrchestrator()
         
         # Configure logging to stdout only (for docker logs)
         log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
@@ -47,11 +49,11 @@ class SOCKS5Daemon:
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"SOCKS5 daemon initialized: port={self.listen_port}")
         
-        # Load pipeline configuration
+        # Load base pipeline configuration (fallback)
         if self.pipeline_manager.load_pipeline_config():
-            self.logger.info(f"Pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
+            self.logger.info(f"Base pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
         else:
-            self.logger.error("Failed to load pipeline configuration")
+            self.logger.error("Failed to load base pipeline configuration")
             raise RuntimeError("Pipeline configuration failed")
     
     async def handle_client(self, reader, writer):
@@ -193,8 +195,23 @@ class SOCKS5Daemon:
             return False
     
     async def proxy_connection(self, client_reader, client_writer, target_host, target_port):
-        """Шаг 4: Трансляция и фрагментация данных через Pipeline Manager"""
+        """Шаг 4: Трансляция и фрагментация данных через Smart Orchestrator"""
+        session = None
         try:
+            # Создаем сессию через оркестратор
+            domain = target_host
+            self.logger.info(f"[SOCKS5] Creating session for domain: {domain}")
+            session = await self.orchestrator.create_session(domain)
+            
+            # Загружаем динамическую конфигурацию пайплайна
+            self.logger.info(f"[SOCKS5] Loading dynamic pipeline config: {session.pipeline_config}")
+            if not await self.pipeline_manager.load_pipeline_from_config(session.pipeline_config):
+                self.logger.error(f"[SOCKS5] Failed to load pipeline for {domain}")
+                return
+            
+            self.logger.info(f"[SOCKS5] Session {session.session_id} created for {domain}")
+            self.logger.info(f"[SOCKS5] Dynamic pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
+            
             # Открываем реальное соединение с целевым сервером
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
             try:
@@ -204,9 +221,11 @@ class SOCKS5Daemon:
                 )
             except asyncio.TimeoutError:
                 self.logger.error(f"[SOCKS5] Connection timeout to {target_host}:{target_port}")
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "timeout")
                 return
             except Exception as e:
                 self.logger.error(f"[SOCKS5] Connection failed to {target_host}:{target_port}: {e}")
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "connection_error")
                 return
             
             # Выставляем сокету сервера TCP_NODELAY = 1
@@ -219,16 +238,29 @@ class SOCKS5Daemon:
             # Сбрасываем состояние конвейера для новой сессии
             self.pipeline_manager.reset_session()
             
-            # Передаем управление Pipeline Manager
-            await asyncio.gather(
-                self.forward_client_to_upstream(client_reader, upstream_writer),
+            # Передаем управление Pipeline Manager с отслеживанием успеха
+            success = await asyncio.gather(
+                self.forward_client_to_upstream(client_reader, upstream_writer, session),
                 self.forward_upstream_to_client(upstream_reader, client_writer),
+                return_exceptions=True
             )
+            
+            # Проверяем результаты
+            if all(isinstance(result, Exception) for result in success):
+                # Все задачи завершились с ошибками
+                error = success[0]
+                self.logger.error(f"[SOCKS5] Pipeline failed: {error}")
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "pipeline_error")
+            else:
+                # Хотя бы одна задача завершилась успешно
+                await self.orchestrator.report_success(session)
             
         except Exception as e:
             self.logger.error(f"[SOCKS5] Proxy connection failed: {e}")
+            if session:
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "proxy_error")
     
-    async def forward_client_to_upstream(self, client_reader, upstream_writer):
+    async def forward_client_to_upstream(self, client_reader, upstream_writer, session):
         """Пересылка данных от клиента к серверу через Pipeline Manager"""
         try:
             while True:
@@ -247,6 +279,9 @@ class SOCKS5Daemon:
                 
         except Exception as e:
             self.logger.error(f"[SOCKS5] Client->Upstream error: {e}")
+            # Сообщаем оркестратору об ошибке
+            await self.orchestrator.report_failure(session.domain, session.pipeline_config, "forward_error")
+            raise
         finally:
             upstream_writer.close()
     

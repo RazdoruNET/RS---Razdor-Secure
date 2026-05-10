@@ -17,13 +17,16 @@ services:
       - LISTEN_PORT=1080
       - PIPELINE_ORDER=fake_packet,jitter_fragmentation
       - SELECTIVE_THRESHOLD=3000
+      # Smart Failover Orchestrator settings
+      - SMART_FAILOVER_ENABLED=true
+      - MAX_MUTATION_ATTEMPTS=4
       # Настройки для модуля fake_packet
       - FAKE_PACKET_BYTES=0x160301000500000000
-      # Настройки для модуля jitter_fragmentation
+      # Настройки для модуля jitter_fragmentation (breaking parameters)
       - MIN_CHUNK_SIZE=40
       - MAX_CHUNK_SIZE=150
-      - MIN_CHUNK_DELAY=0.001
-      - MAX_CHUNK_DELAY=0.003
+      - MIN_CHUNK_DELAY=0.100
+      - MAX_CHUNK_DELAY=0.150
       # Настройки для модуля sni_modifier
       - CASE_MODIFY_PROBABILITY=0.7
       - LOG_LEVEL=INFO

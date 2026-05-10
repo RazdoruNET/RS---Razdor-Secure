@@ -33,6 +33,55 @@ class PipelineManager:
         
         self.logger.info("PipelineManager initialized")
     
+    async def load_pipeline_from_config(self, config: Dict[str, Any]) -> bool:
+        """
+        Загрузка конвейера из динамической конфигурации
+        
+        Args:
+            config: Конфигурация от оркестратора
+            
+        Returns:
+            True если конфигурация загружена успешно
+        """
+        pipeline_modules = config.get('pipeline_modules', [])
+        module_configs = config.get('module_configs', {})
+        
+        if not pipeline_modules:
+            self.logger.info("No modules specified, using passthrough mode")
+            self.pipeline_chain = []
+            return True
+        
+        self.logger.info(f"Loading dynamic pipeline: {' -> '.join(pipeline_modules)}")
+        
+        try:
+            self.pipeline_chain = []
+            for module_name in pipeline_modules:
+                if module_name not in self.available_modules:
+                    self.logger.error(f"Unknown module: {module_name}")
+                    return False
+                
+                # Динамический импорт модуля
+                module_path = self.available_modules[module_name]
+                module_class = self._dynamic_import(module_path)
+                
+                if module_class is None:
+                    self.logger.error(f"Failed to import module: {module_name}")
+                    return False
+                
+                # Создаем экземпляр модуля с конфигурацией
+                config = module_configs.get(module_name, {})
+                module_instance = module_class(config)
+                
+                self.pipeline_chain.append(module_instance)
+                self.logger.info(f"Loaded module: {module_instance.get_module_name()}")
+            
+            self.logger.info(f"Dynamic pipeline initialized: {' -> '.join([m.get_module_name() for m in self.pipeline_chain])}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load dynamic pipeline: {e}")
+            return False
+    
     def load_pipeline_config(self) -> bool:
         """
         Загрузка конфигурации конвейера из переменных окружения
