@@ -37,9 +37,6 @@ class TLSFingerprintPipeline(BasePipeline):
             # Создаем кастомный SSL контекст для фингерпринтинга
             ssl_context = self._create_custom_ssl_context()
             
-            # Выбираем cipher suite
-            cipher_suite = random.choice(self.cipher_suites) if self.cipher_suites else "TLS_AES_256_GCM_SHA384"
-            
             # Создаем URL для запроса
             url = f"https://{request.host}:{request.port}/"
             
@@ -53,11 +50,19 @@ class TLSFingerprintPipeline(BasePipeline):
                 url=url,
                 headers=headers,
                 data=request.data,
-                allow_redirects=True
+                allow_redirects=True,
+                ssl_context=ssl_context
             )
             
             # Анализируем ответ
             success = success and status_code in [200, 201, 202]
+            
+            # Логируем фактические TLS параметры
+            actual_cipher = "DEFAULT"
+            if self.cipher_suites and self.tls_version == "1.2":
+                actual_cipher = ':'.join(self.cipher_suites)
+            elif self.tls_version == "1.3":
+                actual_cipher = "TLS_1.3_DEFAULT"
             
             return BypassResponse(
                 success=success,
@@ -67,9 +72,10 @@ class TLSFingerprintPipeline(BasePipeline):
                 data=response_data,
                 headers={
                     'X-TLS-Version': self.tls_version,
-                    'X-Cipher-Suite': cipher_suite,
+                    'X-Cipher-Suite': actual_cipher,
                     'X-User-Agent': self.user_agent,
-                    'X-SSL-Bypass': 'enabled'
+                    'X-SSL-Bypass': 'enabled',
+                    'X-SSL-Context-Applied': 'true'
                 }
             )
             
@@ -96,34 +102,65 @@ class TLSFingerprintPipeline(BasePipeline):
     
     def _create_custom_ssl_context(self):
         """Создание кастомного SSL контекста для фингерпринтинга"""
-        # Создаем SSL контекст с кастомными настройками
-        ssl_context = ssl.create_default_context()
-        
-        # Устанавливаем версию TLS
-        if self.tls_version == "1.3":
-            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
-            ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
-        elif self.tls_version == "1.2":
-            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
-            ssl_context.maximum_version = ssl.TLSVersion.TLSv1_2
-        else:
-            ssl_context.minimum_version = ssl.TLSVersion.TLSv1
-            ssl_context.maximum_version = ssl.TLSVersion.TLSv1_2
-        
-        # Отключаем проверку сертификатов для тестирования
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        
-        # Устанавливаем кастомные cipher suites
-        if self.cipher_suites:
-            # Это упрощенная версия - в реальности нужно более сложное управление
-            pass
-        
-        # Устанавливаем кастомные опции для обхода DPI
-        ssl_context.options |= ssl.OP_NO_COMPRESSION
-        ssl_context.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
-        
-        return ssl_context
+        try:
+            # Создаем SSL контекст с кастомными настройками
+            ssl_context = ssl.create_default_context()
+            
+            # Устанавливаем версию TLS с fallback
+            try:
+                if self.tls_version == "1.3":
+                    ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
+                    ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+                    print(f"✅ TLS version set to 1.3")
+                elif self.tls_version == "1.2":
+                    ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+                    ssl_context.maximum_version = ssl.TLSVersion.TLSv1_2
+                    print(f"✅ TLS version set to 1.2")
+                else:
+                    # Fallback к поддерживаемым версиям
+                    ssl_context.minimum_version = ssl.TLSVersion.TLSv1
+                    ssl_context.maximum_version = ssl.TLSVersion.TLSv1_2
+                    print(f"⚠️ Unknown TLS version {self.tls_version}, using TLS 1.0-1.2")
+            except Exception as e:
+                print(f"⚠️ Failed to set TLS version: {e}, using default")
+                ssl_context = ssl.create_default_context()
+            
+            # Отключаем проверку сертификатов для тестирования
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            # Устанавливаем кастомные cipher suites с обработкой ошибок
+            if self.cipher_suites and self.tls_version == "1.2":
+                try:
+                    # Применяем cipher suites для TLS 1.2
+                    cipher_string = ':'.join(self.cipher_suites)
+                    ssl_context.set_ciphers(cipher_string)
+                    print(f"✅ Applied cipher suites: {cipher_string}")
+                except Exception as e:
+                    print(f"⚠️ Failed to set cipher suites: {e}")
+                    print(f"ℹ️ Continuing with default cipher suites")
+            elif self.cipher_suites and self.tls_version == "1.3":
+                # TLS 1.3 cipher suites управляются иначе
+                print(f"ℹ️ TLS 1.3 cipher suites not directly configurable (OpenSSL limitation)")
+            
+            # Устанавливаем кастомные опции для обхода DPI с fallback
+            try:
+                ssl_context.options |= ssl.OP_NO_COMPRESSION
+                ssl_context.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
+                print(f"✅ Applied DPI bypass options")
+            except Exception as e:
+                print(f"⚠️ Failed to set SSL options: {e}")
+            
+            return ssl_context
+            
+        except Exception as e:
+            print(f"❌ Critical SSL context creation failed: {e}")
+            print(f"ℹ️ Falling back to basic SSL context")
+            # Последний fallback - базовый контекст
+            fallback_context = ssl.create_default_context()
+            fallback_context.check_hostname = False
+            fallback_context.verify_mode = ssl.CERT_NONE
+            return fallback_context
     
     async def cleanup(self) -> bool:
         """Очистка ресурсов"""

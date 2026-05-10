@@ -71,7 +71,8 @@ class HTTPClient:
                           headers: Optional[Dict[str, str]] = None,
                           data: Optional[bytes] = None,
                           params: Optional[Dict[str, str]] = None,
-                          allow_redirects: bool = True) -> Tuple[bool, int, Dict[str, str], bytes, float]:
+                          allow_redirects: bool = True,
+                          ssl_context: Optional[ssl.SSLContext] = None) -> Tuple[bool, int, Dict[str, str], bytes, float]:
         """
         Make HTTP request with real network operations
         
@@ -89,6 +90,9 @@ class HTTPClient:
             if headers:
                 request_headers.update(headers)
             
+            # Use custom SSL context if provided, otherwise bypass SSL verification
+            ssl_param = ssl_context if ssl_context else False
+            
             async with self.session.request(
                 method=method,
                 url=url,
@@ -96,7 +100,7 @@ class HTTPClient:
                 data=data,
                 params=params,
                 allow_redirects=allow_redirects,
-                ssl=False  # Bypass SSL verification for DPI testing
+                ssl=ssl_param
             ) as response:
                 response_data = await response.read()
                 response_time = time.time() - start_time

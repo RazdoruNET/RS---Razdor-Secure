@@ -8,8 +8,10 @@ import random
 import socket
 import logging
 import re
-from typing import Dict, Any
+from typing import Dict, Any, NamedTuple
 from dataclasses import dataclass
+from collections import deque
+import json
 
 # Импорт с корректным путем
 import sys
@@ -26,6 +28,16 @@ class FragmentMode(Enum):
     RANDOM = "random"
     HEADER_BODY_SPLIT = "header_body_split"
     BYTE_BY_BYTE = "byte_by_byte"
+
+class PerformanceRecord(NamedTuple):
+    """Запись производительности"""
+    timestamp: float
+    response_time: float
+    success: bool
+    status_code: int
+    fragment_count: int
+    bytes_sent: int
+    bytes_received: int
 
 @dataclass
 class FragmentationConfig:
@@ -46,6 +58,11 @@ class HTTPFragmentationPipeline(BasePipeline):
         self.config = FragmentationConfig()
         self.tcp_client = TCPClient(timeout=10.0)
         
+        # Performance tracking с защитой от memory leaks
+        self.performance_history = deque(maxlen=1000)  # Ring buffer с ограничением
+        self.total_requests = 0
+        self.successful_requests = 0
+        
     async def execute(self, request: BypassRequest) -> BypassResponse:
         """Выполнение реальной HTTP фрагментации"""
         start_time = time.time()
@@ -57,8 +74,13 @@ class HTTPFragmentationPipeline(BasePipeline):
             # Создаем HTTP запрос для фрагментации
             http_request = self._create_fragmented_request(request)
             
-            # Разбиваем на фрагменты
-            fragments = self._fragment_data(http_request, self.config.fragment_size)
+            # Разбиваем на фрагменты с защитой от memory spikes
+            try:
+                fragments = self._fragment_data(http_request, self.config.fragment_size)
+            except Exception as e:
+                logger.error(f"Fragmentation failed: {str(e)}")
+                # Fallback на минимальную фрагментацию при ошибках
+                fragments = [http_request[i:i+1024] for i in range(0, len(http_request), 1024)]
             
             # Устанавливаем соединение (TCP для HTTP, TLS для HTTPS) с валидацией
             try:
@@ -69,15 +91,11 @@ class HTTPFragmentationPipeline(BasePipeline):
                     # HTTP - используем plain TCP
                     connection_result = await self.tcp_client.create_connection(request.host, request.port)
                 
-                # Валидируем результат соединения с безопасной проверкой
-                if not isinstance(connection_result, tuple) or len(connection_result) != 2:
+                # Валидируем результат соединения
+                if not connection_result or len(connection_result) != 2:
                     raise ConnectionError(f"Invalid connection result: {connection_result}")
                 
                 reader, writer = connection_result
-                
-                # Дополнительная проверка на None значения
-                if reader is None or writer is None:
-                    raise ConnectionError("Connection returned None reader or writer")
                 
             except Exception as e:
                 logger.error(f"Connection failed: {str(e)}")
@@ -85,8 +103,11 @@ class HTTPFragmentationPipeline(BasePipeline):
             
             # Устанавливаем TCP_NODELAY один раз для гарантии фрагментации
             sock = writer.get_extra_info('socket')
-            if sock:
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            if sock is not None:
+                try:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                except (AttributeError, OSError) as e:
+                    logger.warning(f"Failed to set TCP_NODELAY: {str(e)}")
             
             # Отправляем фрагменты с задержкой и jitter
             for i, fragment in enumerate(fragments):
@@ -141,18 +162,21 @@ class HTTPFragmentationPipeline(BasePipeline):
             
             response_data = bytes(buffer)
             
-            # Корректное закрытие reader
-            try:
-                if hasattr(reader, 'close'):
-                    reader.close()
-            except Exception as e:
-                logger.warning(f"Error closing reader: {str(e)}")
-            
             response_time = time.time() - start_time
             
             # Анализируем ответ с корректным парсингом status line
             status_code = self._parse_http_status(response_data)
             success = 200 <= status_code < 400
+            
+            # Записываем performance metrics
+            self._record_performance(
+                response_time=response_time,
+                success=success,
+                status_code=status_code,
+                fragment_count=len(fragments),
+                bytes_sent=len(http_request),
+                bytes_received=len(response_data)
+            )
             
             return BypassResponse(
                 success=success,
@@ -164,7 +188,9 @@ class HTTPFragmentationPipeline(BasePipeline):
                     'X-Fragments': str(len(fragments)),
                     'X-Fragment-Size': str(self.config.fragment_size),
                     'X-Fragment-Delay': str(self.config.fragment_delay),
-                    'X-Random-Padding': str(self.config.random_padding)
+                    'X-Random-Padding': str(self.config.random_padding),
+                    'X-Success-Rate': f"{self._get_success_rate():.1%}",
+                    'X-Avg-Latency': f"{self._get_avg_latency():.3f}s"
                 }
             )
             
@@ -192,7 +218,7 @@ class HTTPFragmentationPipeline(BasePipeline):
                     logger.warning(f"Error closing reader: {str(e)}")
     
     def initialize(self, config: Dict[str, Any]) -> bool:
-        """Инициализация с конфигурацией"""
+        """Инициализация с конфигурацией и валидацией диапазонов"""
         try:
             # Безопасный парсинг FragmentMode с fallback
             mode_str = config.get('fragment_mode', 'FIXED').upper()
@@ -202,12 +228,36 @@ class HTTPFragmentationPipeline(BasePipeline):
                 logger.warning(f"Unknown fragment mode '{mode_str}', falling back to FIXED")
                 fragment_mode = FragmentMode.FIXED
             
+            # Валидация fragment_size
+            fragment_size = config.get('fragment_size', 256)
+            if not self._validate_fragment_size(fragment_size):
+                logger.warning(f"Invalid fragment_size: {fragment_size}, using default 256")
+                fragment_size = 256
+            
+            # Валидация fragment_delay
+            fragment_delay = config.get('fragment_delay', 0.001)
+            if not self._validate_fragment_delay(fragment_delay):
+                logger.warning(f"Invalid fragment_delay: {fragment_delay}, using default 0.001")
+                fragment_delay = 0.001
+            
+            # Валидация jitter_range
+            jitter_range = config.get('jitter_range', (0.8, 1.2))
+            if not self._validate_jitter_range(jitter_range):
+                logger.warning(f"Invalid jitter_range: {jitter_range}, using default (0.8, 1.2)")
+                jitter_range = (0.8, 1.2)
+            
+            # Валидация random_padding
+            random_padding = config.get('random_padding', False)
+            if not isinstance(random_padding, bool):
+                logger.warning(f"Invalid random_padding: {random_padding}, using default False")
+                random_padding = False
+            
             self.config = FragmentationConfig(
-                fragment_size=config.get('fragment_size', 256),
-                fragment_delay=config.get('fragment_delay', 0.001),
-                random_padding=config.get('random_padding', False),
+                fragment_size=fragment_size,
+                fragment_delay=fragment_delay,
+                random_padding=random_padding,
                 fragment_mode=fragment_mode,
-                jitter_range=config.get('jitter_range', (0.8, 1.2))
+                jitter_range=jitter_range
             )
         except Exception as e:
             logger.error(f"Invalid config: {str(e)}")
@@ -227,13 +277,19 @@ class HTTPFragmentationPipeline(BasePipeline):
         if not hasattr(request, 'host') or not request.host:
             raise ValueError("Request host is required")
         
-        # Формируем базовые заголовки
+        # Валидируем и формируем базовые заголовки
         request_headers = {
-            "Host": request.host,
+            "Host": self._validate_header_value(request.host),
             "Connection": "close",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            **headers
         }
+        
+        # Добавляем пользовательские заголовки с валидацией
+        for key, value in headers.items():
+            clean_key = self._validate_header_name(key)
+            clean_value = self._validate_header_value(value, key)
+            if clean_key and clean_value:
+                request_headers[clean_key] = clean_value
         
         # Добавляем Content-Length если есть тело
         body = request.data or b""
@@ -272,15 +328,22 @@ class HTTPFragmentationPipeline(BasePipeline):
                 fragments.append(data)
         elif self.config.fragment_mode == FragmentMode.BYTE_BY_BYTE:
             # Побайтовая фрагментация с защитой от перегрузки
-            if len(data) > 4096:  # Защита от перегрузки event loop
+            if len(data) > 2048:  # Уменьшен лимит для защиты от CPU spike
                 logger.warning(f"Data too large for BYTE_BY_BYTE mode: {len(data)} bytes, falling back to FIXED")
                 # Fallback на FIXED режим
                 for i in range(0, len(data), self.config.fragment_size):
                     fragment = data[i:i + self.config.fragment_size]
                     fragments.append(fragment)
             else:
-                for byte in data:
-                    fragments.append(bytes([byte]))
+                # Защита от слишком большого количества фрагментов
+                if len(data) > 1024:  # Максимум 1KB для BYTE_BY_BYTE
+                    logger.warning(f"Data too large for BYTE_BY_BYTE mode: {len(data)} bytes, falling back to FIXED")
+                    for i in range(0, len(data), self.config.fragment_size):
+                        fragment = data[i:i + self.config.fragment_size]
+                        fragments.append(fragment)
+                else:
+                    for byte in data:
+                        fragments.append(bytes([byte]))
         elif self.config.fragment_mode == FragmentMode.RANDOM:
             # Случайные размеры фрагментов
             pos = 0
@@ -324,6 +387,236 @@ class HTTPFragmentationPipeline(BasePipeline):
             return 0
     
         
+    def _validate_header_name(self, name: str) -> str:
+        """Валидация имени HTTP заголовка"""
+        if not name:
+            return ""
+        
+        # Удаляем опасные символы
+        clean_name = name.strip()
+        
+        # Запрещаем спецсимволы в именах заголовков
+        if any(char in clean_name for char in ['\r', '\n', '\0']):
+            logger.warning(f"Invalid header name: {repr(name)}")
+            return ""
+        
+        # Ограничиваем длину имени
+        if len(clean_name) > 100:
+            logger.warning(f"Header name too long: {len(clean_name)}")
+            return clean_name[:100]
+        
+        return clean_name
+    
+    def _validate_header_value(self, value: str, header_name: str = "") -> str:
+        """Валидация значения HTTP заголовка"""
+        if value is None:
+            return ""
+        
+        # Конвертируем в строку если нужно
+        if isinstance(value, bytes):
+            try:
+                value = value.decode('utf-8', errors='replace')
+            except UnicodeDecodeError:
+                value = value.decode('latin-1', errors='replace')
+        elif not isinstance(value, str):
+            value = str(value)
+        
+        # Удаляем опасные символы
+        clean_value = value.strip()
+        
+        # Запрещаем \r и \n в значениях заголовков
+        clean_value = clean_value.replace('\r', '').replace('\n', '')
+        
+        # Удаляем null bytes
+        clean_value = clean_value.replace('\0', '')
+        
+        # Ограничиваем длину значения (RFC 7230)
+        if len(clean_value) > 8192:
+            logger.warning(f"Header value too long: {len(clean_value)}, truncating")
+            clean_value = clean_value[:8192]
+        
+        # Дополнительная валидация для ключевых заголовков
+        if header_name.lower() in ['host', 'user-agent', 'connection']:
+            if len(clean_value) > 1024:  # Более строгий лимит для ключевых заголовков
+                logger.warning(f"Key header value too long: {len(clean_value)}, truncating")
+                clean_value = clean_value[:1024]
+        
+        return clean_value
+    
+    def _validate_fragment_size(self, size: int) -> bool:
+        """Валидация fragment_size для защиты от критических значений"""
+        if not isinstance(size, (int, float)):
+            return False
+        
+        size = int(size)
+        
+        # Защита от division by zero
+        if size <= 0:
+            return False
+        
+        # Защита от слишком малых значений
+        if size < 1:
+            return False
+        
+        # Защита от слишком больших значений (memory protection)
+        if size > 10240:  # 10KB максимальный размер фрагмента
+            return False
+        
+        return True
+    
+    def _validate_fragment_delay(self, delay: float) -> bool:
+        """Валидация fragment_delay для защиты от аномальных значений"""
+        if not isinstance(delay, (int, float)):
+            return False
+        
+        delay = float(delay)
+        
+        # Защита от отрицательных значений
+        if delay < 0:
+            return False
+        
+        # Защита от слишком больших задержек
+        if delay > 1.0:  # 1 секунда максимум
+            return False
+        
+        return True
+    
+    def _validate_jitter_range(self, jitter_range: tuple) -> bool:
+        """Валидация jitter_range для защиты от инвертированных диапазонов"""
+        if not isinstance(jitter_range, (tuple, list)):
+            return False
+        
+        if len(jitter_range) != 2:
+            return False
+        
+        try:
+            min_val, max_val = float(jitter_range[0]), float(jitter_range[1])
+        except (ValueError, TypeError):
+            return False
+        
+        # Защита от инвертированных диапазонов
+        if min_val >= max_val:
+            return False
+        
+        # Защита от экстремальных значений
+        if min_val < 0.1 or max_val > 5.0:
+            return False
+        
+        # Защита от слишком широкого диапазона
+        if max_val - min_val > 2.0:
+            return False
+        
+        return True
+    
+    def _record_performance(self, response_time: float, success: bool, status_code: int, 
+                         chunk_count: int, bytes_sent: int, bytes_received: int):
+        """Записываем performance metrics в ring buffer"""
+        record = PerformanceRecord(
+            timestamp=time.time(),
+            response_time=response_time,
+            success=success,
+            status_code=status_code,
+            chunk_count=chunk_count,
+            bytes_sent=bytes_sent,
+            bytes_received=bytes_received
+        )
+        
+        self.performance_history.append(record)
+        self.total_requests += 1
+        if success:
+            self.successful_requests += 1
+    
+    def _get_success_rate(self) -> float:
+        """Расчет success rate"""
+        if self.total_requests == 0:
+            return 0.0
+        return (self.successful_requests / self.total_requests) * 100
+    
+    def _get_avg_latency(self) -> float:
+        """Расчет средней задержки"""
+        if not self.performance_history:
+            return 0.0
+        
+        recent_records = list(self.performance_history)[-100:]  # Последние 100 записей
+        if not recent_records:
+            return 0.0
+        
+        return sum(r.response_time for r in recent_records) / len(recent_records)
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Получение статистики производительности"""
+        if not self.performance_history:
+            return {}
+        
+        recent = list(self.performance_history)[-50:]  # Последние 50 записей
+        
+        # Bypass effectiveness metrics
+        successful_recent = sum(1 for r in recent if r.success)
+        effectiveness_score = (successful_recent / len(recent)) * 100 if recent else 0.0
+        
+        # Latency distribution
+        latencies = [r.response_time for r in recent]
+        if latencies:
+            min_latency = min(latencies)
+            max_latency = max(latencies)
+            p95_latency = sorted(latencies)[int(len(latencies) * 0.95)]
+        else:
+            min_latency = max_latency = p95_latency = 0.0
+        
+        # Fragmentation effectiveness
+        avg_fragments = sum(r.fragment_count for r in recent) / len(recent) if recent else 0
+        avg_bytes_sent = sum(r.bytes_sent for r in recent) / len(recent) if recent else 0
+        avg_bytes_received = sum(r.bytes_received for r in recent) / len(recent) if recent else 0
+        
+        return {
+            'total_requests': self.total_requests,
+            'success_rate': self._get_success_rate(),
+            'avg_latency': self._get_avg_latency(),
+            'recent_avg_latency': sum(r.response_time for r in recent) / len(recent) if recent else 0.0,
+            'min_latency': min_latency,
+            'max_latency': max_latency,
+            'p95_latency': p95_latency,
+            'effectiveness_score': effectiveness_score,
+            'avg_fragments': avg_fragments,
+            'avg_bytes_sent': avg_bytes_sent,
+            'avg_bytes_received': avg_bytes_received,
+            'history_size': len(self.performance_history),
+            'max_history': self.performance_history.maxlen
+        }
+    
+    def log_bypass_effectiveness(self, target_host: str):
+        """Логирование bypass effectiveness для анализа"""
+        stats = self.get_performance_stats()
+        
+        logger.info(f"Bypass Effectiveness Report for {target_host}:")
+        logger.info(f"  Success Rate: {stats.get('success_rate', 0):.1f}%")
+        logger.info(f"  Effectiveness Score: {stats.get('effectiveness_score', 0):.1f}%")
+        logger.info(f"  Avg Latency: {stats.get('avg_latency', 0):.3f}s")
+        logger.info(f"  P95 Latency: {stats.get('p95_latency', 0):.3f}s")
+        logger.info(f"  Avg Fragments: {stats.get('avg_fragments', 0):.1f}")
+        logger.info(f"  Total Requests: {stats.get('total_requests', 0)}")
+        
+        # Записываем в файл для долгосрочного анализа
+        try:
+            log_entry = {
+                'timestamp': time.time(),
+                'target_host': target_host,
+                'stats': stats,
+                'config': {
+                    'fragment_size': self.config.fragment_size,
+                    'fragment_delay': self.config.fragment_delay,
+                    'fragment_mode': self.config.fragment_mode.value,
+                    'jitter_range': self.config.jitter_range
+                }
+            }
+            
+            # Здесь можно добавить запись в файл или БД
+            # with open('bypass_effectiveness.log', 'a') as f:
+            #     f.write(json.dumps(log_entry) + '\n')
+            
+        except Exception as e:
+            logger.warning(f"Failed to log bypass effectiveness: {str(e)}")
+    
     async def cleanup(self) -> bool:
         """Очистка ресурсов"""
         if self.tcp_client:
