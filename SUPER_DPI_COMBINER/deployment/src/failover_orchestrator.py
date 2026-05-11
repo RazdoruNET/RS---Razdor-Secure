@@ -191,30 +191,32 @@ class SmartFailoverOrchestrator:
         self.logger.info(f"[ORCHESTRATOR] Handshake failed for {domain}. Error: {error_type}. Mutating pipeline strategy...")
         
         async with self.strategy_lock:
+            # 🔥 КРИТИЧЕСКИЙ ПАТЧ: Проверяем, есть ли уже домен в кэше
             if domain not in self.domain_strategies:
+                # Создаем запись С НУЛЯ только если домен встретился ВПЕРВЫЕ
                 strategy = self._config_to_strategy(domain, pipeline_config)
                 self.domain_strategies[domain] = strategy
+                self.logger.info(f"[ORCHESTRATOR] Инициализирована новая запись для домена: {domain}")
             else:
                 strategy = self.domain_strategies[domain]
+                self.logger.info(f"[ORCHESTRATOR] Домен {domain} найден в кэше. Аккумулируем историю.")
             
-            strategy.failure_count += 1
-            strategy.last_failure = time.time()
-            
-            # Регистрируем событие отказа перед мутацией
+            # Фиксируем текущий упавший пайплайн ПЕРЕД тем, как мутировать его
             current_pipeline = strategy.pipeline_modules.copy()
             
-            # Генерируем новую стратегию с учетом DPI анализа
+            # Вычисляем следующую мутацию (следующий шаг подбора)
             new_strategy = await self._mutate_strategy_with_dpi_analysis(domain, strategy.failure_count, error_type)
+            new_pipeline = new_strategy.pipeline_modules
             
-            # Сохраняем историю мутаций из старой стратегии
-            new_strategy.mutation_history = strategy.mutation_history.copy()
+            # Дописываем событие в историю (метод делает .append(), ничего не заменяя!)
+            strategy.add_failure_event(current_pipeline, error_type, new_pipeline)
             
-            # Добавляем запись в историю мутаций
-            new_strategy.add_failure_event(current_pipeline, error_type, new_strategy.pipeline_modules)
+            # Обновляем текущие параметры домена для следующей попытки
+            strategy.failure_count += 1
+            strategy.last_failure = time.time()
+            strategy.pipeline_modules = new_pipeline
             
-            self.domain_strategies[domain] = new_strategy
-            
-            modules_str = ", ".join(new_strategy.pipeline_modules)
+            modules_str = ", ".join(new_pipeline)
             self.logger.info(f"[ORCHESTRATOR] New strategy generated for {domain}: [{modules_str}]")
         
         # Экспортируем матрицу стратегий
