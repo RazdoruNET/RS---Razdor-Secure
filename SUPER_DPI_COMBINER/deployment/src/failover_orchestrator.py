@@ -247,7 +247,7 @@ class SmartFailoverOrchestrator:
     
     async def _mutate_strategy_with_dpi_analysis(self, domain: str, failure_count: int, error_type: str) -> DomainStrategy:
         """
-        Мутация стратегии с учетом DPI анализа
+        Мутация стратегии с учетом DPI анализа (теперь использует эволюционный алгоритм)
         
         Args:
             domain: Целевой домен
@@ -257,83 +257,56 @@ class SmartFailoverOrchestrator:
         Returns:
             Мутированная стратегия
         """
-        # Получаем последнюю информацию от DPI инспектора
-        last_analysis = None
-        for analysis in self.dpi_inspector.completed_connections.values():
-            if analysis.domain == domain:
-                last_analysis = analysis
-                break
-        
-        if failure_count >= self.max_mutation_attempts:
-            # Fallback: переводим в passthrough режим
-            self.logger.warning(f"[ORCHESTRATOR] Max mutations reached for {domain}. Switching to passthrough for 5 minutes")
-            return DomainStrategy(
-                pipeline_modules=[],
-                module_configs={},
-                is_passthrough=True,
-                passthrough_until=time.time() + self.passthrough_duration
-            )
-        
-        # Интеллектуальная мутация на основе DPI анализа
-        if last_analysis and not last_analysis.server_hello_received:
-            # DPI Request Drop - приоритет на FakePacket и Jitter
-            self.logger.info(f"[ORCHESTRATOR] DPI Request Drop detected for {domain}. Prioritizing FakePacket/Jitter")
-            
-            if failure_count == 1:
-                # Сбой 1: Увеличить размер fake packet
-                modules = ['fake_packet', 'jitter_fragmentation']
-                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 1: Enhanced fake packet + jitter")
-            
-            elif failure_count == 2:
-                # Сбой 2: Добавить TLS Chameleon для SNI splitting
-                modules = ['tls_chameleon', 'jitter_fragmentation']
-                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 2: TLS Chameleon SNI splitting + jitter")
-            
-            elif failure_count == 3:
-                # Сбой 3: Агрессивная фрагментация
-                modules = ['jitter_fragmentation']
-                self.logger.info(f"[ORCHESTRATOR] DPI Request Drop Mutation 3: Aggressive jitter only")
-            
-            else:
-                modules = []
-        
-        elif last_analysis and last_analysis.server_hello_received:
-            # DPI Deep Inspect Drop - приоритет на SNI модификацию
-            self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop detected for {domain}. Prioritizing SNI modification")
-            
-            if failure_count == 1:
-                # Сбой 1: SNI case modifier
-                modules = ['sni_modifier', 'jitter_fragmentation']
-                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 1: SNI case modifier + jitter")
-            
-            elif failure_count == 2:
-                # Сбой 2: TLS Chameleon + SNI modifier
-                modules = ['tls_chameleon', 'sni_modifier']
-                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 2: TLS Chameleon + SNI modifier")
-            
-            elif failure_count == 3:
-                # Сбой 3: Все техники вместе
-                modules = ['tls_chameleon', 'sni_modifier', 'jitter_fragmentation']
-                self.logger.info(f"[ORCHESTRATOR] DPI Deep Inspect Drop Mutation 3: All techniques combined")
-            
-            else:
-                modules = []
-        
-        else:
-            # Fallback к базовой мутации
-            return await self._mutate_strategy(domain, failure_count)
-        
-        # Генерируем конфигурацию для мутированных модулей
-        module_configs = self._generate_mutation_configs(modules, failure_count)
-        
-        return DomainStrategy(
-            pipeline_modules=modules,
-            module_configs=module_configs
-        )
+        # Используем единый эволюционный алгоритм вместо DPI-специфичной логики
+        return await self._mutate_strategy(domain, failure_count)
     
+    def generate_next_mutation(self, strategy: DomainStrategy, domain: str) -> tuple[list, dict]:
+        """
+        Эволюционный алгоритм градации мутаций с пошаговым снижением агрессивности
+        
+        Args:
+            strategy: Текущая стратегия домена
+            domain: Целевой домен
+            
+        Returns:
+            Кортеж (next_pipeline, force_large_chunks_flag)
+        """
+        base_pipeline = list(self.base_pipeline)
+        fail_count = strategy.failure_count
+        force_large_chunks = False
+        
+        # Шаг 1: Первый сбой — Убираем только FakePacketModule
+        if fail_count == 1:
+            next_pipeline = [m for m in base_pipeline if m != "fake_packet"]
+            if not next_pipeline:
+                next_pipeline = base_pipeline
+            self.logger.info(f"[ORCHESTRATOR] Mutation 1 for {domain}: Removing fake_packet -> {next_pipeline}")
+            return next_pipeline, force_large_chunks
+
+        # Шаг 2: Второй сбой — Убираем SniCaseModifierModule (оставляем только чистый джиттер)
+        elif fail_count == 2:
+            next_pipeline = [m for m in base_pipeline if m == "jitter_fragmentation"]
+            if not next_pipeline:
+                next_pipeline = base_pipeline
+            self.logger.info(f"[ORCHESTRATOR] Mutation 2 for {domain}: Removing sni_modifier -> {next_pipeline}")
+            return next_pipeline, force_large_chunks
+
+        # Шаг 3: Третий сбой — Меняем параметры джиттера (увеличиваем чанки)
+        elif fail_count == 3:
+            next_pipeline = ["jitter_fragmentation"]
+            force_large_chunks = True
+            self.logger.info(f"[ORCHESTRATOR] Mutation 3 for {domain}: Force large chunks for jitter -> {next_pipeline}")
+            return next_pipeline, force_large_chunks
+
+        # Шаг 4: Четвертый сбой и далее — Все методы исчерпаны, уходим в безопасный Passthrough
+        else:
+            print(f"[ORCHESTRATOR CRITICAL] Обход DPI невозможен для {domain}. Fallback в прямой доступ.")
+            self.logger.warning(f"[ORCHESTRATOR] Mutation {fail_count} for {domain}: Passthrough mode")
+            return [], force_large_chunks
+
     async def _mutate_strategy(self, domain: str, failure_count: int) -> DomainStrategy:
         """
-        Мутация стратегии на основе количества неудач
+        Мутация стратегии на основе количества неудач (использует эволюционный алгоритм)
         
         Args:
             domain: Целевой домен
@@ -352,31 +325,34 @@ class SmartFailoverOrchestrator:
                 passthrough_until=time.time() + self.passthrough_duration
             )
         
-        # Алгоритм мутации
-        if failure_count == 1:
-            # Сбой 1: Отключить FakePacketModule
-            modules = [m for m in self.base_pipeline if m != 'fake_packet']
-            self.logger.info(f"[ORCHESTRATOR] Mutation 1 for {domain}: Removing fake_packet module")
+        # Получаем текущую стратегию для вызова эволюционного алгоритма
+        async with self.strategy_lock:
+            if domain in self.domain_strategies:
+                strategy = self.domain_strategies[domain]
+            else:
+                strategy = self._config_to_strategy(domain, self._get_base_config())
+                self.domain_strategies[domain] = strategy
         
-        elif failure_count == 2:
-            # Сбой 2: Увеличить размеры чанков для ускорения
-            modules = [m for m in self.base_pipeline if m != 'fake_packet']
-            self.logger.info(f"[ORCHESTRATOR] Mutation 2 for {domain}: Increasing chunk sizes")
-        
-        elif failure_count == 3:
-            # Сбой 3: Включить SniCaseModifierModule + базовый Jitter
-            modules = ['sni_modifier', 'jitter_fragmentation']
-            self.logger.info(f"[ORCHESTRATOR] Mutation 3 for {domain}: Adding SNI case modifier")
-        
-        else:
-            # Fallback
-            modules = []
+        # Используем эволюционный алгоритм
+        next_pipeline, force_large_chunks = self.generate_next_mutation(strategy, domain)
         
         # Генерируем конфигурацию для мутированных модулей
-        module_configs = self._generate_mutation_configs(modules, failure_count)
+        if force_large_chunks:
+            # Принудительно увеличиваем размеры чанков для ускорения
+            module_configs = {
+                'jitter_fragmentation': {
+                    'MIN_CHUNK_SIZE': str(int(os.environ.get('MIN_CHUNK_SIZE', '40')) + 100),
+                    'MAX_CHUNK_SIZE': str(int(os.environ.get('MAX_CHUNK_SIZE', '150')) + 100),
+                    'MIN_CHUNK_DELAY': os.environ.get('MIN_CHUNK_DELAY', '0.001'),
+                    'MAX_CHUNK_DELAY': os.environ.get('MAX_CHUNK_DELAY', '0.003'),
+                    'SELECTIVE_THRESHOLD': os.environ.get('SELECTIVE_THRESHOLD', '3000'),
+                }
+            }
+        else:
+            module_configs = self._generate_mutation_configs(next_pipeline, failure_count)
         
         return DomainStrategy(
-            pipeline_modules=modules,
+            pipeline_modules=next_pipeline,
             module_configs=module_configs
         )
     
