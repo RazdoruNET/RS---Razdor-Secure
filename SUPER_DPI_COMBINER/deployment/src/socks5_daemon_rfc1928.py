@@ -34,16 +34,16 @@ class SOCKS5Daemon:
             raise EOFError(f"Expected {n} bytes, got {len(data)}")
         return data
 
-    def __init__(self, listen_port=1080):
+    def __init__(self, listen_port=1080, orchestrator=None):
         # Read from environment variables
-        self.listen_port = int(os.environ.get('LISTEN_PORT', str(listen_port)))
+        self.listen_port = listen_port
         
         self.running = False
         self.connections = {}
         
         # Initialize Pipeline Manager and Orchestrator
         self.pipeline_manager = PipelineManager()
-        self.orchestrator = SmartFailoverOrchestrator()
+        self.orchestrator = orchestrator or SmartFailoverOrchestrator()
         
         # Configure logging to stdout only (for docker logs)
         log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
@@ -430,8 +430,9 @@ class SOCKS5Daemon:
 async def main():
     """Основная функция запуска"""
     try:
-        # 1. Инициализируем общие stateless компоненты
+        # 1. Инициализация эшелонов
         orchestrator = SmartFailoverOrchestrator()
+        inspector = orchestrator.dpi_inspector  # Инспектор уже создан внутри оркестратора
         
         # Pre-seed стратегии из внешнего URL
         await orchestrator._preseed_strategies()
@@ -440,7 +441,7 @@ async def main():
         tasks = []
         
         # Добавляем задачу SOCKS5-прокси (всегда активна)
-        daemon = SOCKS5Daemon()
+        daemon = SOCKS5Daemon(orchestrator=orchestrator)
         tasks.append(daemon.run())
         print("[INIT] SOCKS5 Server added to event loop.")
         

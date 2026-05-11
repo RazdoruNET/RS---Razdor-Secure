@@ -5,8 +5,8 @@ DPI Sandbox Inspector - Анализ TLS-пакетов для классифи�
 
 import os
 import asyncio
-import logging
 import json
+from datetime import datetime
 from typing import Dict, Optional, Tuple, Any
 from enum import Enum
 from dataclasses import dataclass, asdict
@@ -32,12 +32,21 @@ class ConnectionAnalysis:
 class DpiSandboxInspector:
     """Инспектор для анализа DPI-поведения и классификации сбросов"""
     
-    def __init__(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, logger=None, export_path: str = "/app/logs/matrix_report.json"):
+        self.logger = logger or __import__('logging').getLogger(self.__class__.__name__)
+        self.export_path = os.getenv("MATRIX_EXPORT_PATH", export_path)
+        
+        # Инициализируем базовые счетчики дропов ядра
+        self.drop_stats = {
+            "unknown": 0,
+            "DPI Request Drop": 0,
+            "DPI Deep Inspect Drop": 0,
+            "Server Error": 0,
+            "Clean": 0
+        }
         
         # Конфигурация из переменных окружения
         self.enabled = os.environ.get('DPI_SANDBOX_INSPECTION', 'true').lower() == 'true'
-        self.matrix_export_path = os.environ.get('MATRIX_EXPORT_PATH', '/app/logs/matrix_report.json')
         
         # Анализ соединений
         self.active_connections: Dict[str, ConnectionAnalysis] = {}
@@ -187,109 +196,82 @@ class DpiSandboxInspector:
         
         return stats
     
-    async def export_matrix_report(self, orchestrator=None) -> bool:
+    def _normalize_domain(self, domain: str) -> str:
+        if not domain:
+            return "unknown_init"
+        return str(domain).strip().lower()
+
+    async def export_matrix_report(self, orchestrator):
         """
-        Экспорт матрицы стратегий в JSON файл
-        
-        Args:
-            orchestrator: Опциональная ссылка на оркестратор для получения mutation_history
-        
-        Returns:
-            True если экспорт успешен
+        orchestrator: Активный инстанс SmartFailoverOrchestrator из Event Loop
         """
-        if not self.enabled:
-            return True
-        
         try:
-            # Группируем по доменам
-            domain_data: Dict[str, Dict[str, Any]] = {}
-            
-            # Получаем snapshot из оркестратора для mutation_history
-            orchestrator_snapshot = None
-            if orchestrator:
-                orchestrator_snapshot = await orchestrator.get_snapshot()
-            
-            # Сначала добавляем домены из оркестратора (даже если соединение не завершено)
-            if orchestrator_snapshot and "domains" in orchestrator_snapshot:
-                for domain, domain_info in orchestrator_snapshot["domains"].items():
-                    domain_data[domain] = {
-                        "status": domain_info.get("status", "UNKNOWN"),
-                        "successful_pipeline": domain_info.get("active_pipeline", []),
-                        "failures_count": domain_info.get("failures", 0),
-                        "last_drop_reason": domain_info.get("last_drop_reason", "unknown"),
-                        "history_of_failures": domain_info.get("mutation_history", []),
-                        "total_connections": 0,
-                        "successful_connections": 0,
-                        "failed_connections": 0,
-                        "bytes_from_server": 0,
-                        "tls_version": None,
-                        "last_analysis": 0
-                    }
-            
-            # Затем обновляем данными из завершенных соединений
-            for analysis in self.completed_connections.values():
-                domain = analysis.domain
-                
-                if domain not in domain_data:
-                    domain_data[domain] = {
-                        "status": "UNKNOWN",
-                        "server_hello_received": False,
-                        "drop_reason": "unknown",
-                        "total_connections": 0,
-                        "successful_connections": 0,
-                        "failed_connections": 0,
-                        "bytes_from_server": 0,
-                        "tls_version": None,
-                        "last_analysis": analysis.timestamp,
-                        "history_of_failures": []
-                    }
-                
-                domain_entry = domain_data[domain]
-                domain_entry["total_connections"] += 1
-                domain_entry["bytes_from_server"] += analysis.bytes_from_server
-                domain_entry["server_hello_received"] = domain_entry["server_hello_received"] or analysis.server_hello_received
-                
-                if analysis.tls_version:
-                    domain_entry["tls_version"] = analysis.tls_version
-                
-                # Определяем статус домена
-                if analysis.drop_reason == ConnectionDropReason.CLEAN:
-                    domain_entry["successful_connections"] += 1
-                    domain_entry["status"] = "STABLE"
-                else:
-                    domain_entry["failed_connections"] += 1
-                    if domain_entry["status"] == "STABLE":
-                        domain_entry["status"] = "UNSTABLE"
-                
-                # Сохраняем последнюю причину сброса
-                if analysis.drop_reason != ConnectionDropReason.CLEAN:
-                    domain_entry["drop_reason"] = analysis.drop_reason.value
-                    domain_entry["last_analysis"] = analysis.timestamp
-            
-            # Добавляем общую статистику
-            matrix_report = {
-                "export_timestamp": analysis.timestamp if self.completed_connections else 0,
-                "total_domains": len(domain_data),
-                "drop_statistics": self.get_drop_statistics(),
-                "domains": domain_data
+            if not orchestrator:
+                self.logger.error("[INSPECTOR ERROR] Передан пустой объект оркестратора.")
+                return
+
+            # Извлекаем честный thread-safe снимок памяти оркестратора
+            snapshot = await orchestrator.get_snapshot()
+            domains_memory = snapshot.get("domains", {})
+
+            # Формируем структуру отчета
+            report_data = {
+                "export_timestamp": datetime.utcnow().timestamp(),
+                "total_domains": len(domains_memory),
+                "drop_statistics": self.drop_stats.copy(),
+                "domains": {}
             }
+
+            total_connections_tracked = 0
+
+            # Перенос данных без потерь и фильтрации
+            for domain_key, strategy_info in domains_memory.items():
+                norm_key = self._normalize_domain(domain_key)
+                
+                # Обновляем внутреннюю статистику дропов инспектора на основе причин сбоев
+                last_reason = strategy_info.get("last_drop_reason", "N/A")
+                if last_reason in self.drop_stats:
+                    self.drop_stats[last_reason] += 1
+                else:
+                    self.drop_stats["unknown"] += 1
+
+                # Сборка кадра домена
+                report_data["domains"][norm_key] = {
+                    "status": strategy_info.get("status", "MUTATING"),
+                    "successful_pipeline": strategy_info.get("successful_pipeline", []),
+                    "failures_count": strategy_info.get("failures_count", 0),
+                    "last_drop_reason": last_reason,
+                    # Гарантируем экспорт накопленного массива истории мутаций
+                    "history_of_failures": strategy_info.get("history_of_failures", []),
+                    "total_connections": 1 + strategy_info.get("failures_count", 0),
+                    "successful_connections": 0,
+                    "failed_connections": strategy_info.get("failures_count", 0),
+                    "bytes_from_server": 0,
+                    "tls_version": None,
+                    "last_analysis": 0
+                }
+                
+                total_connections_tracked += report_data["domains"][norm_key]["total_connections"]
+
+            report_data["drop_statistics"] = self.drop_stats.copy()
             
-            # Асинхронная запись в файл через asyncio.to_thread
-            def write_json_file():
-                with open(self.matrix_export_path, 'w') as f:
-                    json.dump(matrix_report, f, indent=2, default=str)
+            # Директория выгрузки
+            dir_name = os.path.dirname(self.export_path)
+            if dir_name and not os.path.exists(dir_name):
+                os.makedirs(dir_name, exist_ok=True)
+
+            # Потокобезопасная неблокирующая запись на диск
+            def sync_write():
+                with open(self.export_path, 'w', encoding='utf-8') as f:
+                    json.dump(report_data, f, indent=2, ensure_ascii=False)
+
+            await asyncio.to_thread(sync_write)
             
-            await asyncio.to_thread(write_json_file)
-            
-            self.logger.info(f"[INSPECTOR] Matrix report exported to {self.matrix_export_path}")
-            self.logger.info(f"[INSPECTOR] Exported {len(domain_data)} domains, "
-                           f"total connections: {sum(d['total_connections'] for d in domain_data.values())}")
-            
-            return True
-            
+            self.logger.info(f"[INSPECTOR] Matrix report successfully exported to {self.export_path}")
+            self.logger.info(f"[INSPECTOR] Exported {len(report_data['domains'])} domains, total connections: {total_connections_tracked}")
+
         except Exception as e:
-            self.logger.error(f"[INSPECTOR] Failed to export matrix report: {e}")
-            return False
+            self.logger.error(f"[INSPECTOR CRITICAL ERROR] Сбой экспорта матрицы на диск: {e}")
     
     def is_server_hello(self, data: bytes) -> bool:
         """

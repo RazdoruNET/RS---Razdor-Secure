@@ -44,6 +44,12 @@ class DomainStrategy:
     is_passthrough: bool = False
     passthrough_until: Optional[float] = None
     mutation_history: List[Dict[str, Any]] = field(default_factory=list)
+    domain: str = field(default="")
+    
+    def __post_init__(self):
+        """Принудительная нормализация домена после инициализации"""
+        if self.domain:
+            self.domain = str(self.domain).strip().lower()
     
     def add_failure_event(self, pipeline_before_crash: List[str], error_reason: str, mutated_to: List[str]):
         """Регистрирует подробности неудачной попытки с глубоким копированием для изоляции тредов"""
@@ -75,15 +81,16 @@ class SmartFailoverOrchestrator:
         self.session_lock = asyncio.Lock()
         
         # DPI Sandbox Inspector
-        self.dpi_inspector = DpiSandboxInspector()
+        self.dpi_inspector = DpiSandboxInspector(logger=self.logger)
         
         # Базовая конфигурация для мутаций
         self.base_pipeline = os.environ.get('PIPELINE_ORDER', 'fake_packet,jitter_fragmentation').split(',')
-        
-        self.logger.info(f"SmartFailoverOrchestrator initialized: enabled={self.enabled}, max_attempts={self.max_mutation_attempts}")
-        self.logger.info(f"SmartFailoverOrchestrator: DPI Sandbox Inspector enabled={self.dpi_inspector.enabled}")
-        
-        # Pre-seed стратегии из внешнего URL будет вызван позже
+    
+    def _normalize_domain(self, domain: str) -> str:
+        """Принудительная нормализация домена"""
+        if not domain:
+            return "unknown_init"
+        return str(domain).strip().lower()
     
     async def create_session(self, domain: str) -> SessionContext:
         """
@@ -95,58 +102,60 @@ class SmartFailoverOrchestrator:
         Returns:
             Контекст сессии с выбранной стратегией
         """
-        # 🔥 КРИТИЧЕСКИЙ ФИЛЬТР: Если на вход пришел битый IP, принудительно возвращаем passthrough (прямой коннект)
-        if domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
-            self.logger.warning(f"[ORCHESTRATOR] Blocked recursive/invalid address: {domain}. Returning passthrough.")
+        norm_domain = self._normalize_domain(domain)
+        
+        if not self.enabled:
+            # Если оркестратор отключен, возвращаем базовую конфигурацию
             return SessionContext(
-                session_id=f"{domain}_{int(time.time())}",
-                domain=domain,
+                session_id=f"{norm_domain}_{int(time.time())}",
+                domain=norm_domain,
                 start_time=time.time(),
                 pipeline_config=self._create_passthrough_config()
             )
         
-        if not self.enabled:
-            # Если оркестратор отключен, используем базовую конфигурацию
+        # 🔥 КРИТИЧЕСКИЙ ФИЛЬТР: Если на вход пришел битый IP, принудительно возвращаем passthrough (прямой коннект)
+        if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
+            self.logger.warning(f"[ORCHESTRATOR] Blocked recursive/invalid address: {norm_domain}. Returning passthrough.")
             return SessionContext(
-                session_id=f"{domain}_{int(time.time())}",
-                domain=domain,
+                session_id=f"{norm_domain}_{int(time.time())}",
+                domain=norm_domain,
                 start_time=time.time(),
-                pipeline_config=self._get_base_config()
+                pipeline_config=self._create_passthrough_config()
             )
         
         # Начинаем анализ соединения через DPI инспектор
-        connection_id = self.dpi_inspector.start_connection_analysis(domain)
+        connection_id = self.dpi_inspector.start_connection_analysis(norm_domain)
         
         async with self.strategy_lock:
             # Проверяем, есть ли кэшированная стратегия для домена
-            if domain in self.domain_strategies:
-                strategy = self.domain_strategies[domain]
+            if norm_domain in self.domain_strategies:
+                strategy = self.domain_strategies[norm_domain]
                 
                 # Проверяем, не истекло ли время passthrough
                 if strategy.is_passthrough and strategy.passthrough_until and time.time() < strategy.passthrough_until:
-                    self.logger.info(f"[ORCHESTRATOR] Domain {domain} still in passthrough mode")
+                    self.logger.info(f"[ORCHESTRATOR] Domain {norm_domain} still in passthrough mode")
                     return SessionContext(
-                        session_id=f"{domain}_{int(time.time())}",
-                        domain=domain,
+                        session_id=f"{norm_domain}_{int(time.time())}",
+                        domain=norm_domain,
                         start_time=time.time(),
                         pipeline_config=self._create_passthrough_config()
                     )
                 
                 # Если есть успешная стратегия, используем ее
                 if strategy.success_count > 0 and strategy.failure_count == 0:
-                    self.logger.info(f"[ORCHESTRATOR] Using cached successful strategy for {domain}")
+                    self.logger.info(f"[ORCHESTRATOR] Using cached successful strategy for {norm_domain}")
                     return SessionContext(
-                        session_id=f"{domain}_{int(time.time())}",
-                        domain=domain,
+                        session_id=f"{norm_domain}_{int(time.time())}",
+                        domain=norm_domain,
                         start_time=time.time(),
                         pipeline_config=self._strategy_to_config(strategy)
                     )
             
             # Генерируем новую стратегию
-            strategy = await self._generate_strategy_for_domain(domain)
+            strategy = await self._generate_strategy_for_domain(norm_domain)
             return SessionContext(
-                session_id=f"{domain}_{int(time.time())}",
-                domain=domain,
+                session_id=f"{norm_domain}_{int(time.time())}",
+                domain=norm_domain,
                 start_time=time.time(),
                 pipeline_config=self._strategy_to_config(strategy)
             )
@@ -184,8 +193,9 @@ class SmartFailoverOrchestrator:
             
             self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} marked as STABLE with pipeline {strategy.pipeline_modules}")
         
-        # Экспортируем матрицу стратегий
-        await self.dpi_inspector.export_matrix_report(self)
+        # 🔥 ВЫЗОВ ЭКСПОРТА ВНЕ БЛОКА LOCK С ПЕРЕДАЧЕЙ ССЫЛКИ НА СЕБЯ
+        if self.dpi_inspector:
+            await self.dpi_inspector.export_matrix_report(self)
     
     async def report_failure(self, domain: str, reason: str, current_pipeline: list, next_pipeline: list):
         """
@@ -197,36 +207,44 @@ class SmartFailoverOrchestrator:
             current_pipeline: Текущий упавший пайплайн
             next_pipeline: Следующий пайплайн после мутации
         """
+        norm_domain = self._normalize_domain(domain)
+        
         if not self.enabled:
             return
         
-        self.logger.info(f"[ORCHESTRATOR] Handshake failed for {domain}. Error: {reason}. Mutating pipeline strategy...")
+        if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
+            return
+        
+        self.logger.info(f"[ORCHESTRATOR] Handshake failed for {norm_domain}. Error: {reason}. Mutating pipeline strategy...")
         
         async with self.strategy_lock:
-            # Предотвращение очистки: если домен существует, извлекаем его, а не перезаписываем
-            if domain not in self.domain_strategies:
-                self.domain_strategies[domain] = DomainStrategy(
+            # АТОМАРНАЯ ПРОВЕРКА ИСКЛЮЧАЕТ ПОВТОРНУЮ ИНИЦИАЛИЗАЦИЮ
+            if norm_domain not in self.domain_strategies:
+                print(f"[ORCHESTRATOR] Инициализирована новая запись для домена: {norm_domain}")
+                strategy = DomainStrategy(
                     pipeline_modules=current_pipeline,
-                    module_configs={}
+                    module_configs={},
+                    domain=norm_domain
                 )
-                self.logger.info(f"[ORCHESTRATOR] Инициализирована новая запись для домена: {domain}")
+                self.domain_strategies[norm_domain] = strategy
+            else:
+                print(f"[ORCHESTRATOR] Домен {norm_domain} найден в кэше. Аккумулируем историю.")
+                strategy = self.domain_strategies[norm_domain]
             
-            strategy = self.domain_strategies[domain]
-            
-            # Регистрация события до мутации состояния
+            # Фиксация сбоя в массив
             strategy.add_failure_event(current_pipeline, reason, next_pipeline)
             
-            # Аккумуляция счетчиков и обновление дескрипторов
             strategy.failure_count += 1
             strategy.status = "UNSTABLE" if strategy.failure_count < 4 else "PASSTHROUGH"
             strategy.last_failure = time.time()
             strategy.pipeline_modules = next_pipeline
             
             modules_str = ", ".join(next_pipeline)
-            self.logger.info(f"[ORCHESTRATOR] New strategy generated for {domain}: [{modules_str}]")
+            self.logger.info(f"[ORCHESTRATOR] New strategy generated for {norm_domain}: [{modules_str}]")
         
-        # Экспортируем матрицу стратегий
-        await self.dpi_inspector.export_matrix_report(self)
+        # 🔥 ВЫЗОВ ЭКСПОРТА ВНЕ БЛОКА LOCK С ПЕРЕДАЧЕЙ ССЫЛКИ НА СЕБЯ
+        if self.dpi_inspector:
+            await self.dpi_inspector.export_matrix_report(self)
     
     async def _generate_strategy_for_domain(self, domain: str) -> DomainStrategy:
         """
