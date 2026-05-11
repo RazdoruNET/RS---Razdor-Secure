@@ -8,8 +8,9 @@ import asyncio
 import time
 import logging
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from datetime import datetime
 from dpi_sandbox_inspector import DpiSandboxInspector, ConnectionDropReason
 
 class SessionStatus(Enum):
@@ -41,6 +42,16 @@ class DomainStrategy:
     last_failure: Optional[float] = None
     is_passthrough: bool = False
     passthrough_until: Optional[float] = None
+    mutation_history: List[Dict[str, Any]] = field(default_factory=list)
+    
+    def add_failure_event(self, pipeline_before_crash: List[str], error_reason: str, mutated_to: List[str]):
+        """Регистрирует подробности неудачной попытки"""
+        self.mutation_history.append({
+            "timestamp": datetime.utcnow().isoformat(),
+            "failed_pipeline": pipeline_before_crash,
+            "error_reason": error_reason,
+            "mutated_to_pipeline": mutated_to
+        })
 
 class SmartFailoverOrchestrator:
     """Оркестратор для адаптивной мутации пайплайнов"""
@@ -163,7 +174,7 @@ class SmartFailoverOrchestrator:
             self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} marked as STABLE with pipeline {strategy.pipeline_modules}")
         
         # Экспортируем матрицу стратегий
-        await self.dpi_inspector.export_matrix_report()
+        await self.dpi_inspector.export_matrix_report(self)
     
     async def report_failure(self, domain: str, pipeline_config: Dict[str, Any], error_type: str):
         """
@@ -189,15 +200,25 @@ class SmartFailoverOrchestrator:
             strategy.failure_count += 1
             strategy.last_failure = time.time()
             
+            # Регистрируем событие отказа перед мутацией
+            current_pipeline = strategy.pipeline_modules.copy()
+            
             # Генерируем новую стратегию с учетом DPI анализа
             new_strategy = await self._mutate_strategy_with_dpi_analysis(domain, strategy.failure_count, error_type)
+            
+            # Сохраняем историю мутаций из старой стратегии
+            new_strategy.mutation_history = strategy.mutation_history.copy()
+            
+            # Добавляем запись в историю мутаций
+            new_strategy.add_failure_event(current_pipeline, error_type, new_strategy.pipeline_modules)
+            
             self.domain_strategies[domain] = new_strategy
             
             modules_str = ", ".join(new_strategy.pipeline_modules)
             self.logger.info(f"[ORCHESTRATOR] New strategy generated for {domain}: [{modules_str}]")
         
         # Экспортируем матрицу стратегий
-        await self.dpi_inspector.export_matrix_report()
+        await self.dpi_inspector.export_matrix_report(self)
     
     async def _generate_strategy_for_domain(self, domain: str) -> DomainStrategy:
         """
@@ -469,7 +490,7 @@ class SmartFailoverOrchestrator:
                     self.logger.info(f"[ORCHESTRATOR] Pre-seeded {imported_count} stable domain strategies from external URL")
                     
                     # Экспортируем матрицу
-                    await self.dpi_inspector.export_matrix_report()
+                    await self.dpi_inspector.export_matrix_report(self)
         
         except ImportError:
             self.logger.warning("[ORCHESTRATOR] aiohttp not available, skipping preseed")
@@ -497,7 +518,8 @@ class SmartFailoverOrchestrator:
                         "status": self._get_domain_status(strategy),
                         "active_pipeline": strategy.pipeline_modules,
                         "failures": strategy.failure_count,
-                        "last_drop_reason": self._get_last_drop_reason(domain)
+                        "last_drop_reason": self._get_last_drop_reason(domain),
+                        "mutation_history": strategy.mutation_history
                     }
                     for domain, strategy in self.domain_strategies.items()
                 }

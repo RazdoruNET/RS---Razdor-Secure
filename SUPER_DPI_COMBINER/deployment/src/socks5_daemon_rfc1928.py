@@ -246,10 +246,11 @@ class SOCKS5Daemon:
                     type=socket.SOCK_STREAM
                 )
                 resolved_ipv4 = addr_info[0][4][0]
+                self.logger.info(f"[SOCKS5] Resolved {target_host} to {resolved_ipv4}")
                 
                 upstream_reader, upstream_writer = await asyncio.wait_for(
                     asyncio.open_connection(resolved_ipv4, target_port),
-                    timeout=30.0
+                    timeout=5.0  # Уменьшенный таймаут для быстрой детекции сбоев
                 )
                 
                 # Выставляем TCP_NODELAY для оптимизации
@@ -259,11 +260,11 @@ class SOCKS5Daemon:
                     
             except asyncio.TimeoutError:
                 self.logger.error(f"[SOCKS5] Connection timeout to {target_host}:{target_port}")
-                await self.orchestrator.report_failure(domain, session.pipeline_config, "timeout")
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "Connection timeout")
                 return
             except Exception as e:
                 self.logger.error(f"[MAC DOCKER CRITICAL] Ошибка резолва/доступа в интернет для {target_host}: {e}")
-                await self.orchestrator.report_failure(domain, session.pipeline_config, "connection_error")
+                await self.orchestrator.report_failure(domain, session.pipeline_config, "DPI Request Drop")
                 return
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
@@ -295,10 +296,18 @@ class SOCKS5Daemon:
     
     async def forward_client_to_upstream(self, client_reader, upstream_writer, session):
         """Пересылка данных от клиента к серверу через Pipeline Manager"""
+        bytes_sent = 0
+        threshold = 3000
+        
         try:
             while True:
                 data = await client_reader.read(4096)
+                
+                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: Если сервер закрыл соединение или curl прислал пустой буфер
                 if not data:
+                    if bytes_sent < threshold:
+                        # Сессия упала НА СТАРТЕ — это 100% сетевой сбой/блокировка!
+                        raise ConnectionResetError("Empty reply or premature connection close during handshake")
                     break
                 
                 self.logger.info(f"[SOCKS5] Received {len(data)} bytes from client")
@@ -310,10 +319,18 @@ class SOCKS5Daemon:
                     self.logger.error("[SOCKS5] Pipeline processing failed")
                     break
                 
+                bytes_sent += len(data)
+                
         except Exception as e:
             self.logger.error(f"[SOCKS5] Client->Upstream error: {e}")
-            # Сообщаем оркестратору об ошибке
-            await self.orchestrator.report_failure(session.domain, session.pipeline_config, "forward_error")
+            
+            # 🔥 СВЯЗЫВАЕМ СБОЙ С ОРКЕСТРАТОРОМ И ИНСПЕКТОРОМ
+            # Принудительно рапортуем оркестратору, передавая причину ошибки
+            error_reason = "DPI Request Drop" if "timeout" not in str(e).lower() else "Connection timeout"
+            if "empty reply" in str(e).lower() or "premature connection close" in str(e).lower():
+                error_reason = "DPI Request Drop" # Пустой ответ от httpbin.org из-за задержек чанков
+            
+            await self.orchestrator.report_failure(session.domain, session.pipeline_config, error_reason)
             raise
         finally:
             upstream_writer.close()

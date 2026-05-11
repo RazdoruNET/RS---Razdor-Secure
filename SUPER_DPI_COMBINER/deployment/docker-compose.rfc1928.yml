@@ -18,6 +18,10 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     
+    # Нативный macOS-совместимый сетевой шлюз для обхода изоляции Docker Desktop
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
     environment:
       - LISTEN_PORT=1080
       - PIPELINE_ORDER=fake_packet,jitter_fragmentation

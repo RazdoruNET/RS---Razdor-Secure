@@ -187,9 +187,12 @@ class DpiSandboxInspector:
         
         return stats
     
-    async def export_matrix_report(self) -> bool:
+    async def export_matrix_report(self, orchestrator=None) -> bool:
         """
         Экспорт матрицы стратегий в JSON файл
+        
+        Args:
+            orchestrator: Опциональная ссылка на оркестратор для получения mutation_history
         
         Returns:
             True если экспорт успешен
@@ -201,6 +204,29 @@ class DpiSandboxInspector:
             # Группируем по доменам
             domain_data: Dict[str, Dict[str, Any]] = {}
             
+            # Получаем snapshot из оркестратора для mutation_history
+            orchestrator_snapshot = None
+            if orchestrator:
+                orchestrator_snapshot = await orchestrator.get_snapshot()
+            
+            # Сначала добавляем домены из оркестратора (даже если соединение не завершено)
+            if orchestrator_snapshot and "domains" in orchestrator_snapshot:
+                for domain, domain_info in orchestrator_snapshot["domains"].items():
+                    domain_data[domain] = {
+                        "status": domain_info.get("status", "UNKNOWN"),
+                        "successful_pipeline": domain_info.get("active_pipeline", []),
+                        "failures_count": domain_info.get("failures", 0),
+                        "last_drop_reason": domain_info.get("last_drop_reason", "unknown"),
+                        "history_of_failures": domain_info.get("mutation_history", []),
+                        "total_connections": 0,
+                        "successful_connections": 0,
+                        "failed_connections": 0,
+                        "bytes_from_server": 0,
+                        "tls_version": None,
+                        "last_analysis": 0
+                    }
+            
+            # Затем обновляем данными из завершенных соединений
             for analysis in self.completed_connections.values():
                 domain = analysis.domain
                 
@@ -214,7 +240,8 @@ class DpiSandboxInspector:
                         "failed_connections": 0,
                         "bytes_from_server": 0,
                         "tls_version": None,
-                        "last_analysis": analysis.timestamp
+                        "last_analysis": analysis.timestamp,
+                        "history_of_failures": []
                     }
                 
                 domain_entry = domain_data[domain]

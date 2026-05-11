@@ -382,12 +382,79 @@ class WebGuiServer:
         .updating {
             animation: pulse 2s infinite;
         }
+        
+        .history-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.3s ease;
+        }
+        
+        .history-btn:hover {
+            background: #764ba2;
+            transform: translateY(-1px);
+        }
+        
+        .history-row {
+            display: none;
+            background: #0f172a;
+        }
+        
+        .history-row.visible {
+            display: table-row;
+        }
+        
+        .history-table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: collapse;
+            background: #1a1f3a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #2d3748;
+            font-size: 0.85em;
+        }
+        
+        .history-table th {
+            background: #0f172a;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .history-timestamp {
+            color: #9ca3af;
+            font-size: 0.8em;
+        }
+        
+        .history-error {
+            color: #f59e0b;
+            font-weight: 500;
+        }
+        
+        .history-solution {
+            color: #10b981;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛡️ DPI Proxy Dashboard</h1>
+            <h1>🛡️ SUPER DPI COMBINER</h1>
             <p>Мониторинг и управление стратегиями обхода в реальном времени</p>
         </div>
         
@@ -445,11 +512,12 @@ class WebGuiServer:
                         <th>Успешных сессий</th>
                         <th>Сбоев</th>
                         <th>Последний сброс</th>
+                        <th>История</th>
                     </tr>
                 </thead>
                 <tbody id="domainsTableBody">
                     <tr>
-                        <td colspan="6" class="loading">Загрузка данных...</td>
+                        <td colspan="7" class="loading">Загрузка данных...</td>
                     </tr>
                 </tbody>
             </table>
@@ -470,6 +538,11 @@ class WebGuiServer:
             setTimeout(() => {
                 messageArea.innerHTML = '';
             }, 5000);
+        }
+        
+        function toggleHistory(domain) {
+            const historyRow = document.getElementById(`history-${domain}`);
+            historyRow.classList.toggle('visible');
         }
         
         async function importStrategies() {
@@ -535,6 +608,9 @@ class WebGuiServer:
                         `<span class="module-tag">${module}</span>`
                     ).join('');
                     
+                    const history = info.mutation_history || [];
+                    const hasHistory = history.length > 0;
+                    
                     row.innerHTML = `
                         <td><strong>${domain}</strong></td>
                         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
@@ -542,19 +618,51 @@ class WebGuiServer:
                         <td>${info.successful_connections || 0}</td>
                         <td>${info.failed_connections || 0}</td>
                         <td>${info.drop_reason || '-'}</td>
+                        <td>
+                            ${hasHistory ? `<button class="history-btn" onclick="toggleHistory('${domain}')">📜 История (${history.length})</button>` : '-'}
+                        </td>
                     `;
                     
                     tbody.appendChild(row);
+                    
+                    // Добавляем скрытую строку с историей мутаций
+                    if (hasHistory) {
+                        const historyRow = document.createElement('tr');
+                        historyRow.id = `history-${domain}`;
+                        historyRow.className = 'history-row';
+                        
+                        let historyHtml = '<table class="history-table"><thead><tr><th>Время</th><th>Упавший пайплайн</th><th>Ошибка</th><th>Решение</th></tr></thead><tbody>';
+                        
+                        history.forEach(event => {
+                            const timestamp = new Date(event.timestamp).toLocaleString('ru-RU');
+                            const failedPipeline = event.failed_pipeline ? event.failed_pipeline.join(', ') : '-';
+                            const errorReason = event.error_reason || '-';
+                            const mutatedTo = event.mutated_to_pipeline ? event.mutated_to_pipeline.join(', ') : '-';
+                            
+                            historyHtml += `
+                                <tr>
+                                    <td class="history-timestamp">${timestamp}</td>
+                                    <td>${failedPipeline}</td>
+                                    <td class="history-error">${errorReason}</td>
+                                    <td class="history-solution">${mutatedTo}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        historyHtml += '</tbody></table>';
+                        historyRow.innerHTML = `<td colspan="7">${historyHtml}</td>`;
+                        tbody.appendChild(historyRow);
+                    }
                 });
                 
                 if (Object.keys(data.domains || {}).length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #9ca3af;">Нет данных о доменах</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #9ca3af;">Нет данных о доменах</td></tr>';
                 }
                 
             } catch (error) {
                 console.error('Error updating dashboard:', error);
                 document.getElementById('domainsTableBody').innerHTML = 
-                    '<tr><td colspan="6" style="text-align: center; color: #dc2626;">Ошибка загрузки данных</td></tr>';
+                    '<tr><td colspan="7" style="text-align: center; color: #dc2626;">Ошибка загрузки данных</td></tr>';
             }
         }
         
@@ -582,34 +690,40 @@ class WebGuiServer:
     
     async def serve_status_api(self) -> str:
         """API endpoint для получения статуса"""
+        # Путь к файлу матрицы (должен совпадать с MATRIX_EXPORT_PATH из конфига)
+        matrix_path = os.getenv('MATRIX_EXPORT_PATH', '/app/logs/matrix_report.json')
+        
+        matrix_json_body = "{}"
         try:
-            # Получаем слепок состояния от оркестратора
-            snapshot = await self.orchestrator.get_snapshot()
-            
-            # Добавляем дополнительную мета-информацию
-            status_data = {
-                'timestamp': asyncio.get_event_loop().time(),
-                'total_domains': len(snapshot.get('domains', {})),
-                'orchestrator_enabled': self.orchestrator.enabled,
-                'dpi_inspector_enabled': self.orchestrator.dpi_inspector.enabled,
-                **snapshot  # Включаем domains из snapshot
-            }
-            response_json = json.dumps(status_data, indent=2, ensure_ascii=False)
-            
-            # Формируем HTTP ответ вручную как требуется
-            response = (
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: application/json; charset=utf-8\r\n"
-                f"Content-Length: {len(response_json.encode('utf-8'))}\r\n"
-                "Connection: close\r\n"
-                "\r\n"
-                f"{response_json}"
-            )
-            return response
-            
-        except Exception as e:
-            self.logger.error(f"Status API error: {e}")
-            return self.make_response(500, json.dumps({'error': str(e)}), 'application/json')
+            # Если файл уже физически создан инспектором, асинхронно читаем его
+            if os.path.exists(matrix_path):
+                # Используем asyncio.to_thread для неблокирующего чтения файла с диска
+                def read_file():
+                    with open(matrix_path, 'r', encoding='utf-8') as f:
+                        return f.read()
+                
+                file_content = await asyncio.to_thread(read_file)
+                if file_content.strip():
+                    matrix_json_body = file_content
+            else:
+                # Fallback если файл еще не создался (отдаем структуру на основе живой памяти)
+                snapshot = await self.orchestrator.get_snapshot()
+                matrix_json_body = json.dumps(snapshot, ensure_ascii=False)
+                
+        except Exception as read_err:
+            self.logger.error(f"[WEB GUI API ERROR] Не удалось прочитать matrix_report.json: {read_err}")
+            matrix_json_body = '{"error": "Failed to read matrix data"}'
+
+        # Формируем валидный HTTP/1.1 ответ с честными данными о сбоях
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json; charset=utf-8\r\n"
+            f"Content-Length: {len(matrix_json_body.encode('utf-8'))}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            f"{matrix_json_body}"
+        )
+        return response
     
     async def serve_import_api(self, headers: Dict[str, str], body: bytes) -> str:
         """API endpoint для импорта стратегий"""
