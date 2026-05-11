@@ -33,8 +33,9 @@ class SessionContext:
     error_type: Optional[str] = None
 
 class DomainStrategy:
-    def __init__(self, domain: str):
+    def __init__(self, domain: str, port: int):
         self.domain = domain.strip().lower()
+        self.port = port
         self.status = "CLEAN"
         self.current_pipeline = []
         self.failures_count = 0
@@ -60,6 +61,9 @@ class SmartFailoverOrchestrator:
         self.inspector = inspector
         self.strategy_ttl = strategy_ttl
 
+    def _make_key(self, domain: str, port: int) -> str:
+        return f"{str(domain).strip().lower()}:{int(port)}"
+
     def _normalize_domain(self, domain: str) -> str:
         if not domain:
             return "unknown_init"
@@ -77,31 +81,37 @@ class SmartFailoverOrchestrator:
         filtered = [m for m in pipeline if m not in tls_modules]
         return filtered
 
-    async def get_or_create_strategy(self, domain: str, port: int) -> list:
+    async def get_or_create_strategy(self, domain: str, port: int) -> tuple:
+        """
+        Возвращает кортеж: (pipeline_list, chunk_size_modifier)
+        """
         norm_domain = self._normalize_domain(domain)
         if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
-            return []
+            return [], 0
             
+        cache_key = self._make_key(norm_domain, port)
+        
         async with self.lock:
-            if norm_domain not in self.domain_cache:
-                strategy = DomainStrategy(norm_domain)
-                strategy.current_pipeline = []  # Стартуем с Pre-emptive Passthrough
-                self.domain_cache[norm_domain] = strategy
-                print(f"[ORCHESTRATOR] Домен {norm_domain} инициализирован в режиме Pre-emptive Passthrough: []")
-                return []
+            if cache_key not in self.domain_cache:
+                strategy = DomainStrategy(norm_domain, port)
+                strategy.current_pipeline = []  # Pre-emptive Passthrough
+                self.domain_cache[cache_key] = strategy
+                print(f"[ORCHESTRATOR] Домен {norm_domain}:{port} инициализирован в режиме Pre-emptive Passthrough: []")
+                return [], 0
             
-            strategy = self.domain_cache[norm_domain]
+            strategy = self.domain_cache[cache_key]
             current_time = time.time()
             
             if strategy.status in ("PASSTHROUGH", "UNSTABLE") and (current_time - strategy.last_mutation_timestamp) > self.strategy_ttl:
                 strategy.status = "CLEAN"
                 strategy.failures_count = 0
                 strategy.current_pipeline = []
+                strategy.chunk_size_modifier = 0
                 strategy.last_mutation_timestamp = current_time
-                return []
+                return [], 0
             
-            # 🔥 ПРИНУДИТЕЛЬНАЯ ФИЛЬТРАЦИЯ ПО ПОРТУ НА ВЫХОДЕ ИЗ КЭША
-            return self._filter_pipeline_by_port(strategy.current_pipeline, port)
+            filtered_pipeline = self._filter_pipeline_by_port(strategy.current_pipeline, port)
+            return filtered_pipeline, strategy.chunk_size_modifier
 
     def _calculate_next_mutation(self, failed_pipeline: list, strategy) -> list:
         """
@@ -149,13 +159,14 @@ class SmartFailoverOrchestrator:
         if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
             return
 
-        print(f"[ORCHESTRATOR DEBUG] report_failure called for {norm_domain}, pipeline={current_pipeline}, port={port}")
+        cache_key = self._make_key(norm_domain, port)
 
         async with self.lock:
-            if norm_domain not in self.domain_cache:
-                self.domain_cache[norm_domain] = DomainStrategy(norm_domain)
+            if cache_key not in self.domain_cache:
+                self.domain_cache[cache_key] = DomainStrategy(norm_domain, port)
+                self.domain_cache[cache_key].current_pipeline = list(current_pipeline)
             
-            strategy = self.domain_cache[norm_domain]
+            strategy = self.domain_cache[cache_key]
             current_time = time.time()
             
             # Вычисляем следующую мутацию, передавая объект strategy для управления chunk_size_modifier
@@ -243,7 +254,7 @@ class SmartFailoverOrchestrator:
                 pipeline_config = self._strategy_to_config(strategy)
             else:
                 # Создаем новую стратегию на основе базового пайплайна
-                strategy = DomainStrategy(norm_domain)
+                strategy = DomainStrategy(norm_domain, 443)  # Default port for create_session
                 strategy.current_pipeline = []  # Pre-emptive Passthrough
                 self.domain_cache[norm_domain] = strategy
                 

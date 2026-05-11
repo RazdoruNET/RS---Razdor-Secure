@@ -230,8 +230,10 @@ class DpiSandboxInspector:
                 
                 # Обновляем внутреннюю статистику дропов инспектора на основе причин сбоев
                 last_reason = strategy_info.get("last_drop_reason", "N/A")
-                if last_reason in self.drop_stats:
-                    self.drop_stats[last_reason] += 1
+                if last_reason == "Connection timeout":
+                    self.drop_stats["DPI Request Drop"] += 1
+                elif last_reason == "DPI Request Drop":
+                    self.drop_stats["DPI Deep Inspect Drop"] += 1
                 else:
                     self.drop_stats["unknown"] += 1
 

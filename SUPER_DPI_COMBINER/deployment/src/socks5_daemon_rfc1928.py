@@ -16,6 +16,18 @@ import signal
 import copy
 from pathlib import Path
 
+def apply_hard_reset_opts(writer: asyncio.StreamWriter):
+    """
+    Принудительно настраивает сокет на мгновенное уничтожение при закрытии
+    """
+    sock = writer.get_extra_info('socket')
+    if sock:
+        # Отключаем алгоритм Нагла
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        # Включаем жесткое закрытие (RST вместо FIN): l_onoff=1, l_linger=0
+        ling = struct.pack('ii', 1, 0)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, ling)
+
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
@@ -67,12 +79,18 @@ class SOCKS5Daemon:
             self.logger.error("Failed to load base pipeline configuration")
             raise RuntimeError("Pipeline configuration failed")
     
-    async def handle_client(self, reader, writer):
-        """Handle SOCKS5 client connection with wire fragmentation"""
+    async def handle_socks5_client(self, reader, writer):
+        """Основной обработчик клиентского соединения с жесткой очисткой дескрипторов"""
         client_addr = writer.get_extra_info('peername')
+        writer_cl = writer
+        writer_srv = None
+        
         self.logger.info(f"[SOCKS5] New client connection from {client_addr}")
         
         try:
+            # Настраиваем входящий сокет клиента на жесткую очистку
+            apply_hard_reset_opts(writer_cl)
+            
             # Шаг 1: Handshake (Приветствие)
             if not await self.handle_socks5_handshake(reader, writer):
                 return
@@ -88,13 +106,21 @@ class SOCKS5Daemon:
             if not await self.send_success_reply(writer):
                 return
             
-            # Шаг 4: Трансляция и Фрагментация
+            # Шаг 4: Трансляция и Фрагментация с жесткой очисткой
             await self.proxy_connection(reader, writer, target_host, target_port)
             
         except Exception as e:
             self.logger.error(f"[SOCKS5] Error handling client {client_addr}: {e}")
+            
         finally:
-            writer.close()
+            # 🔥 УЛЬТИМАТИВНЫЙ БЛОК ОЧИСТКИ ФАЙЛОВЫХ ДЕСКРИПТОРОВ (ЗАЩИТА ОТ УТЕЧЕК)
+            for w in [writer_srv, writer_cl]:
+                if w:
+                    try:
+                        w.close()
+                        await w.wait_closed()  # Строгое асинхронное ожидание освобождения дескриптора ОС
+                    except Exception:
+                        pass  # Игнорируем повторные ошибки закрытия уже мертвых сокетов
             self.logger.info(f"[SOCKS5] Client {client_addr} disconnected")
     
     async def handle_socks5_handshake(self, reader, writer):
@@ -215,50 +241,47 @@ class SOCKS5Daemon:
         """Шаг 4: Трансляция и фрагментация данных через Smart Orchestrator"""
         session = None
         try:
-            # 1. Запрашиваем АКТУАЛЬНЫЙ на данный момент пайплайн из кэша оркестратора с учетом порта
+            # 1. Извлекаем пайплайн и накопленный модификатор размера чанка
             domain = target_host
             self.logger.info(f"[SOCKS5] Requesting active pipeline for domain: {domain}")
-            active_pipeline = await self.orchestrator.get_or_create_strategy(domain, target_port)
-            
-            # 🔥 ИЗВЛЕКАЕМ МОДИФИКАТОР ЧАНКА ДЛЯ КАЛИБРОВКИ JITTER
-            snapshot = await self.orchestrator.get_snapshot()
-            domain_info = snapshot["domains"].get(domain.strip().lower(), {})
-            modifier = domain_info.get("chunk_size_modifier", 0)
+            active_pipeline, chunk_modifier = await self.orchestrator.get_or_create_strategy(domain, target_port)
             
             # Динамически модифицируем конфигурацию для PipelineManager текущей сессии
             global_config = {
-                'MIN_CHUNK_SIZE': 40,
-                'MAX_CHUNK_SIZE': 150,
+                'MIN_CHUNK_SIZE': 50,
+                'MAX_CHUNK_SIZE': 300,
                 'FRAGMENT_DELAY_MIN': 0.001,
                 'FRAGMENT_DELAY_MAX': 0.003
             }
             local_config = copy.deepcopy(global_config)
-            if modifier > 0:
-                local_config["MIN_CHUNK_SIZE"] = int(local_config.get("MIN_CHUNK_SIZE", 40)) + modifier
-                local_config["MAX_CHUNK_SIZE"] = int(local_config.get("MAX_CHUNK_SIZE", 150)) + modifier
-                print(f"[SOCKS5] Applied chunk modifier +{modifier}B for {domain}: MIN={local_config['MIN_CHUNK_SIZE']}, MAX={local_config['MAX_CHUNK_SIZE']}")
             
+            # Вычисляем боевые границы размера фрагментов
+            base_min = int(local_config.get("MIN_CHUNK_SIZE", 50))
+            base_max = int(local_config.get("MAX_CHUNK_SIZE", 300))
+            
+            if chunk_modifier > 0:
+                base_min += chunk_modifier
+                base_max += chunk_modifier
+
+            # 🔥 СТРОГИЙ СИНТАКСИС ПЕРЕДАЧИ В ЯДРО КЛИЕНТСКОГО МОДУЛЯ
+            local_config["MIN_CHUNK_SIZE"] = base_min
+            local_config["MAX_CHUNK_SIZE"] = base_max
+
+            # Явно прописываем конфигурацию внутрь module_configs для PipelineManager
+            local_config["module_configs"] = {
+                "jitter_fragmentation": {
+                    "MIN_CHUNK_SIZE": str(base_min),
+                    "MAX_CHUNK_SIZE": str(base_max),
+                    "MIN_CHUNK_DELAY": str(local_config.get("FRAGMENT_DELAY_MIN", 0.001)),
+                    "MAX_CHUNK_DELAY": str(local_config.get("FRAGMENT_DELAY_MAX", 0.003))
+                }
+            }
+
             # 2. Инициализируем PipelineManager с учетом калибровки
             pipeline_config = {
                 'pipeline_modules': active_pipeline,
-                'module_configs': {}
+                'module_configs': local_config["module_configs"]
             }
-            # 🔥 ПРИМЕНЯЕМ КАЛИБРОВКУ КОНФИГУРАЦИИ JITTER
-            if active_pipeline == ["jitter_fragmentation"] and modifier > 0:
-                # Создаем специальную конфигурацию для jitter с кастомными размерами чанков
-                jitter_config = {
-                    'MIN_CHUNK_SIZE': 40 + modifier,
-                    'MAX_CHUNK_SIZE': 150 + modifier,
-                    'FRAGMENT_DELAY_MIN': 0.001,
-                    'FRAGMENT_DELAY_MAX': 0.003
-                }
-                # Обновляем глобальную конфигурацию для PipelineManager
-                self.pipeline_manager.min_chunk_size = jitter_config['MIN_CHUNK_SIZE']
-                self.pipeline_manager.max_chunk_size = jitter_config['MAX_CHUNK_SIZE']
-                self.pipeline_manager.fragment_delay_min = jitter_config['FRAGMENT_DELAY_MIN']
-                self.pipeline_manager.fragment_delay_max = jitter_config['FRAGMENT_DELAY_MAX']
-                print(f"[SOCKS5] Applied jitter calibration to PipelineManager: MIN={jitter_config['MIN_CHUNK_SIZE']}, MAX={jitter_config['MAX_CHUNK_SIZE']}")
-            
             self.logger.info(f"[SOCKS5] Initializing pipeline with config: {pipeline_config}")
             if not await self.pipeline_manager.load_pipeline_from_config(pipeline_config):
                 self.logger.error(f"[SOCKS5] Failed to load pipeline for {domain}")
@@ -292,10 +315,8 @@ class SOCKS5Daemon:
                     timeout=3.0
                 )
 
-                # Успешное подключение — отключаем Нагла
-                sock = upstream_writer.get_extra_info('socket')
-                if sock:
-                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                # 🔥 Применяем жесткую очистку к апстрим сокету
+                apply_hard_reset_opts(upstream_writer)
 
             except asyncio.TimeoutError:
                 # Перехватываем зависание Docker-сети на macOS
@@ -310,8 +331,6 @@ class SOCKS5Daemon:
                     port=target_port
                 )
                 
-                client_writer.close()
-                await client_writer.wait_closed()
                 return
 
             except Exception as net_err:
@@ -325,8 +344,7 @@ class SOCKS5Daemon:
                     current_pipeline=list(active_pipeline), # Передаем честный срез (пустой или полный)
                     port=target_port
                 )
-                client_writer.close()
-                await client_writer.wait_closed()
+                
                 return
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
@@ -423,7 +441,7 @@ class SOCKS5Daemon:
         
         # Используем стандартный asyncio.start_server
         server = await asyncio.start_server(
-            self.handle_client,
+            self.handle_socks5_client,
             '0.0.0.0',
             self.listen_port,
             reuse_address=True,
