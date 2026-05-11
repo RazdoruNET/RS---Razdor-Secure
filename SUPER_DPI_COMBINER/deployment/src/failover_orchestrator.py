@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-Smart Failover Orchestrator - Адаптивная система мутации пайплайнов
+Smart Failover Orchestrator - Адаптивный оркестратор пайплайнов с динамической мутацией
 """
 
-import os
 import asyncio
-import time
-import logging
 import copy
-from typing import Dict, List, Optional, Tuple, Any
+import os
+import time
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime
-from dpi_sandbox_inspector import DpiSandboxInspector, ConnectionDropReason
+
+# Import pipeline modules
+from pipeline_manager import PipelineManager
 
 class SessionStatus(Enum):
     """Статус сессии"""
@@ -32,66 +33,115 @@ class SessionContext:
     pipeline_config: Dict[str, Any] = None
     error_type: Optional[str] = None
 
-@dataclass
 class DomainStrategy:
-    """Стратегия для домена"""
-    pipeline_modules: List[str]
-    module_configs: Dict[str, Dict[str, Any]]
-    success_count: int = 0
-    failure_count: int = 0
-    last_success: Optional[float] = None
-    last_failure: Optional[float] = None
-    is_passthrough: bool = False
-    passthrough_until: Optional[float] = None
-    mutation_history: List[Dict[str, Any]] = field(default_factory=list)
-    domain: str = field(default="")
-    
-    def __post_init__(self):
-        """Принудительная нормализация домена после инициализации"""
-        if self.domain:
-            self.domain = str(self.domain).strip().lower()
-    
-    def add_failure_event(self, pipeline_before_crash: List[str], error_reason: str, mutated_to: List[str]):
-        """Регистрирует подробности неудачной попытки с глубоким копированием для изоляции тредов"""
+    def __init__(self, domain: str):
+        self.domain = domain.strip().lower()
+        self.status = "MUTATING"
+        self.current_pipeline = []
+        self.failures_count = 0  # СТРОГИЙ СТАНДАРТ ИМЕНИ
+        self.last_drop_reason = "N/A"
+        self.mutation_history = []
+
+    def add_failure_event(self, failed_pipeline: list, error_reason: str, mutated_to_pipeline: list):
         self.mutation_history.append({
             "timestamp": datetime.utcnow().isoformat(),
-            "failed_pipeline": list(pipeline_before_crash),
+            "failed_pipeline": list(failed_pipeline),
             "error_reason": str(error_reason),
-            "mutated_to_pipeline": list(mutated_to)
+            "mutated_to_pipeline": list(mutated_to_pipeline)
         })
 
 class SmartFailoverOrchestrator:
-    """Оркестратор для адаптивной мутации пайплайнов"""
-    
-    def __init__(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
-        # Конфигурация из переменных окружения
-        self.enabled = os.environ.get('SMART_FAILOVER_ENABLED', 'true').lower() == 'true'
-        self.max_mutation_attempts = int(os.environ.get('MAX_MUTATION_ATTEMPTS', '4'))
-        self.selective_threshold = int(os.environ.get('SELECTIVE_THRESHOLD', '3000'))
-        self.passthrough_duration = 300  # 5 минут в секундах
-        
-        # Кэш успешных стратегий по доменам
-        self.domain_strategies: Dict[str, DomainStrategy] = {}
-        self.strategy_lock = asyncio.Lock()
-        
-        # Активные сессии
-        self.active_sessions: Dict[str, SessionContext] = {}
-        self.session_lock = asyncio.Lock()
-        
-        # DPI Sandbox Inspector
-        self.dpi_inspector = DpiSandboxInspector(logger=self.logger)
-        
-        # Базовая конфигурация для мутаций
-        self.base_pipeline = os.environ.get('PIPELINE_ORDER', 'fake_packet,jitter_fragmentation').split(',')
-    
+    def __init__(self, default_pipeline: list = None, inspector=None):
+        self.lock = asyncio.Lock()
+        self.domain_cache = {}
+        self.default_pipeline = default_pipeline if default_pipeline else ["fake_packet", "sni_modifier", "jitter_fragmentation"]
+        self.inspector = inspector
+
     def _normalize_domain(self, domain: str) -> str:
-        """Принудительная нормализация домена"""
         if not domain:
             return "unknown_init"
         return str(domain).strip().lower()
-    
+
+    async def get_or_create_strategy(self, domain: str) -> list:
+        norm_domain = self._normalize_domain(domain)
+        if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
+            return []
+            
+        async with self.lock:
+            if norm_domain not in self.domain_cache:
+                strategy = DomainStrategy(norm_domain)
+                strategy.current_pipeline = list(self.default_pipeline)
+                self.domain_cache[norm_domain] = strategy
+                print(f"[ORCHESTRATOR] Создана базовая стратегия для {norm_domain}: {strategy.current_pipeline}")
+            
+            return list(self.domain_cache[norm_domain].current_pipeline)
+
+    def _calculate_next_mutation(self, current_pipeline: list, fail_count: int) -> list:
+        pipeline = list(current_pipeline)
+        
+        if "fake_packet" in pipeline:
+            return [m for m in pipeline if m != "fake_packet"]
+            
+        if "sni_modifier" in pipeline:
+            return [m for m in pipeline if m != "sni_modifier"]
+            
+        return []
+
+    async def report_failure(self, domain: str, reason: str, current_pipeline: list):
+        norm_domain = self._normalize_domain(domain)
+        if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
+            return
+
+        async with self.lock:
+            if norm_domain not in self.domain_cache:
+                self.domain_cache[norm_domain] = DomainStrategy(norm_domain)
+                self.domain_cache[norm_domain].current_pipeline = list(current_pipeline)
+            
+            strategy = self.domain_cache[norm_domain]
+            
+            # Локальный счетчик перед расчетом мутации
+            next_fail_count = strategy.failures_count + 1
+            next_pipeline = self._calculate_next_mutation(current_pipeline, next_fail_count)
+            
+            # Запись в историю под надежным Lock
+            strategy.add_failure_event(
+                list(current_pipeline),
+                reason,
+                list(next_pipeline)
+            )
+            
+            # Применение дескрипторов
+            strategy.failures_count = next_fail_count  # ИСПРАВЛЕНО ИСПОЛЬЗОВАНИЕ АТРИБУТА
+            strategy.last_drop_reason = str(reason)
+            
+            if strategy.failures_count >= 4:
+                strategy.status = "PASSTHROUGH"
+                strategy.current_pipeline = []
+            else:
+                strategy.status = "UNSTABLE"
+                strategy.current_pipeline = list(next_pipeline)
+
+        # Вызов внешнего инспектора
+        if self.inspector:
+            await self.inspector.export_matrix_report(orchestrator=self)
+
+    async def get_snapshot(self) -> dict:
+        async with self.lock:
+            snapshot = {
+                "export_timestamp": datetime.utcnow().timestamp(),
+                "total_domains": len(self.domain_cache),
+                "domains": {}
+            }
+            for domain, strategy in self.domain_cache.items():
+                snapshot["domains"][domain] = {
+                    "status": strategy.status,
+                    "successful_pipeline": strategy.current_pipeline,
+                    "failures_count": strategy.failures_count,  # СТАНДАРТ ИМЕНИ СХРАНЕН
+                    "last_drop_reason": strategy.last_drop_reason,
+                    "history_of_failures": copy.deepcopy(strategy.mutation_history)
+                }
+            return snapshot
+
     async def create_session(self, domain: str) -> SessionContext:
         """
         Создание новой сессии с оптимальной стратегией
@@ -104,18 +154,8 @@ class SmartFailoverOrchestrator:
         """
         norm_domain = self._normalize_domain(domain)
         
-        if not self.enabled:
-            # Если оркестратор отключен, возвращаем базовую конфигурацию
-            return SessionContext(
-                session_id=f"{norm_domain}_{int(time.time())}",
-                domain=norm_domain,
-                start_time=time.time(),
-                pipeline_config=self._create_passthrough_config()
-            )
-        
-        # 🔥 КРИТИЧЕСКИЙ ФИЛЬТР: Если на вход пришел битый IP, принудительно возвращаем passthrough (прямой коннект)
+        # Блокировка рекурсивных адресов
         if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
-            self.logger.warning(f"[ORCHESTRATOR] Blocked recursive/invalid address: {norm_domain}. Returning passthrough.")
             return SessionContext(
                 session_id=f"{norm_domain}_{int(time.time())}",
                 domain=norm_domain,
@@ -124,42 +164,36 @@ class SmartFailoverOrchestrator:
             )
         
         # Начинаем анализ соединения через DPI инспектор
-        connection_id = self.dpi_inspector.start_connection_analysis(norm_domain)
+        if self.inspector:
+            connection_id = self.inspector.start_connection_analysis(norm_domain)
+        else:
+            connection_id = None
         
-        async with self.strategy_lock:
+        async with self.lock:
             # Проверяем, есть ли кэшированная стратегия для домена
-            if norm_domain in self.domain_strategies:
-                strategy = self.domain_strategies[norm_domain]
+            if norm_domain in self.domain_cache:
+                strategy = self.domain_cache[norm_domain]
                 
-                # Проверяем, не истекло ли время passthrough
-                if strategy.is_passthrough and strategy.passthrough_until and time.time() < strategy.passthrough_until:
-                    self.logger.info(f"[ORCHESTRATOR] Domain {norm_domain} still in passthrough mode")
-                    return SessionContext(
-                        session_id=f"{norm_domain}_{int(time.time())}",
-                        domain=norm_domain,
-                        start_time=time.time(),
-                        pipeline_config=self._create_passthrough_config()
-                    )
+                # Создаем конфигурацию из текущей стратегии
+                pipeline_config = self._strategy_to_config(strategy)
+            else:
+                # Создаем новую стратегию на основе базового пайплайна
+                strategy = DomainStrategy(norm_domain)
+                strategy.current_pipeline = list(self.default_pipeline)
+                self.domain_cache[norm_domain] = strategy
                 
-                # Если есть успешная стратегия, используем ее
-                if strategy.success_count > 0 and strategy.failure_count == 0:
-                    self.logger.info(f"[ORCHESTRATOR] Using cached successful strategy for {norm_domain}")
-                    return SessionContext(
-                        session_id=f"{norm_domain}_{int(time.time())}",
-                        domain=norm_domain,
-                        start_time=time.time(),
-                        pipeline_config=self._strategy_to_config(strategy)
-                    )
-            
-            # Генерируем новую стратегию
-            strategy = await self._generate_strategy_for_domain(norm_domain)
-            return SessionContext(
-                session_id=f"{norm_domain}_{int(time.time())}",
-                domain=norm_domain,
-                start_time=time.time(),
-                pipeline_config=self._strategy_to_config(strategy)
-            )
-    
+                pipeline_config = self._get_base_config()
+        
+        # Создаем контекст сессии
+        session = SessionContext(
+            session_id=f"{norm_domain}_{int(time.time())}",
+            domain=norm_domain,
+            start_time=time.time(),
+            pipeline_config=pipeline_config
+        )
+        
+        return session
+
     async def report_success(self, session: SessionContext):
         """
         Отчет об успешной сессии
@@ -167,266 +201,43 @@ class SmartFailoverOrchestrator:
         Args:
             session: Контекст успешной сессии
         """
-        if not self.enabled:
-            return
-        
         session.status = SessionStatus.SUCCESS
         
         # Завершаем анализ соединения в DPI инспекторе
-        analysis = self.dpi_inspector.finalize_connection_analysis(session.session_id)
+        if self.inspector:
+            analysis = self.inspector.finalize_connection_analysis(session.session_id)
+        else:
+            analysis = None
         
-        async with self.strategy_lock:
-            if session.domain not in self.domain_strategies:
+        async with self.lock:
+            if session.domain not in self.domain_cache:
                 # Создаем новую стратегию на основе успешной сессии
-                strategy = self._config_to_strategy(session.domain, session.pipeline_config)
-                self.domain_strategies[session.domain] = strategy
+                strategy = DomainStrategy(session.domain)
+                strategy.current_pipeline = list(session.pipeline_config.get('pipeline_modules', []))
+                self.domain_cache[session.domain] = strategy
             
-            strategy = self.domain_strategies[session.domain]
-            strategy.success_count += 1
+            strategy = self.domain_cache[session.domain]
+            strategy.success_count = strategy.success_count + 1 if hasattr(strategy, 'success_count') else 1
             strategy.last_success = time.time()
             
-            # Если домен был в passthrough, возвращаем его в нормальный режим
-            if strategy.is_passthrough:
-                strategy.is_passthrough = False
-                strategy.passthrough_until = None
-                self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} restored from passthrough mode")
+            print(f"[ORCHESTRATOR] Domain {session.domain} marked as STABLE with pipeline {strategy.current_pipeline}")
             
-            self.logger.info(f"[ORCHESTRATOR] Domain {session.domain} marked as STABLE with pipeline {strategy.pipeline_modules}")
-        
-        # 🔥 ВЫЗОВ ЭКСПОРТА ВНЕ БЛОКА LOCK С ПЕРЕДАЧЕЙ ССЫЛКИ НА СЕБЯ
-        if self.dpi_inspector:
-            await self.dpi_inspector.export_matrix_report(self)
-    
-    async def report_failure(self, domain: str, reason: str, current_pipeline: list, next_pipeline: list):
-        """
-        Отчет о неудачной сессии с предотвращением переинициализации и аккумуляцией истории
-        
-        Args:
-            domain: Домен, на котором произошел сбой
-            reason: Причина ошибки
-            current_pipeline: Текущий упавший пайплайн
-            next_pipeline: Следующий пайплайн после мутации
-        """
-        norm_domain = self._normalize_domain(domain)
-        
-        if not self.enabled:
-            return
-        
-        if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
-            return
-        
-        self.logger.info(f"[ORCHESTRATOR] Handshake failed for {norm_domain}. Error: {reason}. Mutating pipeline strategy...")
-        
-        async with self.strategy_lock:
-            # АТОМАРНАЯ ПРОВЕРКА ИСКЛЮЧАЕТ ПОВТОРНУЮ ИНИЦИАЛИЗАЦИЮ
-            if norm_domain not in self.domain_strategies:
-                print(f"[ORCHESTRATOR] Инициализирована новая запись для домена: {norm_domain}")
-                strategy = DomainStrategy(
-                    pipeline_modules=current_pipeline,
-                    module_configs={},
-                    domain=norm_domain
-                )
-                self.domain_strategies[norm_domain] = strategy
-            else:
-                print(f"[ORCHESTRATOR] Домен {norm_domain} найден в кэше. Аккумулируем историю.")
-                strategy = self.domain_strategies[norm_domain]
-            
-            # Фиксация сбоя в массив
-            strategy.add_failure_event(current_pipeline, reason, next_pipeline)
-            
-            strategy.failure_count += 1
-            strategy.status = "UNSTABLE" if strategy.failure_count < 4 else "PASSTHROUGH"
-            strategy.last_failure = time.time()
-            strategy.pipeline_modules = next_pipeline
-            
-            modules_str = ", ".join(next_pipeline)
-            self.logger.info(f"[ORCHESTRATOR] New strategy generated for {norm_domain}: [{modules_str}]")
-        
-        # 🔥 ВЫЗОВ ЭКСПОРТА ВНЕ БЛОКА LOCK С ПЕРЕДАЧЕЙ ССЫЛКИ НА СЕБЯ
-        if self.dpi_inspector:
-            await self.dpi_inspector.export_matrix_report(self)
-    
-    async def _generate_strategy_for_domain(self, domain: str) -> DomainStrategy:
-        """
-        Генерация начальной стратегии для домена
-        
-        Args:
-            domain: Целевой домен
-            
-        Returns:
-            Новая стратегия
-        """
-        # Для начала используем базовую конфигурацию
-        return self._config_to_strategy(domain, self._get_base_config())
-    
-    async def _mutate_strategy_with_dpi_analysis(self, domain: str, failure_count: int, error_type: str) -> DomainStrategy:
-        """
-        Мутация стратегии с учетом DPI анализа (теперь использует эволюционный алгоритм)
-        
-        Args:
-            domain: Целевой домен
-            failure_count: Количество неудач
-            error_type: Тип ошибки
-            
-        Returns:
-            Мутированная стратегия
-        """
-        # Используем единый эволюционный алгоритм вместо DPI-специфичной логики
-        return await self._mutate_strategy(domain, failure_count)
-    
-    def generate_next_mutation(self, strategy: DomainStrategy, domain: str) -> tuple[list, dict]:
-        """
-        Эволюционный алгоритм градации мутаций с пошаговым снижением агрессивности
-        
-        Args:
-            strategy: Текущая стратегия домена
-            domain: Целевой домен
-            
-        Returns:
-            Кортеж (next_pipeline, force_large_chunks_flag)
-        """
-        base_pipeline = list(self.base_pipeline)
-        fail_count = strategy.failure_count
-        force_large_chunks = False
-        
-        # Шаг 1: Первый сбой — Убираем только FakePacketModule
-        if fail_count == 1:
-            next_pipeline = [m for m in base_pipeline if m != "fake_packet"]
-            if not next_pipeline:
-                next_pipeline = base_pipeline
-            self.logger.info(f"[ORCHESTRATOR] Mutation 1 for {domain}: Removing fake_packet -> {next_pipeline}")
-            return next_pipeline, force_large_chunks
+            # Экспортируем матрицу
+            if self.inspector:
+                await self.inspector.export_matrix_report(self)
 
-        # Шаг 2: Второй сбой — Убираем SniCaseModifierModule (оставляем только чистый джиттер)
-        elif fail_count == 2:
-            next_pipeline = [m for m in base_pipeline if m == "jitter_fragmentation"]
-            if not next_pipeline:
-                next_pipeline = base_pipeline
-            self.logger.info(f"[ORCHESTRATOR] Mutation 2 for {domain}: Removing sni_modifier -> {next_pipeline}")
-            return next_pipeline, force_large_chunks
-
-        # Шаг 3: Третий сбой — Меняем параметры джиттера (увеличиваем чанки)
-        elif fail_count == 3:
-            next_pipeline = ["jitter_fragmentation"]
-            force_large_chunks = True
-            self.logger.info(f"[ORCHESTRATOR] Mutation 3 for {domain}: Force large chunks for jitter -> {next_pipeline}")
-            return next_pipeline, force_large_chunks
-
-        # Шаг 4: Четвертый сбой и далее — Все методы исчерпаны, уходим в безопасный Passthrough
-        else:
-            print(f"[ORCHESTRATOR CRITICAL] Обход DPI невозможен для {domain}. Fallback в прямой доступ.")
-            self.logger.warning(f"[ORCHESTRATOR] Mutation {fail_count} for {domain}: Passthrough mode")
-            return [], force_large_chunks
-
-    async def _mutate_strategy(self, domain: str, failure_count: int) -> DomainStrategy:
-        """
-        Мутация стратегии на основе количества неудач (использует эволюционный алгоритм)
-        
-        Args:
-            domain: Целевой домен
-            failure_count: Количество неудач
-            
-        Returns:
-            Мутированная стратегия
-        """
-        if failure_count >= self.max_mutation_attempts:
-            # Fallback: переводим в passthrough режим
-            self.logger.warning(f"[ORCHESTRATOR] Max mutations reached for {domain}. Switching to passthrough for 5 minutes")
-            return DomainStrategy(
-                pipeline_modules=[],
-                module_configs={},
-                is_passthrough=True,
-                passthrough_until=time.time() + self.passthrough_duration
-            )
-        
-        # Получаем текущую стратегию для вызова эволюционного алгоритма
-        async with self.strategy_lock:
-            if domain in self.domain_strategies:
-                strategy = self.domain_strategies[domain]
-            else:
-                strategy = self._config_to_strategy(domain, self._get_base_config())
-                self.domain_strategies[domain] = strategy
-        
-        # Используем эволюционный алгоритм
-        next_pipeline, force_large_chunks = self.generate_next_mutation(strategy, domain)
-        
-        # Генерируем конфигурацию для мутированных модулей
-        if force_large_chunks:
-            # Принудительно увеличиваем размеры чанков для ускорения
-            module_configs = {
-                'jitter_fragmentation': {
-                    'MIN_CHUNK_SIZE': str(int(os.environ.get('MIN_CHUNK_SIZE', '40')) + 100),
-                    'MAX_CHUNK_SIZE': str(int(os.environ.get('MAX_CHUNK_SIZE', '150')) + 100),
-                    'MIN_CHUNK_DELAY': os.environ.get('MIN_CHUNK_DELAY', '0.001'),
-                    'MAX_CHUNK_DELAY': os.environ.get('MAX_CHUNK_DELAY', '0.003'),
-                    'SELECTIVE_THRESHOLD': os.environ.get('SELECTIVE_THRESHOLD', '3000'),
-                }
-            }
-        else:
-            module_configs = self._generate_mutation_configs(next_pipeline, failure_count)
-        
-        return DomainStrategy(
-            pipeline_modules=next_pipeline,
-            module_configs=module_configs
-        )
-    
-    def _generate_mutation_configs(self, modules: List[str], failure_count: int) -> Dict[str, Dict[str, Any]]:
-        """
-        Генерация конфигурации для мутированных модулей
-        
-        Args:
-            modules: Список модулей
-            failure_count: Количество неудач
-            
-        Returns:
-            Конфигурация модулей
-        """
-        configs = {}
-        
-        for module in modules:
-            if module == 'jitter_fragmentation':
-                if failure_count == 2:
-                    # Увеличиваем размеры чанков
-                    configs[module] = {
-                        'MIN_CHUNK_SIZE': str(int(os.environ.get('MIN_CHUNK_SIZE', '40')) + 50),
-                        'MAX_CHUNK_SIZE': str(int(os.environ.get('MAX_CHUNK_SIZE', '150')) + 50),
-                        'MIN_CHUNK_DELAY': os.environ.get('MIN_CHUNK_DELAY', '0.001'),
-                        'MAX_CHUNK_DELAY': os.environ.get('MAX_CHUNK_DELAY', '0.003'),
-                        'SELECTIVE_THRESHOLD': os.environ.get('SELECTIVE_THRESHOLD', '3000'),
-                    }
-                else:
-                    # Базовая конфигурация
-                    configs[module] = {
-                        'MIN_CHUNK_SIZE': os.environ.get('MIN_CHUNK_SIZE', '40'),
-                        'MAX_CHUNK_SIZE': os.environ.get('MAX_CHUNK_SIZE', '150'),
-                        'MIN_CHUNK_DELAY': os.environ.get('MIN_CHUNK_DELAY', '0.001'),
-                        'MAX_CHUNK_DELAY': os.environ.get('MAX_CHUNK_DELAY', '0.003'),
-                        'SELECTIVE_THRESHOLD': os.environ.get('SELECTIVE_THRESHOLD', '3000'),
-                    }
-            
-            elif module == 'fake_packet':
-                configs[module] = {
-                    'FAKE_PACKET_BYTES': os.environ.get('FAKE_PACKET_BYTES', '0x160301000500000000'),
-                }
-            
-            elif module == 'sni_modifier':
-                configs[module] = {
-                    'CASE_MODIFY_PROBABILITY': os.environ.get('CASE_MODIFY_PROBABILITY', '0.7'),
-                }
-            
-            elif module == 'tls_chameleon':
-                configs[module] = {
-                    'SNI_SPLITTING_ENABLED': 'true',
-                    'MIN_PACKET_SIZE': os.environ.get('MIN_PACKET_SIZE', '100'),
-                }
-        
-        return configs
-    
-    def _get_base_config(self) -> Dict[str, Any]:
-        """Получение базовой конфигурации"""
+    def _strategy_to_config(self, strategy) -> dict:
+        """Преобразование стратегии в конфигурацию пайплайна"""
         return {
-            'pipeline_modules': self.base_pipeline,
-            'module_configs': self._generate_mutation_configs(self.base_pipeline, 0)
+            'pipeline_modules': strategy.current_pipeline,
+            'module_configs': {}
+        }
+
+    def _get_base_config(self) -> Dict[str, Any]:
+        """Получить базовую конфигурацию пайплайна"""
+        return {
+            'pipeline_modules': self.default_pipeline,
+            'module_configs': {}
         }
     
     def _create_passthrough_config(self) -> Dict[str, Any]:
@@ -435,157 +246,3 @@ class SmartFailoverOrchestrator:
             'pipeline_modules': [],
             'module_configs': {}
         }
-    
-    def _strategy_to_config(self, strategy: DomainStrategy) -> Dict[str, Any]:
-        """Преобразование стратегии в конфигурацию"""
-        return {
-            'pipeline_modules': strategy.pipeline_modules,
-            'module_configs': strategy.module_configs
-        }
-    
-    async def _preseed_strategies(self):
-        """
-        Импорт стратегий из внешнего URL при старте
-        """
-        preseed_url = os.environ.get('STRATEGY_PRESEED_URL')
-        if not preseed_url:
-            self.logger.info("[ORCHESTRATOR] No preseed URL configured")
-            return
-        
-        try:
-            self.logger.info(f"[ORCHESTRATOR] Importing strategies from: {preseed_url}")
-            
-            # Создаем HTTP клиент
-            import aiohttp
-            timeout = aiohttp.ClientTimeout(total=30)
-            
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(preseed_url) as response:
-                    if response.status != 200:
-                        self.logger.error(f"[ORCHESTRATOR] Failed to fetch preseed: HTTP {response.status}")
-                        return
-                    
-                    # Читаем JSON
-                    data = await response.json()
-                    
-                    # Импортируем стратегии
-                    imported_count = 0
-                    for domain, strategy_data in data.items():
-                        if isinstance(strategy_data, dict):
-                            # Создаем стратегию
-                            modules = strategy_data.get('pipeline_modules', [])
-                            configs = strategy_data.get('module_configs', {})
-                            
-                            strategy = self._config_to_strategy(domain, {
-                                'pipeline_modules': modules,
-                                'module_configs': configs
-                            })
-                            
-                            # Устанавливаем статус если указан
-                            if strategy_data.get('status') == 'STABLE':
-                                strategy.success_count = 1
-                                strategy.failure_count = 0
-                            
-                            self.domain_strategies[domain] = strategy
-                            imported_count += 1
-                    
-                    self.logger.info(f"[ORCHESTRATOR] Pre-seeded {imported_count} stable domain strategies from external URL")
-                    
-                    # Экспортируем матрицу
-                    await self.dpi_inspector.export_matrix_report(self)
-        
-        except ImportError:
-            self.logger.warning("[ORCHESTRATOR] aiohttp not available, skipping preseed")
-        except Exception as e:
-            self.logger.error(f"[ORCHESTRATOR] Preseed import failed: {e}")
-    
-    def _config_to_strategy(self, domain: str, config: Dict[str, Any]) -> DomainStrategy:
-        """Преобразование конфигурации в стратегию"""
-        return DomainStrategy(
-            pipeline_modules=config.get('pipeline_modules', []),
-            module_configs=config.get('module_configs', {})
-        )
-    
-    async def get_snapshot(self) -> dict:
-        """
-        Получить потокобезопасный слепок состояния кэша доменов с глубоким копированием для Web GUI
-        
-        Returns:
-            Словарь с текущим состоянием стратегий
-        """
-        async with self.strategy_lock:
-            snapshot = {
-                "export_timestamp": datetime.utcnow().timestamp(),
-                "total_domains": len(self.domain_strategies),
-                "domains": {}
-            }
-            for domain, strategy in self.domain_strategies.items():
-                snapshot["domains"][domain] = {
-                    "status": self._get_domain_status(strategy),
-                    "successful_pipeline": strategy.pipeline_modules,
-                    "failures_count": strategy.failure_count,
-                    "last_drop_reason": self._get_last_drop_reason(domain),
-                    # Глубокое копирование истории для предотвращения рассинхронизации длин ответов в Web GUI
-                    "history_of_failures": copy.deepcopy(strategy.mutation_history)
-                }
-            return snapshot
-    
-    def _get_domain_status(self, strategy) -> str:
-        """Определить статус домена"""
-        if strategy.is_passthrough:
-            return 'PASSTHROUGH'
-        elif strategy.success_count > 0 and strategy.failure_count == 0:
-            return 'STABLE'
-        elif strategy.failure_count > 0:
-            return 'UNSTABLE'
-        else:
-            return 'MUTATING'
-    
-    def _get_last_drop_reason(self, domain: str) -> str:
-        """Получить последнюю причину сброса от DPI инспектора"""
-        for analysis in self.dpi_inspector.completed_connections.values():
-            if analysis.domain == domain and analysis.drop_reason.value != 'unknown':
-                return analysis.drop_reason.value
-        return 'N/A'
-    
-    async def get_domain_stats(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Получить статистику по доменам
-        
-        Returns:
-            Словарь со статистикой
-        """
-        async with self.strategy_lock:
-            stats = {}
-            for domain, strategy in self.domain_strategies.items():
-                # Определяем статус домена
-                if strategy.is_passthrough:
-                    status = 'PASSTHROUGH'
-                elif strategy.success_count > 0 and strategy.failure_count == 0:
-                    status = 'STABLE'
-                elif strategy.failure_count > 0:
-                    status = 'UNSTABLE'
-                else:
-                    status = 'MUTATING'
-                
-                # Получаем последнюю причину сброса от DPI инспектора
-                last_drop_reason = None
-                for analysis in self.dpi_inspector.completed_connections.values():
-                    if analysis.domain == domain and analysis.drop_reason.value != 'unknown':
-                        last_drop_reason = analysis.drop_reason.value
-                        break
-                
-                stats[domain] = {
-                    'status': status,
-                    'success_count': strategy.success_count,
-                    'failure_count': strategy.failure_count,
-                    'successful_connections': strategy.success_count,
-                    'failed_connections': strategy.failure_count,
-                    'last_success': strategy.last_success,
-                    'last_failure': strategy.last_failure,
-                    'is_passthrough': strategy.is_passthrough,
-                    'pipeline_modules': strategy.pipeline_modules,
-                    'module_configs': strategy.module_configs,
-                    'drop_reason': last_drop_reason
-                }
-            return stats

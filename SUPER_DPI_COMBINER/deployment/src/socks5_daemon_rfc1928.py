@@ -23,6 +23,7 @@ sys.path.insert(0, str(project_root))
 from pipeline_manager import PipelineManager
 from failover_orchestrator import SmartFailoverOrchestrator
 from web_gui import WebGuiServer
+from dpi_sandbox_inspector import DpiSandboxInspector
 
 class SOCKS5Daemon:
     """Универсальный SOCKS5 прокси с wire fragmentation"""
@@ -213,19 +214,27 @@ class SOCKS5Daemon:
         """Шаг 4: Трансляция и фрагментация данных через Smart Orchestrator"""
         session = None
         try:
-            # Создаем сессию через оркестратор
+            # 1. Запрашиваем АКТУАЛЬНЫЙ на данный момент пайплайн из кэша оркестратора
             domain = target_host
-            self.logger.info(f"[SOCKS5] Creating session for domain: {domain}")
-            session = await self.orchestrator.create_session(domain)
+            self.logger.info(f"[SOCKS5] Requesting active pipeline for domain: {domain}")
+            active_pipeline = await self.orchestrator.get_or_create_strategy(domain)
             
-            # Загружаем динамическую конфигурацию пайплайна
-            self.logger.info(f"[SOCKS5] Loading dynamic pipeline config: {session.pipeline_config}")
-            if not await self.pipeline_manager.load_pipeline_from_config(session.pipeline_config):
+            # 2. Инициализируем PipelineManager строго с полученным active_pipeline
+            pipeline_config = {
+                'pipeline_modules': active_pipeline,
+                'module_configs': {}
+            }
+            self.logger.info(f"[SOCKS5] Initializing pipeline with config: {pipeline_config}")
+            if not await self.pipeline_manager.load_pipeline_from_config(pipeline_config):
                 self.logger.error(f"[SOCKS5] Failed to load pipeline for {domain}")
                 return
             
+            # Создаем сессию через оркестратор
+            self.logger.info(f"[SOCKS5] Creating session for domain: {domain}")
+            session = await self.orchestrator.create_session(domain)
+            
             self.logger.info(f"[SOCKS5] Session {session.session_id} created for {domain}")
-            self.logger.info(f"[SOCKS5] Dynamic pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
+            self.logger.info(f"[SOCKS5] Active pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
             
             # Открываем реальное соединение с целевым сервером
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
@@ -257,33 +266,27 @@ class SOCKS5Daemon:
                 # Перехватываем зависание Docker-сети на macOS
                 print(f"[SOCKS5 TIMEOUT] Превышено время ожидания (3.0s) подключения к {target_host}. Сеть Docker Desktop заблокирована.")
 
-                # Генерация мутации на основе текущего состояния
-                current_pipeline = session.pipeline_config.get('pipeline_modules', ['fake_packet', 'sni_modifier', 'jitter_fragmentation'])
-                next_pipeline = [m for m in current_pipeline if m != "fake_packet"] if "fake_packet" in current_pipeline else []
-                
-                # Принудительный вызов с передачей нано-контекста
+                # ПЕРЕДАЕМ ИМЕННО ТОТ ПАЙПЛАЙН, КОТОРЫЙ СБОИЛ В ЭТОЙ СЕССИИ
                 await self.orchestrator.report_failure(
-                    domain=domain,
+                    domain=target_host,
                     reason="Connection timeout",
-                    current_pipeline=current_pipeline,
-                    next_pipeline=next_pipeline
+                    current_pipeline=active_pipeline
                 )
+                client_writer.close()
+                await client_writer.wait_closed()
                 return
 
             except Exception as net_err:
                 print(f"[SOCKS5 NET ERROR] Сбой подключения к {target_host}: {net_err}")
                 
-                # Генерация мутации на основе текущего состояния
-                current_pipeline = session.pipeline_config.get('pipeline_modules', ['fake_packet', 'sni_modifier', 'jitter_fragmentation'])
-                next_pipeline = [m for m in current_pipeline if m != "fake_packet"] if "fake_packet" in current_pipeline else []
-                
-                # Принудительный вызов с передачей нано-контекста
+                # ПЕРЕДАЕМ ИМЕННО ТОТ ПАЙПЛАЙН, КОТОРЫЙ СБОИЛ В ЭТОЙ СЕССИИ
                 await self.orchestrator.report_failure(
-                    domain=domain,
+                    domain=target_host,
                     reason="DPI Request Drop",
-                    current_pipeline=current_pipeline,
-                    next_pipeline=next_pipeline
+                    current_pipeline=active_pipeline
                 )
+                client_writer.close()
+                await client_writer.wait_closed()
                 return
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
@@ -431,11 +434,10 @@ async def main():
     """Основная функция запуска"""
     try:
         # 1. Инициализация эшелонов
-        orchestrator = SmartFailoverOrchestrator()
-        inspector = orchestrator.dpi_inspector  # Инспектор уже создан внутри оркестратора
+        inspector = DpiSandboxInspector()
+        orchestrator = SmartFailoverOrchestrator(inspector=inspector)
         
-        # Pre-seed стратегии из внешнего URL
-        await orchestrator._preseed_strategies()
+        # Pre-seed стратегии из внешнего URL (удалено - метод не существует)
         
         # 2. Формируем список конкурентных задач
         tasks = []

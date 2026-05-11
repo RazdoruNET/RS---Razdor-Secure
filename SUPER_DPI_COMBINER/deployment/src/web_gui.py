@@ -763,7 +763,8 @@ class WebGuiServer:
                     self.logger.error(f"[WEB_GUI] Failed to import strategy for {domain}: {e}")
             
             # Экспортируем обновленную матрицу
-            await self.orchestrator.dpi_inspector.export_matrix_report()
+            if self.orchestrator.inspector:
+                await self.orchestrator.inspector.export_matrix_report()
             
             result = {
                 'imported': imported_count,
