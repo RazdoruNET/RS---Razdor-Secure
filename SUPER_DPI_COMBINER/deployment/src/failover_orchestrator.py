@@ -7,6 +7,7 @@ import os
 import asyncio
 import time
 import logging
+import copy
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
@@ -45,12 +46,12 @@ class DomainStrategy:
     mutation_history: List[Dict[str, Any]] = field(default_factory=list)
     
     def add_failure_event(self, pipeline_before_crash: List[str], error_reason: str, mutated_to: List[str]):
-        """Регистрирует подробности неудачной попытки"""
+        """Регистрирует подробности неудачной попытки с глубоким копированием для изоляции тредов"""
         self.mutation_history.append({
             "timestamp": datetime.utcnow().isoformat(),
-            "failed_pipeline": pipeline_before_crash,
-            "error_reason": error_reason,
-            "mutated_to_pipeline": mutated_to
+            "failed_pipeline": list(pipeline_before_crash),
+            "error_reason": str(error_reason),
+            "mutated_to_pipeline": list(mutated_to)
         })
 
 class SmartFailoverOrchestrator:
@@ -186,47 +187,42 @@ class SmartFailoverOrchestrator:
         # Экспортируем матрицу стратегий
         await self.dpi_inspector.export_matrix_report(self)
     
-    async def report_failure(self, domain: str, pipeline_config: Dict[str, Any], error_type: str):
+    async def report_failure(self, domain: str, reason: str, current_pipeline: list, next_pipeline: list):
         """
-        Отчет о неудачной сессии
+        Отчет о неудачной сессии с предотвращением переинициализации и аккумуляцией истории
         
         Args:
             domain: Домен, на котором произошел сбой
-            pipeline_config: Использовавшаяся конфигурация
-            error_type: Тип ошибки (timeout, connection_reset, etc.)
+            reason: Причина ошибки
+            current_pipeline: Текущий упавший пайплайн
+            next_pipeline: Следующий пайплайн после мутации
         """
         if not self.enabled:
             return
         
-        self.logger.info(f"[ORCHESTRATOR] Handshake failed for {domain}. Error: {error_type}. Mutating pipeline strategy...")
+        self.logger.info(f"[ORCHESTRATOR] Handshake failed for {domain}. Error: {reason}. Mutating pipeline strategy...")
         
         async with self.strategy_lock:
-            # 🔥 КРИТИЧЕСКИЙ ПАТЧ: Проверяем, есть ли уже домен в кэше
+            # Предотвращение очистки: если домен существует, извлекаем его, а не перезаписываем
             if domain not in self.domain_strategies:
-                # Создаем запись С НУЛЯ только если домен встретился ВПЕРВЫЕ
-                strategy = self._config_to_strategy(domain, pipeline_config)
-                self.domain_strategies[domain] = strategy
+                self.domain_strategies[domain] = DomainStrategy(
+                    pipeline_modules=current_pipeline,
+                    module_configs={}
+                )
                 self.logger.info(f"[ORCHESTRATOR] Инициализирована новая запись для домена: {domain}")
-            else:
-                strategy = self.domain_strategies[domain]
-                self.logger.info(f"[ORCHESTRATOR] Домен {domain} найден в кэше. Аккумулируем историю.")
             
-            # Фиксируем текущий упавший пайплайн ПЕРЕД тем, как мутировать его
-            current_pipeline = strategy.pipeline_modules.copy()
+            strategy = self.domain_strategies[domain]
             
-            # Вычисляем следующую мутацию (следующий шаг подбора)
-            new_strategy = await self._mutate_strategy_with_dpi_analysis(domain, strategy.failure_count, error_type)
-            new_pipeline = new_strategy.pipeline_modules
+            # Регистрация события до мутации состояния
+            strategy.add_failure_event(current_pipeline, reason, next_pipeline)
             
-            # Дописываем событие в историю (метод делает .append(), ничего не заменяя!)
-            strategy.add_failure_event(current_pipeline, error_type, new_pipeline)
-            
-            # Обновляем текущие параметры домена для следующей попытки
+            # Аккумуляция счетчиков и обновление дескрипторов
             strategy.failure_count += 1
+            strategy.status = "UNSTABLE" if strategy.failure_count < 4 else "PASSTHROUGH"
             strategy.last_failure = time.time()
-            strategy.pipeline_modules = new_pipeline
+            strategy.pipeline_modules = next_pipeline
             
-            modules_str = ", ".join(new_pipeline)
+            modules_str = ", ".join(next_pipeline)
             self.logger.info(f"[ORCHESTRATOR] New strategy generated for {domain}: [{modules_str}]")
         
         # Экспортируем матрицу стратегий
@@ -494,24 +490,27 @@ class SmartFailoverOrchestrator:
     
     async def get_snapshot(self) -> dict:
         """
-        Получить потокобезопасный слепок состояния кэша доменов для Web GUI
+        Получить потокобезопасный слепок состояния кэша доменов с глубоким копированием для Web GUI
         
         Returns:
             Словарь с текущим состоянием стратегий
         """
         async with self.strategy_lock:
-            return {
-                "domains": {
-                    domain: {
-                        "status": self._get_domain_status(strategy),
-                        "active_pipeline": strategy.pipeline_modules,
-                        "failures": strategy.failure_count,
-                        "last_drop_reason": self._get_last_drop_reason(domain),
-                        "mutation_history": strategy.mutation_history
-                    }
-                    for domain, strategy in self.domain_strategies.items()
-                }
+            snapshot = {
+                "export_timestamp": datetime.utcnow().timestamp(),
+                "total_domains": len(self.domain_strategies),
+                "domains": {}
             }
+            for domain, strategy in self.domain_strategies.items():
+                snapshot["domains"][domain] = {
+                    "status": self._get_domain_status(strategy),
+                    "successful_pipeline": strategy.pipeline_modules,
+                    "failures_count": strategy.failure_count,
+                    "last_drop_reason": self._get_last_drop_reason(domain),
+                    # Глубокое копирование истории для предотвращения рассинхронизации длин ответов в Web GUI
+                    "history_of_failures": copy.deepcopy(strategy.mutation_history)
+                }
+            return snapshot
     
     def _get_domain_status(self, strategy) -> str:
         """Определить статус домена"""

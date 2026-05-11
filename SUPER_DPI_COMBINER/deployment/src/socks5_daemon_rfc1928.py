@@ -230,34 +230,60 @@ class SOCKS5Daemon:
             # Открываем реальное соединение с целевым сервером
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
             try:
-                # Принудительный IPv4-резолвинг для обхода блокировки Docker Desktop на macOS
                 loop = asyncio.get_running_loop()
-                addr_info = await loop.getaddrinfo(
-                    target_host,
-                    target_port,
-                    family=socket.AF_INET,
-                    type=socket.SOCK_STREAM
+
+                # 1. Ограничиваем время резолва адреса DNS до 3 секунд
+                addr_info = await asyncio.wait_for(
+                    loop.getaddrinfo(target_host, target_port, family=socket.AF_INET, type=socket.SOCK_STREAM),
+                    timeout=3.0
                 )
                 resolved_ipv4 = addr_info[0][4][0]
-                self.logger.info(f"[SOCKS5] Resolved {target_host} to {resolved_ipv4}")
-                
+
+                print(f"[SOCKS5] Connecting to verified IPv4: {resolved_ipv4}:{target_port}")
+
+                # 2. 🔥 КРИТИЧЕСКИЙ ПАТЧ: Ограничиваем время самого TCP-handshake до 3 секунд
+                # Если VPNKit на macOS зависнет и задропает пакеты, wait_for спасет корутину от бесконечного ожидания
                 upstream_reader, upstream_writer = await asyncio.wait_for(
                     asyncio.open_connection(resolved_ipv4, target_port),
-                    timeout=5.0  # Уменьшенный таймаут для быстрой детекции сбоев
+                    timeout=3.0
                 )
-                
-                # Выставляем TCP_NODELAY для оптимизации
+
+                # Успешное подключение — отключаем Нагла
                 sock = upstream_writer.get_extra_info('socket')
                 if sock:
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                    
+
             except asyncio.TimeoutError:
-                self.logger.error(f"[SOCKS5] Connection timeout to {target_host}:{target_port}")
-                await self.orchestrator.report_failure(domain, session.pipeline_config, "Connection timeout")
+                # Перехватываем зависание Docker-сети на macOS
+                print(f"[SOCKS5 TIMEOUT] Превышено время ожидания (3.0s) подключения к {target_host}. Сеть Docker Desktop заблокирована.")
+
+                # Генерация мутации на основе текущего состояния
+                current_pipeline = session.pipeline_config.get('pipeline_modules', ['fake_packet', 'sni_modifier', 'jitter_fragmentation'])
+                next_pipeline = [m for m in current_pipeline if m != "fake_packet"] if "fake_packet" in current_pipeline else []
+                
+                # Принудительный вызов с передачей нано-контекста
+                await self.orchestrator.report_failure(
+                    domain=domain,
+                    reason="Connection timeout",
+                    current_pipeline=current_pipeline,
+                    next_pipeline=next_pipeline
+                )
                 return
-            except Exception as e:
-                self.logger.error(f"[MAC DOCKER CRITICAL] Ошибка резолва/доступа в интернет для {target_host}: {e}")
-                await self.orchestrator.report_failure(domain, session.pipeline_config, "DPI Request Drop")
+
+            except Exception as net_err:
+                print(f"[SOCKS5 NET ERROR] Сбой подключения к {target_host}: {net_err}")
+                
+                # Генерация мутации на основе текущего состояния
+                current_pipeline = session.pipeline_config.get('pipeline_modules', ['fake_packet', 'sni_modifier', 'jitter_fragmentation'])
+                next_pipeline = [m for m in current_pipeline if m != "fake_packet"] if "fake_packet" in current_pipeline else []
+                
+                # Принудительный вызов с передачей нано-контекста
+                await self.orchestrator.report_failure(
+                    domain=domain,
+                    reason="DPI Request Drop",
+                    current_pipeline=current_pipeline,
+                    next_pipeline=next_pipeline
+                )
                 return
             
             self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port}")
