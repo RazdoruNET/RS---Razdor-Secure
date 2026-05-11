@@ -27,6 +27,13 @@ from web_gui import WebGuiServer
 class SOCKS5Daemon:
     """Универсальный SOCKS5 прокси с wire fragmentation"""
     
+    async def _readexact(self, reader, n):
+        """Helper to read exactly n bytes from StreamReader"""
+        data = await reader.read(n)
+        if len(data) != n:
+            raise EOFError(f"Expected {n} bytes, got {len(data)}")
+        return data
+
     def __init__(self, listen_port=1080):
         # Read from environment variables
         self.listen_port = int(os.environ.get('LISTEN_PORT', str(listen_port)))
@@ -121,81 +128,67 @@ class SOCKS5Daemon:
     async def parse_socks5_request(self, reader, writer):
         """Шаг 2: Чтение запроса и извлечение назначения (RFC 1928)"""
         try:
-            # Читаем фиксированную часть заголовка запроса (4 байта)
-            req_header = await reader.read(4)
-            if len(req_header) < 4:
-                self.logger.error(f"[SOCKS5] Request header incomplete: Only {len(req_header)} bytes read")
-                return None, None
-            
-            version = req_header[0]  # Версия (0x05)
-            cmd = req_header[1]      # Команда (0x01 = CONNECT)
-            rsv = req_header[2]       # Резерв (0x00)
-            atyp = req_header[3]     # Тип адреса (ATYP)
-            
+            # 1. Читаем строго 4 байта заголовка запроса (атомарное чтение)
+            req_header = await self._readexact(reader, 4)
+            version = req_header[0]
+            cmd = req_header[1]
+            rsv = req_header[2]
+            atyp = req_header[3]  # Строгий индекс типа адреса
+
             self.logger.debug(f"[SOCKS5] Request: version={version:02x}, cmd={cmd:02x}, atyp={atyp:02x}")
-            
+
             # Проверяем версию и команду
-            if version != 0x05:
-                self.logger.error(f"[SOCKS5] Unsupported SOCKS version: {version:02x}")
+            if version != 0x05 or cmd != 0x01:
+                # Если команда не CONNECT (0x01), закрываем сокет
+                self.logger.error(f"[SOCKS5] Invalid version or command: version={version:02x}, cmd={cmd:02x}")
                 return None, None
-            
-            if cmd != 0x01:
-                self.logger.error(f"[SOCKS5] Unsupported command: {cmd:02x} (only CONNECT supported)")
-                return None, None
-            
-            # Извлекаем целевой хост в зависимости от ATYP
+
+            # 2. Извлекаем хост на основе ATYP (атомарное чтение)
             target_host = None
             target_port = None
-            
+
             if atyp == 0x01:  # IPv4
-                # Читаем 4 байта IP и 2 байта порта
-                raw_ip = await reader.read(4)
-                raw_port = await reader.read(2)
-                if len(raw_ip) < 4 or len(raw_port) < 2:
-                    self.logger.error("[SOCKS5] IPv4 address incomplete")
-                    return None, None
-                target_host = socket.inet_ntoa(raw_ip)
+                raw_ip = await self._readexact(reader, 4)
+                raw_port = await self._readexact(reader, 2)
+                target_host = ".".join(map(str, raw_ip))
                 target_port = int.from_bytes(raw_port, 'big')
-                
-            elif atyp == 0x03:  # Доменное имя (самый частый случай для браузеров)
-                # Читаем 1 байт длины домена
-                len_byte = await reader.read(1)
-                if not len_byte:
-                    self.logger.error("[SOCKS5] Domain length byte missing")
-                    return None, None
-                domain_len = len_byte[0]
-                
-                # Читаем сам домен
-                raw_domain = await reader.read(domain_len)
-                if len(raw_domain) < domain_len:
-                    self.logger.error(f"[SOCKS5] Domain incomplete: {len(raw_domain)}/{domain_len} bytes")
-                    return None, None
-                target_host = raw_domain.decode('utf-8')
-                
-                # Читаем 2 байта порта
-                raw_port = await reader.read(2)
-                if len(raw_port) < 2:
-                    self.logger.error("[SOCKS5] Port bytes missing")
-                    return None, None
+
+            elif atyp == 0x03:  # Доменное имя (Браузеры)
+                len_byte = await self._readexact(reader, 1)
+                domain_length = len_byte[0]
+                raw_domain = await self._readexact(reader, domain_length)
+                target_host = raw_domain.decode('utf-8', errors='ignore')
+                raw_port = await self._readexact(reader, 2)
                 target_port = int.from_bytes(raw_port, 'big')
-                
+
             elif atyp == 0x04:  # IPv6
-                # Читаем 16 байт IPv6 и 2 байта порта
-                raw_ipv6 = await reader.read(16)
-                raw_port = await reader.read(2)
-                if len(raw_ipv6) < 16 or len(raw_port) < 2:
-                    self.logger.error("[SOCKS5] IPv6 address incomplete")
-                    return None, None
+                raw_ipv6 = await self._readexact(reader, 16)
+                raw_port = await self._readexact(reader, 2)
                 target_host = socket.inet_ntop(socket.AF_INET6, raw_ipv6)
                 target_port = int.from_bytes(raw_port, 'big')
-                
+
             else:
-                self.logger.error(f"[SOCKS5] Unsupported address type: {atyp:02x}")
+                print(f"[SOCKS5 ERROR] Неподдерживаемый тип адреса ATYP: {atyp}")
                 return None, None
-            
+
+            # 🔥 КРИТИЧЕСКИЙ ФИЛЬТР АНТИ-РЕКУРСИИ: Предотвращаем поломку интернета
+            if target_host in ("0.0.0.0", "127.0.0.1", "localhost"):
+                print(f"[SOCKS5 RECURSION DROP] Заблокирована попытка проксирования на localhost: {target_host}")
+                return None, None
+
+            # Блокируем проксирование на самого себя (self-reference)
+            try:
+                local_addr = writer.get_extra_info('sockname')[0]
+                if target_host == local_addr:
+                    print(f"[SOCKS5 RECURSION DROP] Заблокирована попытка проксирования на самого себя: {target_host}")
+                    return None, None
+            except Exception:
+                # Если не удалось получить локальный адрес, пропускаем эту проверку
+                pass
+
             self.logger.info(f"[SOCKS5] Parsed target: {target_host}:{target_port}")
             return target_host, target_port
-            
+
         except Exception as e:
             self.logger.error(f"[SOCKS5] Request parsing failed: {e}")
             return None, None

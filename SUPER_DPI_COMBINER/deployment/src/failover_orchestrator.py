@@ -94,6 +94,16 @@ class SmartFailoverOrchestrator:
         Returns:
             Контекст сессии с выбранной стратегией
         """
+        # 🔥 КРИТИЧЕСКИЙ ФИЛЬТР: Если на вход пришел битый IP, принудительно возвращаем passthrough (прямой коннект)
+        if domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
+            self.logger.warning(f"[ORCHESTRATOR] Blocked recursive/invalid address: {domain}. Returning passthrough.")
+            return SessionContext(
+                session_id=f"{domain}_{int(time.time())}",
+                domain=domain,
+                start_time=time.time(),
+                pipeline_config=self._create_passthrough_config()
+            )
+        
         if not self.enabled:
             # Если оркестратор отключен, используем базовую конфигурацию
             return SessionContext(
