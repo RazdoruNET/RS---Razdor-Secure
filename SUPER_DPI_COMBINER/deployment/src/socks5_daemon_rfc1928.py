@@ -18,15 +18,13 @@ from pathlib import Path
 
 def apply_hard_reset_opts(writer: asyncio.StreamWriter):
     """
-    Принудительно настраивает сокет на мгновенное уничтожение при закрытии
+    Настраивает сокет для стабильной работы без агрессивного сброса
     """
     sock = writer.get_extra_info('socket')
     if sock:
         # Отключаем алгоритм Нагла
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        # Включаем жесткое закрытие (RST вместо FIN): l_onoff=1, l_linger=0
-        ling = struct.pack('ii', 1, 0)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, ling)
+        # УДАЛЕНО: SO_LINGER - больше не используем агрессивный RST
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -43,10 +41,7 @@ class SOCKS5Daemon:
     
     async def _readexact(self, reader, n):
         """Helper to read exactly n bytes from StreamReader"""
-        data = await reader.read(n)
-        if len(data) != n:
-            raise EOFError(f"Expected {n} bytes, got {len(data)}")
-        return data
+        return await reader.readexactly(n)
 
     def __init__(self, listen_port=1080, orchestrator=None):
         # Read from environment variables
@@ -294,56 +289,79 @@ class SOCKS5Daemon:
             self.logger.info(f"[SOCKS5] Session {session.session_id} created for {domain}")
             self.logger.info(f"[SOCKS5] Active pipeline loaded: {self.pipeline_manager.get_pipeline_info()}")
             
-            # Открываем реальное соединение с целевым сервером
+            # Открываем реальное соединение с целевым сервером с multi-IP fallback
             self.logger.info(f"[SOCKS5] Connecting to {target_host}:{target_port}")
             try:
                 loop = asyncio.get_running_loop()
 
-                # 1. Ограничиваем время резолва адреса DNS до 3 секунд
+                # 1. DNS resolution с увеличенным timeout
+                self.logger.info(f"[DNS] Resolving {target_host}:{target_port}")
                 addr_info = await asyncio.wait_for(
-                    loop.getaddrinfo(target_host, target_port, family=socket.AF_INET, type=socket.SOCK_STREAM),
-                    timeout=3.0
+                    loop.getaddrinfo(target_host, target_port, type=socket.SOCK_STREAM),
+                    timeout=10.0
                 )
-                resolved_ipv4 = addr_info[0][4][0]
+                
+                # Логируем все найденные адреса
+                resolved_ips = []
+                for entry in addr_info:
+                    ip = entry[4][0]
+                    resolved_ips.append(ip)
+                
+                self.logger.info(f"[DNS] {target_host} -> {', '.join(resolved_ips)}")
+                
+                # 2. Пробуем подключиться ко всем IP по очереди (fallback)
+                last_error = None
+                upstream_reader = None
+                upstream_writer = None
+                successful_ip = None
+                
+                for entry in addr_info:
+                    ip = entry[4][0]
+                    self.logger.info(f"[CONNECT] Trying {ip}:{target_port}")
+                    
+                    try:
+                        upstream_reader, upstream_writer = await asyncio.wait_for(
+                            asyncio.open_connection(ip, target_port),
+                            timeout=15.0  # Увеличенный timeout для стабильности
+                        )
+                        successful_ip = ip
+                        self.logger.info(f"[CONNECT] Success {ip}:{target_port}")
+                        break
+                        
+                    except Exception as e:
+                        self.logger.warning(f"[CONNECT] Failed {ip}:{target_port}: {e}")
+                        last_error = e
+                        continue
+                
+                # Если все IP недоступны
+                if successful_ip is None:
+                    self.logger.error(f"[CONNECT] All IPs failed for {target_host}:{target_port}")
+                    raise last_error or Exception("All connection attempts failed")
 
-                print(f"[SOCKS5] Connecting to verified IPv4: {resolved_ipv4}:{target_port}")
-
-                # 2. 🔥 КРИТИЧЕСКИЙ ПАТЧ: Ограничиваем время самого TCP-handshake до 3 секунд
-                # Если VPNKit на macOS зависнет и задропает пакеты, wait_for спасет корутину от бесконечного ожидания
-                upstream_reader, upstream_writer = await asyncio.wait_for(
-                    asyncio.open_connection(resolved_ipv4, target_port),
-                    timeout=3.0
-                )
-
-                # 🔥 Применяем жесткую очистку к апстрим сокету
+                # 🔥 Применяем стабильную настройку к апстрим сокету
                 apply_hard_reset_opts(upstream_writer)
+                
+                # 🔥 ФИКС: Сохраняем upstream writer для корректной очистки
+                writer_srv = upstream_writer
+                
+                self.logger.info(f"[SOCKS5] Connected to {target_host}:{target_port} via {successful_ip}")
 
             except asyncio.TimeoutError:
                 # Перехватываем зависание Docker-сети на macOS
-                print(f"[SOCKS5 TIMEOUT] Превышено время ожидания (3.0s) для {target_host}:{target_port}")
+                self.logger.error(f"[CONNECT] Timeout (15.0s) for {target_host}:{target_port}")
                 
-                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: ВЫЗОВ ОРКЕСТРАТОРА ОБЯЗАН БЫТЬ ТОТАЛЬНЫМ
-                # Передаем active_pipeline (даже если он равен []), чтобы запустить Шаг 0 автомата мутаций
-                await self.orchestrator.report_failure(
-                    domain=target_host,
-                    reason="Connection timeout",
-                    current_pipeline=list(active_pipeline), # Передаем честный срез (пустой или полный)
-                    port=target_port
-                )
+                # 🔥 ВРЕМЕННО ОТКЛЮЧАЕМ mutation trigger на connect timeout
+                # Connect timeout НЕ означает DPI блокировку на этом этапе
+                # НЕ вызываем orchestrator.report_failure() для стабилизации transport layer
                 
                 return
 
             except Exception as net_err:
-                print(f"[SOCKS5 NET ERROR] Сбой подключения к {target_host}: {net_err}")
+                self.logger.error(f"[CONNECT] Connection failed to {target_host}: {net_err}")
                 
-                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: ВЫЗОВ ОРКЕСТРАТОРА ОБЯЗАН БЫТЬ ТОТАЛЬНЫМ
-                # Передаем active_pipeline (даже если он равен []), чтобы запустить автомат мутаций
-                await self.orchestrator.report_failure(
-                    domain=target_host,
-                    reason="DPI Request Drop",
-                    current_pipeline=list(active_pipeline), # Передаем честный срез (пустой или полный)
-                    port=target_port
-                )
+                # 🔥 ВРЕМЕННО ОТКЛЮЧАЕМ mutation trigger на connection error
+                # Connection error НЕ означает DPI блокировку на этом этапе
+                # НЕ вызываем orchestrator.report_failure() для стабилизации transport layer
                 
                 return
             
@@ -352,22 +370,45 @@ class SOCKS5Daemon:
             # Сбрасываем состояние конвейера для новой сессии
             self.pipeline_manager.reset_session()
             
-            # Передаем управление Pipeline Manager с отслеживанием успеха
-            success = await asyncio.gather(
-                self.forward_client_to_upstream(client_reader, upstream_writer, session),
-                self.forward_upstream_to_client(upstream_reader, client_writer),
-                return_exceptions=True
-            )
+            # Передаем управление Pipeline Manager с улучшенным обработчиком жизненного цикла
+            tasks = [
+                asyncio.create_task(self.forward_client_to_upstream(client_reader, upstream_writer, session)),
+                asyncio.create_task(self.forward_upstream_to_client(upstream_reader, client_writer))
+            ]
             
-            # Проверяем результаты
-            if all(isinstance(result, Exception) for result in success):
-                # Все задачи завершились с ошибками
-                error = success[0]
-                self.logger.error(f"[SOCKS5] Pipeline failed: {error}")
-                await self.orchestrator.report_failure(domain, session.pipeline_config, "pipeline_error")
-            else:
-                # Хотя бы одна задача завершилась успешно
-                await self.orchestrator.report_success(session)
+            try:
+                # Ждем завершения задач с обработкой исключений
+                done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                
+                # Отменяем ожидающие задачи при завершении одной из них
+                for task in pending:
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+                
+                # Проверяем результаты завершенных задач
+                success_count = 0
+                for task in done:
+                    if task.exception() is None:
+                        success_count += 1
+                    else:
+                        self.logger.error(f"[SOCKS5] Task failed: {task.exception()}")
+                
+                # Временно отключаем агрессивную DPI-классификацию для стабилизации
+                # НЕ вызываем orchestrator для стабилизации transport layer
+                
+            except Exception as e:
+                self.logger.error(f"[SOCKS5] Pipeline execution error: {e}")
+                # Отменяем все задачи при критической ошибке
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            pass
             
         except Exception as e:
             self.logger.error(f"[SOCKS5] Proxy connection failed: {e}")
@@ -383,11 +424,8 @@ class SOCKS5Daemon:
             while True:
                 data = await client_reader.read(4096)
                 
-                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: Если сервер закрыл соединение или curl прислал пустой буфер
+                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: Обычный EOF - это не DPI drop
                 if not data:
-                    if bytes_sent < threshold:
-                        # Сессия упала НА СТАРТЕ — это 100% сетевой сбой/блокировка!
-                        raise ConnectionResetError("Empty reply or premature connection close during handshake")
                     break
                 
                 self.logger.info(f"[SOCKS5] Received {len(data)} bytes from client")
@@ -403,17 +441,9 @@ class SOCKS5Daemon:
                 
         except Exception as e:
             self.logger.error(f"[SOCKS5] Client->Upstream error: {e}")
-            
-            # 🔥 СВЯЗЫВАЕМ СБОЙ С ОРКЕСТРАТОРОМ И ИНСПЕКТОРОМ
-            # Принудительно рапортуем оркестратору, передавая причину ошибки
-            error_reason = "DPI Request Drop" if "timeout" not in str(e).lower() else "Connection timeout"
-            if "empty reply" in str(e).lower() or "premature connection close" in str(e).lower():
-                error_reason = "DPI Request Drop" # Пустой ответ от httpbin.org из-за задержек чанков
-            
-            await self.orchestrator.report_failure(session.domain, session.pipeline_config, error_reason)
+            # 🔥 ВРЕМЕННО ОТКЛЮЧАЕМ агрессивную DPI-классификацию для стабилизации transport layer
+            # НЕ вызываем orchestrator на обычные ошибки соединения
             raise
-        finally:
-            upstream_writer.close()
     
     async def forward_upstream_to_client(self, upstream_reader, client_writer):
         """Пересылка данных от сервера к клиенту (passthrough)"""
@@ -431,21 +461,19 @@ class SOCKS5Daemon:
                 
         except Exception as e:
             self.logger.error(f"[SOCKS5] Upstream->Client error: {e}")
-        finally:
-            client_writer.close()
+            # 🔥 НЕ закрываем сокет здесь - централизованная очистка в handle_socks5_client
     
         
     async def start_server(self):
         """Запуск SOCKS5 сервера"""
         self.logger.info(f"Starting SOCKS5 server on port {self.listen_port}")
         
-        # Используем стандартный asyncio.start_server
+        # Используем стандартный asyncio.start_server без reuse_port для стабильности
         server = await asyncio.start_server(
             self.handle_socks5_client,
             '0.0.0.0',
             self.listen_port,
-            reuse_address=True,
-            reuse_port=True
+            reuse_address=True
         )
         
         self.running = True
