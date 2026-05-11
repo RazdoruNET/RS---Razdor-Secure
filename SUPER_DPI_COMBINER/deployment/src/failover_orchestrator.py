@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Smart Failover Orchestrator - Адаптивный оркестратор пайплайнов с динамической мутацией
+Smart Failover Orchestrator - Адаптивный оркестратор пайплайнов с динамической мутацией и TTL авто-сбросом
 """
 
 import asyncio
 import copy
-import os
 import time
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -38,9 +37,10 @@ class DomainStrategy:
         self.domain = domain.strip().lower()
         self.status = "MUTATING"
         self.current_pipeline = []
-        self.failures_count = 0  # СТРОГИЙ СТАНДАРТ ИМЕНИ
+        self.failures_count = 0
         self.last_drop_reason = "N/A"
         self.mutation_history = []
+        self.last_mutation_timestamp = time.time()  # Временной маркер для TTL
 
     def add_failure_event(self, failed_pipeline: list, error_reason: str, mutated_to_pipeline: list):
         self.mutation_history.append({
@@ -51,11 +51,12 @@ class DomainStrategy:
         })
 
 class SmartFailoverOrchestrator:
-    def __init__(self, default_pipeline: list = None, inspector=None):
+    def __init__(self, default_pipeline: list = None, inspector=None, strategy_ttl: int = 60):
         self.lock = asyncio.Lock()
         self.domain_cache = {}
         self.default_pipeline = default_pipeline if default_pipeline else ["fake_packet", "sni_modifier", "jitter_fragmentation"]
         self.inspector = inspector
+        self.strategy_ttl = strategy_ttl  # Время жизни заклинившей стратегии в секундах
 
     def _normalize_domain(self, domain: str) -> str:
         if not domain:
@@ -72,19 +73,37 @@ class SmartFailoverOrchestrator:
                 strategy = DomainStrategy(norm_domain)
                 strategy.current_pipeline = list(self.default_pipeline)
                 self.domain_cache[norm_domain] = strategy
-                print(f"[ORCHESTRATOR] Создана базовая стратегия для {norm_domain}: {strategy.current_pipeline}")
+                print(f"[ORCHESTRATOR] Инициализирован базовый геном для {norm_domain}: {strategy.current_pipeline}")
+                return list(strategy.current_pipeline)
             
-            return list(self.domain_cache[norm_domain].current_pipeline)
+            strategy = self.domain_cache[norm_domain]
+            
+            # 🔥 АНТИ-ЗАЦИКЛИВАНИЕ: Если стратегия мертва (passthrough) и истек TTL — сбрасываем в дефолт
+            current_time = time.time()
+            if strategy.status == "PASSTHROUGH" and (current_time - strategy.last_mutation_timestamp) > self.strategy_ttl:
+                print(f"[ORCHESTRATOR TTL EXPIRED] Стратегия для {norm_domain} устарела. Сброс конвейера до базового уровня.")
+                strategy.status = "MUTATING"
+                strategy.failures_count = 0
+                strategy.current_pipeline = list(self.default_pipeline)
+                strategy.last_mutation_timestamp = current_time
+            
+            return list(strategy.current_pipeline)
 
-    def _calculate_next_mutation(self, current_pipeline: list, fail_count: int) -> list:
+    def _calculate_next_mutation(self, current_pipeline: list, failures_count: int) -> list:
+        """
+        Строгий пошаговый каскад деградации на основе анализа текущих модулей
+        """
         pipeline = list(current_pipeline)
         
+        # Шаг 1: Если в упавшем пакете был fake_packet — вырезаем только его
         if "fake_packet" in pipeline:
             return [m for m in pipeline if m != "fake_packet"]
             
+        # Шаг 2: Если fake_packet уже нет, но sni_modifier остался — убираем его
         if "sni_modifier" in pipeline:
             return [m for m in pipeline if m != "sni_modifier"]
             
+        # Шаг 3: Если остался только jitter_fragmentation, но таймауты продолжаются — падение в passthrough []
         return []
 
     async def report_failure(self, domain: str, reason: str, current_pipeline: list):
@@ -98,30 +117,37 @@ class SmartFailoverOrchestrator:
                 self.domain_cache[norm_domain].current_pipeline = list(current_pipeline)
             
             strategy = self.domain_cache[norm_domain]
+            current_time = time.time()
             
-            # Локальный счетчик перед расчетом мутации
-            next_fail_count = strategy.failures_count + 1
-            next_pipeline = self._calculate_next_mutation(current_pipeline, next_fail_count)
+            # Логический предохранитель: если на вход по ошибке пришел пустой пайплайн, а мы не в passthrough — восстанавливаем контекст
+            actual_failed_pipeline = list(current_pipeline) if current_pipeline else list(self.default_pipeline)
             
-            # Запись в историю под надежным Lock
+            # Расчет следующего шага
+            next_pipeline = self._calculate_next_mutation(actual_failed_pipeline, strategy.failures_count)
+            
+            # Фиксация в хронологию
             strategy.add_failure_event(
-                list(current_pipeline),
-                reason,
-                list(next_pipeline)
+                failed_pipeline=actual_failed_pipeline,
+                error_reason=reason,
+                mutated_to_pipeline=list(next_pipeline)
             )
             
-            # Применение дескрипторов
-            strategy.failures_count = next_fail_count  # ИСПРАВЛЕНО ИСПОЛЬЗОВАНИЕ АТРИБУТА
+            # Обновление дескрипторов состояния ядра
+            strategy.failures_count += 1
             strategy.last_drop_reason = str(reason)
+            strategy.last_mutation_timestamp = current_time
+            strategy.current_pipeline = list(next_pipeline)
             
-            if strategy.failures_count >= 4:
+            # Если дошли до конца цепочки или превысили лимит — фиксируем PASSTHROUGH
+            if not next_pipeline or strategy.failures_count >= 4:
                 strategy.status = "PASSTHROUGH"
                 strategy.current_pipeline = []
+                print(f"[ORCHESTRATOR] Домен {norm_domain} переведен в режим Passthrough (Black Hole). Ожидание TTL.")
             else:
                 strategy.status = "UNSTABLE"
-                strategy.current_pipeline = list(next_pipeline)
+                print(f"[ORCHESTRATOR] Домен {norm_domain} мутировал до: {strategy.current_pipeline}")
 
-        # Вызов внешнего инспектора
+        # Выгрузка дампа на диск
         if self.inspector:
             await self.inspector.export_matrix_report(orchestrator=self)
 
@@ -136,7 +162,7 @@ class SmartFailoverOrchestrator:
                 snapshot["domains"][domain] = {
                     "status": strategy.status,
                     "successful_pipeline": strategy.current_pipeline,
-                    "failures_count": strategy.failures_count,  # СТАНДАРТ ИМЕНИ СХРАНЕН
+                    "failures_count": strategy.failures_count,
                     "last_drop_reason": strategy.last_drop_reason,
                     "history_of_failures": copy.deepcopy(strategy.mutation_history)
                 }
