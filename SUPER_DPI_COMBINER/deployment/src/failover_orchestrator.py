@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Smart Failover Orchestrator - Адаптивный оркестратор пайплайнов с динамической мутацией и TTL авто-сбросом
+Smart Failover Orchestrator - Адаптивный оркестратор пайплайнов с упреждающим пастру (Pre-emptive Passthrough)
 """
 
 import asyncio
@@ -35,12 +35,14 @@ class SessionContext:
 class DomainStrategy:
     def __init__(self, domain: str):
         self.domain = domain.strip().lower()
-        self.status = "MUTATING"
+        self.status = "CLEAN"
         self.current_pipeline = []
         self.failures_count = 0
         self.last_drop_reason = "N/A"
         self.mutation_history = []
-        self.last_mutation_timestamp = time.time()  # Временной маркер для TTL
+        self.last_mutation_timestamp = time.time()
+        # 🔥 НОВЫЙ ДЕСКРИПТОР ДЛЯ СДВИГА ПАРАМЕТРОВ ФРАГМЕНТАЦИИ
+        self.chunk_size_modifier = 0
 
     def add_failure_event(self, failed_pipeline: list, error_reason: str, mutated_to_pipeline: list):
         self.mutation_history.append({
@@ -51,19 +53,31 @@ class DomainStrategy:
         })
 
 class SmartFailoverOrchestrator:
-    def __init__(self, default_pipeline: list = None, inspector=None, strategy_ttl: int = 60):
+    def __init__(self, default_pipeline: list = None, inspector=None, strategy_ttl: int = 120):
         self.lock = asyncio.Lock()
         self.domain_cache = {}
         self.default_pipeline = default_pipeline if default_pipeline else ["fake_packet", "sni_modifier", "jitter_fragmentation"]
         self.inspector = inspector
-        self.strategy_ttl = strategy_ttl  # Время жизни заклинившей стратегии в секундах
+        self.strategy_ttl = strategy_ttl
 
     def _normalize_domain(self, domain: str) -> str:
         if not domain:
             return "unknown_init"
         return str(domain).strip().lower()
 
-    async def get_or_create_strategy(self, domain: str) -> list:
+    def _filter_pipeline_by_port(self, pipeline: list, port: int) -> list:
+        """
+        Исключает TLS-модули, если порт не равен 443 (HTTPS)
+        """
+        if port == 443:
+            return list(pipeline)
+        
+        # Для HTTP (порт 80) и других протоколов оставляем только безопасную фрагментацию
+        tls_modules = {"fake_packet", "sni_modifier"}
+        filtered = [m for m in pipeline if m not in tls_modules]
+        return filtered
+
+    async def get_or_create_strategy(self, domain: str, port: int) -> list:
         norm_domain = self._normalize_domain(domain)
         if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
             return []
@@ -71,83 +85,107 @@ class SmartFailoverOrchestrator:
         async with self.lock:
             if norm_domain not in self.domain_cache:
                 strategy = DomainStrategy(norm_domain)
-                strategy.current_pipeline = list(self.default_pipeline)
+                strategy.current_pipeline = []  # Стартуем с Pre-emptive Passthrough
                 self.domain_cache[norm_domain] = strategy
-                print(f"[ORCHESTRATOR] Инициализирован базовый геном для {norm_domain}: {strategy.current_pipeline}")
-                return list(strategy.current_pipeline)
+                print(f"[ORCHESTRATOR] Домен {norm_domain} инициализирован в режиме Pre-emptive Passthrough: []")
+                return []
             
             strategy = self.domain_cache[norm_domain]
-            
-            # 🔥 АНТИ-ЗАЦИКЛИВАНИЕ: Если стратегия мертва (passthrough) и истек TTL — сбрасываем в дефолт
             current_time = time.time()
-            if strategy.status == "PASSTHROUGH" and (current_time - strategy.last_mutation_timestamp) > self.strategy_ttl:
-                print(f"[ORCHESTRATOR TTL EXPIRED] Стратегия для {norm_domain} устарела. Сброс конвейера до базового уровня.")
-                strategy.status = "MUTATING"
-                strategy.failures_count = 0
-                strategy.current_pipeline = list(self.default_pipeline)
-                strategy.last_mutation_timestamp = current_time
             
-            return list(strategy.current_pipeline)
+            if strategy.status in ("PASSTHROUGH", "UNSTABLE") and (current_time - strategy.last_mutation_timestamp) > self.strategy_ttl:
+                strategy.status = "CLEAN"
+                strategy.failures_count = 0
+                strategy.current_pipeline = []
+                strategy.last_mutation_timestamp = current_time
+                return []
+            
+            # 🔥 ПРИНУДИТЕЛЬНАЯ ФИЛЬТРАЦИЯ ПО ПОРТУ НА ВЫХОДЕ ИЗ КЭША
+            return self._filter_pipeline_by_port(strategy.current_pipeline, port)
 
-    def _calculate_next_mutation(self, current_pipeline: list, failures_count: int) -> list:
+    def _calculate_next_mutation(self, failed_pipeline: list, strategy) -> list:
         """
-        Строгий пошаговый каскад деградации на основе анализа текущих модулей
+        failed_pipeline: то, что упало в текущей сессии
+        strategy: ссылка на изменяемый объект DomainStrategy домена
         """
-        pipeline = list(current_pipeline)
+        pipeline = list(failed_pipeline)
         
-        # Шаг 1: Если в упавшем пакете был fake_packet — вырезаем только его
+        # 🔥 Шаг 0: Если упал чистый запрос (длина конвейера == 0) — накладываем полный пайплайн
+        if not pipeline and strategy.failures_count == 0:
+            print(f"[ORCHESTRATOR] Чистый запрос для {strategy.domain} заблокирован. Активация боевого пайплайна.")
+            return list(self.default_pipeline)
+        
+        # Шаг 1: Если упал полный стек (HTTPS) — отсекаем fake_packet
         if "fake_packet" in pipeline:
             return [m for m in pipeline if m != "fake_packet"]
             
-        # Шаг 2: Если fake_packet уже нет, но sni_modifier остался — убираем его
-        if "sni_modifier" in pipeline:
-            return [m for m in pipeline if m != "sni_modifier"]
+        # Шаг 2: Если фейка уже нет, но есть sni_modifier — отсекаем его, оставляя чистый jitter
+        elif "sni_modifier" in pipeline:
+            return ["jitter_fragmentation"]
             
-        # Шаг 3: Если остался только jitter_fragmentation, но таймауты продолжаются — падение в passthrough []
+        # Шаг 3: 🔥 НОВАЯ ЛОГИКА — Если упал чистый jitter_fragmentation (HTTP или HTTPS)
+        elif "jitter_fragmentation" in pipeline:
+            # Если это первое падение чистого джиттера — увеличиваем размер чанков на +100 байт
+            if strategy.chunk_size_modifier == 0:
+                strategy.chunk_size_modifier = 100
+                print(f"[ORCHESTRATOR CALIBRATION] Jitter сбоит на {strategy.domain}. Увеличиваем MTU на +100B.")
+                return ["jitter_fragmentation"]  # Оставляем модуль в пайплайне
+                
+            # Если это второе падение чистого джиттера — увеличиваем размер чанков еще на +200 байт
+            elif strategy.chunk_size_modifier == 100:
+                strategy.chunk_size_modifier = 300
+                print(f"[ORCHESTRATOR CALIBRATION] Jitter все еще сбоит на {strategy.domain}. Увеличиваем MTU на +300B.")
+                return ["jitter_fragmentation"]  # Даем последний шанс модулю
+                
+            # Все лимиты калибровки джиттера исчерпаны — падаем в пасстру
+            else:
+                return []
+            
+        # Защитный fallback
         return []
 
-    async def report_failure(self, domain: str, reason: str, current_pipeline: list):
+    async def report_failure(self, domain: str, reason: str, current_pipeline: list, port: int):
         norm_domain = self._normalize_domain(domain)
         if norm_domain in ("0.0.0.0", "127.0.0.1", "localhost", "unknown_init"):
             return
 
+        print(f"[ORCHESTRATOR DEBUG] report_failure called for {norm_domain}, pipeline={current_pipeline}, port={port}")
+
         async with self.lock:
             if norm_domain not in self.domain_cache:
                 self.domain_cache[norm_domain] = DomainStrategy(norm_domain)
-                self.domain_cache[norm_domain].current_pipeline = list(current_pipeline)
             
             strategy = self.domain_cache[norm_domain]
             current_time = time.time()
             
-            # Логический предохранитель: если на вход по ошибке пришел пустой пайплайн, а мы не в passthrough — восстанавливаем контекст
-            actual_failed_pipeline = list(current_pipeline) if current_pipeline else list(self.default_pipeline)
+            # Вычисляем следующую мутацию, передавая объект strategy для управления chunk_size_modifier
+            next_pipeline_raw = self._calculate_next_mutation(current_pipeline, strategy)
             
-            # Расчет следующего шага
-            next_pipeline = self._calculate_next_mutation(actual_failed_pipeline, strategy.failures_count)
+            # Принудительно фильтруем выданную мутацию по порту (для порта 80 вырежет TLS модули)
+            next_pipeline = self._filter_pipeline_by_port(next_pipeline_raw, port)
             
-            # Фиксация в хронологию
+            print(f"[ORCHESTRATOR DEBUG] next_pipeline_raw={next_pipeline_raw}, next_pipeline={next_pipeline}")
+            
+            # Запись в историю
             strategy.add_failure_event(
-                failed_pipeline=actual_failed_pipeline,
+                failed_pipeline=list(current_pipeline),
                 error_reason=reason,
                 mutated_to_pipeline=list(next_pipeline)
             )
             
-            # Обновление дескрипторов состояния ядра
             strategy.failures_count += 1
             strategy.last_drop_reason = str(reason)
             strategy.last_mutation_timestamp = current_time
             strategy.current_pipeline = list(next_pipeline)
             
-            # Если дошли до конца цепочки или превысили лимит — фиксируем PASSTHROUGH
-            if not next_pipeline or strategy.failures_count >= 4:
+            if strategy.failures_count == 1 and next_pipeline:
+                strategy.status = "MUTATING"
+                print(f"[ORCHESTRATOR] Чистый запрос для {norm_domain} заблокирован. Активация боевого пайплайна: {strategy.current_pipeline}")
+            elif not next_pipeline and strategy.failures_count >= 4:
                 strategy.status = "PASSTHROUGH"
-                strategy.current_pipeline = []
-                print(f"[ORCHESTRATOR] Домен {norm_domain} переведен в режим Passthrough (Black Hole). Ожидание TTL.")
             else:
                 strategy.status = "UNSTABLE"
-                print(f"[ORCHESTRATOR] Домен {norm_domain} мутировал до: {strategy.current_pipeline}")
 
-        # Выгрузка дампа на диск
         if self.inspector:
             await self.inspector.export_matrix_report(orchestrator=self)
 
@@ -164,7 +202,8 @@ class SmartFailoverOrchestrator:
                     "successful_pipeline": strategy.current_pipeline,
                     "failures_count": strategy.failures_count,
                     "last_drop_reason": strategy.last_drop_reason,
-                    "history_of_failures": copy.deepcopy(strategy.mutation_history)
+                    "history_of_failures": copy.deepcopy(strategy.mutation_history),
+                    "chunk_size_modifier": strategy.chunk_size_modifier  # 🔥 НОВОЕ ПОЛЕ
                 }
             return snapshot
 
@@ -205,10 +244,10 @@ class SmartFailoverOrchestrator:
             else:
                 # Создаем новую стратегию на основе базового пайплайна
                 strategy = DomainStrategy(norm_domain)
-                strategy.current_pipeline = list(self.default_pipeline)
+                strategy.current_pipeline = []  # Pre-emptive Passthrough
                 self.domain_cache[norm_domain] = strategy
                 
-                pipeline_config = self._get_base_config()
+                pipeline_config = self._create_passthrough_config()
         
         # Создаем контекст сессии
         session = SessionContext(

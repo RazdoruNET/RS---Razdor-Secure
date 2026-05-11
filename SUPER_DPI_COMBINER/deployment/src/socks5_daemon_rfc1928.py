@@ -13,6 +13,7 @@ import json
 import os
 import random
 import signal
+import copy
 from pathlib import Path
 
 # Add project root to path
@@ -214,16 +215,50 @@ class SOCKS5Daemon:
         """Шаг 4: Трансляция и фрагментация данных через Smart Orchestrator"""
         session = None
         try:
-            # 1. Запрашиваем АКТУАЛЬНЫЙ на данный момент пайплайн из кэша оркестратора
+            # 1. Запрашиваем АКТУАЛЬНЫЙ на данный момент пайплайн из кэша оркестратора с учетом порта
             domain = target_host
             self.logger.info(f"[SOCKS5] Requesting active pipeline for domain: {domain}")
-            active_pipeline = await self.orchestrator.get_or_create_strategy(domain)
+            active_pipeline = await self.orchestrator.get_or_create_strategy(domain, target_port)
             
-            # 2. Инициализируем PipelineManager строго с полученным active_pipeline
+            # 🔥 ИЗВЛЕКАЕМ МОДИФИКАТОР ЧАНКА ДЛЯ КАЛИБРОВКИ JITTER
+            snapshot = await self.orchestrator.get_snapshot()
+            domain_info = snapshot["domains"].get(domain.strip().lower(), {})
+            modifier = domain_info.get("chunk_size_modifier", 0)
+            
+            # Динамически модифицируем конфигурацию для PipelineManager текущей сессии
+            global_config = {
+                'MIN_CHUNK_SIZE': 40,
+                'MAX_CHUNK_SIZE': 150,
+                'FRAGMENT_DELAY_MIN': 0.001,
+                'FRAGMENT_DELAY_MAX': 0.003
+            }
+            local_config = copy.deepcopy(global_config)
+            if modifier > 0:
+                local_config["MIN_CHUNK_SIZE"] = int(local_config.get("MIN_CHUNK_SIZE", 40)) + modifier
+                local_config["MAX_CHUNK_SIZE"] = int(local_config.get("MAX_CHUNK_SIZE", 150)) + modifier
+                print(f"[SOCKS5] Applied chunk modifier +{modifier}B for {domain}: MIN={local_config['MIN_CHUNK_SIZE']}, MAX={local_config['MAX_CHUNK_SIZE']}")
+            
+            # 2. Инициализируем PipelineManager с учетом калибровки
             pipeline_config = {
                 'pipeline_modules': active_pipeline,
                 'module_configs': {}
             }
+            # 🔥 ПРИМЕНЯЕМ КАЛИБРОВКУ КОНФИГУРАЦИИ JITTER
+            if active_pipeline == ["jitter_fragmentation"] and modifier > 0:
+                # Создаем специальную конфигурацию для jitter с кастомными размерами чанков
+                jitter_config = {
+                    'MIN_CHUNK_SIZE': 40 + modifier,
+                    'MAX_CHUNK_SIZE': 150 + modifier,
+                    'FRAGMENT_DELAY_MIN': 0.001,
+                    'FRAGMENT_DELAY_MAX': 0.003
+                }
+                # Обновляем глобальную конфигурацию для PipelineManager
+                self.pipeline_manager.min_chunk_size = jitter_config['MIN_CHUNK_SIZE']
+                self.pipeline_manager.max_chunk_size = jitter_config['MAX_CHUNK_SIZE']
+                self.pipeline_manager.fragment_delay_min = jitter_config['FRAGMENT_DELAY_MIN']
+                self.pipeline_manager.fragment_delay_max = jitter_config['FRAGMENT_DELAY_MAX']
+                print(f"[SOCKS5] Applied jitter calibration to PipelineManager: MIN={jitter_config['MIN_CHUNK_SIZE']}, MAX={jitter_config['MAX_CHUNK_SIZE']}")
+            
             self.logger.info(f"[SOCKS5] Initializing pipeline with config: {pipeline_config}")
             if not await self.pipeline_manager.load_pipeline_from_config(pipeline_config):
                 self.logger.error(f"[SOCKS5] Failed to load pipeline for {domain}")
@@ -264,14 +299,17 @@ class SOCKS5Daemon:
 
             except asyncio.TimeoutError:
                 # Перехватываем зависание Docker-сети на macOS
-                print(f"[SOCKS5 TIMEOUT] Превышено время ожидания (3.0s) подключения к {target_host}. Сеть Docker Desktop заблокирована.")
-
-                # ПЕРЕДАЕМ ИМЕННО ТОТ ПАЙПЛАЙН, КОТОРЫЙ СБОИЛ В ЭТОЙ СЕССИИ
+                print(f"[SOCKS5 TIMEOUT] Превышено время ожидания (3.0s) для {target_host}:{target_port}")
+                
+                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: ВЫЗОВ ОРКЕСТРАТОРА ОБЯЗАН БЫТЬ ТОТАЛЬНЫМ
+                # Передаем active_pipeline (даже если он равен []), чтобы запустить Шаг 0 автомата мутаций
                 await self.orchestrator.report_failure(
                     domain=target_host,
                     reason="Connection timeout",
-                    current_pipeline=active_pipeline
+                    current_pipeline=list(active_pipeline), # Передаем честный срез (пустой или полный)
+                    port=target_port
                 )
+                
                 client_writer.close()
                 await client_writer.wait_closed()
                 return
@@ -279,11 +317,13 @@ class SOCKS5Daemon:
             except Exception as net_err:
                 print(f"[SOCKS5 NET ERROR] Сбой подключения к {target_host}: {net_err}")
                 
-                # ПЕРЕДАЕМ ИМЕННО ТОТ ПАЙПЛАЙН, КОТОРЫЙ СБОИЛ В ЭТОЙ СЕССИИ
+                # 🔥 КРИТИЧЕСКИЙ ПАТЧ: ВЫЗОВ ОРКЕСТРАТОРА ОБЯЗАН БЫТЬ ТОТАЛЬНЫМ
+                # Передаем active_pipeline (даже если он равен []), чтобы запустить автомат мутаций
                 await self.orchestrator.report_failure(
                     domain=target_host,
                     reason="DPI Request Drop",
-                    current_pipeline=active_pipeline
+                    current_pipeline=list(active_pipeline), # Передаем честный срез (пустой или полный)
+                    port=target_port
                 )
                 client_writer.close()
                 await client_writer.wait_closed()
